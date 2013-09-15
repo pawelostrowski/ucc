@@ -1,7 +1,7 @@
-#ifndef SOCKETS_H
-#define SOCKETS_H
+#ifndef SOCKETS_HPP
+#define SOCKETS_HPP
 
-#define SOCKETS_H_NAME "sockets"
+#define SOCKETS_HPP_NAME "sockets"
 
 
 //int http(std::string &host, std::string &port, std::string &data_send, std::string &cookies_recv);
@@ -31,4 +31,4 @@ int http_2(std::string &cookies);
 
 
 
-#endif // SOCKETS_H
+#endif // SOCKETS_HPP

@@ -1,9 +1,9 @@
-#ifndef AUTH_H
-#define AUTH_H
+#ifndef AUTH_HPP
+#define AUTH_HPP
 
-#define AUTH_H_NAME "auth"
+#define AUTH_HPP_NAME "auth"
 
 
 int auth(char *authkey);
 
-#endif // AUTH_H
+#endif // AUTH_HPP

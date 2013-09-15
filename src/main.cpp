@@ -5,8 +5,8 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include "auth.h"
-#include "sockets.h"
+#include "auth.hpp"
+#include "sockets.hpp"
 
 using namespace std;
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 	int http_status = http_2(cookies);
 	if (http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_H_NAME << ", kod błędu " << http_status << endl;
+		cerr << "Błąd w module " << SOCKETS_HPP_NAME << ", kod błędu " << http_status << endl;
 		return 1;
 	}
 

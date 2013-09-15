@@ -4,7 +4,7 @@
 //#include <sys/socket.h>
 #include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>		// close() - socket
-#include "sockets.h"
+#include "sockets.hpp"
 
 using namespace std;
 

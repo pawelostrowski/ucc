@@ -1,5 +1,5 @@
 #include <cstring>		// strlen(), memcpy()
-#include "auth.h"
+#include "auth.hpp"
 
 
 int auth(char *authkey)
