@@ -2,7 +2,7 @@
 #include <cstring>		// memset(), strlen(), strstr()
 #include <fstream>		// pliki
 //#include <sys/socket.h>
-#include <netdb.h>	// getaddrinfo(), freeaddrinfo(), socket()
+#include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>		// close() - socket
 #include "sockets.h"
 
@@ -75,17 +75,14 @@ int find_cookies(char *c_buffer, string &cookies)
 	// string(c_buffer) zamienia C string na std::string
 	cookie_start = string(c_buffer).find(cookie_string);		// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
 	if(cookie_start == string::npos)
-	{
 		return 6;		// kod błędu, gdy nie znaleziono cookie (pierwszego)
-	}
 
 	do
 	{
 		cookie_end = string(c_buffer).find(";", cookie_start);		// szukaj ";" od pozycji początku cookie
 		if(cookie_end == string::npos)
-		{
 			return 7;	// kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
-		}
+
 		cookie_tmp.clear();			// wyczyść bufor pomocniczy
 		cookie_tmp.insert(0, string(c_buffer), cookie_start + cookie_string.size(), cookie_end - cookie_start - cookie_string.size() + 1);	// skopiuj cookie do bufora pomocniczego
 		cookies += cookie_tmp;			// dopisz kolejny cookie do bufora
