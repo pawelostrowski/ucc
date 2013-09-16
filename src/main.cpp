@@ -5,7 +5,6 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include <sstream>
 #include <stdlib.h>		// system()
 #include "auth.hpp"
 #include "sockets.hpp"

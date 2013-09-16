@@ -16,7 +16,7 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 	int socketfd; // The socket descripter
 	ssize_t bytes_recv;
 	char tmp_buffer[2000];
-	bool first_recv = false;		// czy pierwsze pobranie w pętli
+	bool first_recv = true;		// czy pierwsze pobranie w pętli
 
 	struct addrinfo host_info;       // The struct that getaddrinfo() fills up with data.
 	struct addrinfo *host_info_list; // Pointer to the to the linked list of host_info's.
@@ -52,7 +52,7 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 	do
 	{
 		bytes_recv = recv(socketfd, tmp_buffer, 2000, 0);		// pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-		if(! first_recv)
+		if(first_recv)
 		{
 			if(bytes_recv == 0)
 			{
@@ -61,7 +61,7 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 				return 4;		// kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host został wyłączony)
 			}
 		}
-		first_recv = true;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
+		first_recv = false;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
 		memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);		// pobrane dane "dopisz" do bufora
 		offset_recv += bytes_recv;		// zwiększ offset
 	} while(bytes_recv != 0);
