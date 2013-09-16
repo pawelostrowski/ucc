@@ -1,11 +1,12 @@
 /*
- *
+ * Opis dodam, jak kod się bardziej rozwinie.
  */
 
 #include <iostream>
 #include <string>
 #include <cstring>
 #include <stdlib.h>		// system()
+//#include <iconv.h>		// konwersja kodowania znaków
 #include "auth.hpp"
 #include "sockets.hpp"
 
@@ -14,10 +15,20 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	string cookies, captcha_code, err_code;
+	string nick, cookies, captcha_code, err_code, uokey, zuousername;
 	int http_status;
 
 	cout << "Ucieszony Chat Client" << endl;
+
+	do
+	{
+		cout << "Podaj nick tymczasowy: ";
+		getline(cin, nick);
+		while(nick.find(" ") != string::npos)
+			nick.erase(nick.find(" "), 1);		// usuń spacje z nicka (nie może istnieć taki nick)
+	} while(! nick.size());
+
+	cout << "Pobieranie obrazka z kodem do przepisania... " << endl;
 
 	http_status = http_1(cookies);
 	if(http_status != 0)
@@ -56,7 +67,23 @@ int main(int argc, char *argv[])
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
+	http_status = http_4(cookies, nick, uokey, zuousername, err_code);
+	if(http_status != 0)
+	{
+		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_4, kod błędu " << http_status << endl;
+		return 1;
+	}
 
+	if(err_code != "TRUE")
+	{
+		cout << "Błąd serwera (nieprawidłowy nick?): " << err_code << endl;
+		cout << "Zakończono." << endl;
+		return 0;		// 0, bo to nie jest błąd programu
+	}
+
+	cout << "err_code:\t" << err_code << endl;
+	cout << "uoKey:\t\t" << uokey << endl;
+	cout << "zuoUsername:\t" << zuousername << endl;
 
 	return 0;
 }

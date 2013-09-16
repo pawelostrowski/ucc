@@ -8,7 +8,7 @@
 #include "sockets.hpp"
 
 using namespace std;
-//	#include <iostream>
+	#include <iostream>
 
 
 int socket_a(string &host, string &port, string &data_send, char *c_buffer, long &offset_recv)
@@ -83,26 +83,48 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 
 int find_cookies(char *c_buffer, string &cookies)
 {
-	size_t cookie_start, cookie_end;
+	size_t pos_cookie_start, pos_cookie_end;
 	string cookie_tmp;
 	string cookie_string = "Set-Cookie:";
 
 	// string(c_buffer) zamienia C string na std::string
-	cookie_start = string(c_buffer).find(cookie_string);		// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
-	if(cookie_start == string::npos)
-		return 6;		// kod błędu, gdy nie znaleziono cookie (pierwszego)
+	pos_cookie_start = string(c_buffer).find(cookie_string);	// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
+	if(pos_cookie_start == string::npos)
+		return 6;	// kod błędu, gdy nie znaleziono cookie (pierwszego)
 
 	do
 	{
-		cookie_end = string(c_buffer).find(";", cookie_start);		// szukaj ";" od pozycji początku cookie
-		if(cookie_end == string::npos)
+		pos_cookie_end = string(c_buffer).find(";", pos_cookie_start);	// szukaj ";" od pozycji początku cookie
+		if(pos_cookie_end == string::npos)
 			return 7;	// kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
 
-		cookie_tmp.clear();			// wyczyść bufor pomocniczy
-		cookie_tmp.insert(0, string(c_buffer), cookie_start + cookie_string.size(), cookie_end - cookie_start - cookie_string.size() + 1);	// skopiuj cookie do bufora pomocniczego
-		cookies += cookie_tmp;			// dopisz kolejny cookie do bufora
-		cookie_start = string(c_buffer).find(cookie_string, cookie_start + cookie_string.size());		// znajdź kolejny cookie
-	} while(cookie_start != string::npos);
+	cookie_tmp.clear();	// wyczyść bufor pomocniczy
+	cookie_tmp.insert(0, string(c_buffer), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);	// skopiuj cookie
+																																					//  do bufora pomocniczego
+	cookies += cookie_tmp;	// dopisz kolejny cookie do bufora
+	pos_cookie_start = string(c_buffer).find(cookie_string, pos_cookie_start + cookie_string.size());	// znajdź kolejny cookie
+	} while(pos_cookie_start != string::npos);
+
+	return 0;
+}
+
+
+int find_value(char *c_buffer, string &expr_before, string &expr_after, string &f_value)
+{
+	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
+
+	f_value.clear();	// wyczyść bufor szukanej wartości
+
+	pos_expr_before = string(c_buffer).find(expr_before);		// znajdź pozycję początku szukanego wyrażenia
+	if(pos_expr_before == string::npos)
+		return 8;		// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+
+	pos_expr_after = string(c_buffer).find(expr_after, pos_expr_before + expr_before.size());		// znajdź pozycję końca szukanego wyrażenia,
+																									//  zaczynając od znalezionego początku + jego jego długości
+	if(pos_expr_after == string::npos)
+		return 9;		// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
+
+	f_value.insert(0, string(c_buffer), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());		// wstaw szukaną wartość
 
 	return 0;
 }
@@ -169,14 +191,14 @@ int http_2(string &cookies)
 
 int http_3(string &cookies, string &captcha_code, string &err_code)
 {
-	int socket_status;
-	size_t err_code_start, err_code_end;
-	char c_buffer[2000];
+	int socket_status, f_value_status;
+	char c_buffer[5000];
 	long offset_recv;
 	stringstream content_length;
-	string err_code_string = "err_code=\"";
+	string expr_before, expr_after;
 
 	string api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
+
 	content_length << api_function.size();
 
 	string host = "czat.onet.pl";
@@ -196,16 +218,77 @@ int http_3(string &cookies, string &captcha_code, string &err_code)
 	if(socket_status != 0)
 		return socket_status;		// kod błędu, gdy napotkano problem z socketem
 
-	// sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera)
-	err_code_start = string(c_buffer).find(err_code_string);		// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
-	if(err_code_start == string::npos)
-		return 8;		// kod błędu, gdy nie znaleziono szukanego wyrażenia
+	// sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE)
+	expr_before = "err_code=\"";	// szukaj wartości, przed którą jest wyrażenie: err_code="
+	expr_after = "\"";				// szukaj wartości, po której jest wyrażenie: "
+	f_value_status = find_value(c_buffer, expr_before, expr_after, err_code);
+	if(f_value_status != 0)
+		return f_value_status;		// kod błedu, gdy nie udało się pobrać err_code
 
-	err_code_end = string(c_buffer).find("\"", err_code_start + err_code_string.size());		// err_code_string.size(), bo trzeba pominąć pierwszy cudzysłów
-	if(err_code_end == string::npos)
-			return 9;	// kod błędu, gdy nie znaleziono oczekiwanego cudzysłowu na końcu wyrażenia
+	if(err_code != "TRUE")
+		if(err_code != "FALSE")
+			return 10;			// kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
 
-	err_code.insert(0, string(c_buffer), err_code_start + err_code_string.size(), err_code_end - err_code_start - err_code_string.size());	// wstaw odebraną wartość
+	return 0;
+}
+
+
+int http_4(string &cookies, string &nick, string &uokey, string &zuousername, string &err_code)
+{
+	int socket_status, f_value_status;
+	char c_buffer[5000];
+	long offset_recv;
+	stringstream nick_length, content_length;
+	string expr_before, expr_after;
+
+	nick_length << nick.size();
+
+	string api_function = 	"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\"" + nick
+							+ "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
+
+	content_length << api_function.size();
+
+	string host = "czat.onet.pl";
+	string port = "80";
+	string data_send = 	"POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
+						"Host: " + host + "\r\n"
+						"Connection: Keep-Alive\r\n"
+						"Content-Type: application/x-www-form-urlencoded\r\n"
+						"Content-Length: " + content_length.str() + "\r\n"
+						"Cache-Control: no-cache\r\n"
+						"Pragma: no-cache\r\n"
+						"User-Agent: Mozilla/5.0\r\n"
+						"Cookie:" + cookies + "\r\n\r\n"
+						+ api_function;
+
+	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
+	if(socket_status != 0)
+		return socket_status;		// kod błędu, gdy napotkano problem z socketem
+
+	// pobierz kod błędu
+	expr_before = "err_code=\"";
+	expr_after = "\"";
+	f_value_status = find_value(c_buffer, expr_before, expr_after, err_code);
+	if(f_value_status != 0)
+		return f_value_status;		// kod błędu, gdy nie udało się pobrać err_code
+
+	// sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
+	if(err_code != "TRUE")
+		return 0;			// 0, bo to nie jest błąd programu
+
+	// pobierz uoKey
+	expr_before = "<uoKey>";
+	expr_after = "</uoKey>";
+	f_value_status = find_value(c_buffer, expr_before, expr_after, uokey);
+	if(f_value_status != 0)
+		return f_value_status + 10;	// kod błedu, gdy nie udało się pobrać uoKey (+10, aby można było go odróżnić od poprzedniego użycia find_value() )
+
+	// pobierz zuoUsername (nick, który zwrócił serwer)
+	expr_before = "<zuoUsername>";
+	expr_after = "</zuoUsername>";
+	f_value_status = find_value(c_buffer, expr_before, expr_after, zuousername);
+	if(f_value_status != 0)
+		return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (+20, aby można było go odróżnić od poprzedniego użycia find_value() )
 
 	return 0;
 }
@@ -213,5 +296,6 @@ int http_3(string &cookies, string &captcha_code, string &err_code)
 
 int irc()
 {
+
 	return 0;
 }
