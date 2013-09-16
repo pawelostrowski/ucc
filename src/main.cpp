@@ -7,10 +7,11 @@
 #include <cstring>
 #include <stdlib.h>		// system()
 //#include <iconv.h>		// konwersja kodowania znaków
-#include "auth.hpp"
 #include "sockets.hpp"
 
 using namespace std;
+
+	#include "auth.hpp"
 
 
 int main(int argc, char *argv[])
@@ -30,6 +31,7 @@ int main(int argc, char *argv[])
 
 	cout << "Pobieranie obrazka z kodem do przepisania... " << endl;
 
+	cout << "http_1()" << endl;
 	http_status = http_1(cookies);
 	if(http_status != 0)
 	{
@@ -37,6 +39,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
+	cout << "http_2()" << endl;
 	http_status = http_2(cookies);
 	if(http_status != 0)
 	{
@@ -54,6 +57,7 @@ int main(int argc, char *argv[])
 			cout << "Kod musi mieć 6 znaków!" << endl;
 	} while(captcha_code.size() != 6);
 
+	cout << "http_3()" << endl;
 	http_status = http_3(cookies, captcha_code, err_code);
 	if(http_status != 0)
 	{
@@ -67,7 +71,8 @@ int main(int argc, char *argv[])
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
-	http_status = http_4(cookies, nick, uokey, zuousername, err_code);
+	cout << "http_4()" << endl;
+	http_status = http_4(cookies, nick, zuousername, uokey, err_code);
 	if(http_status != 0)
 	{
 		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_4, kod błędu " << http_status << endl;
@@ -81,9 +86,13 @@ int main(int argc, char *argv[])
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
-	cout << "err_code:\t" << err_code << endl;
-	cout << "uoKey:\t\t" << uokey << endl;
-	cout << "zuoUsername:\t" << zuousername << endl;
+	cout << "irc()" << endl;
+	http_status = irc(zuousername, uokey);
+	if(http_status != 0)
+	{
+		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania irc, kod błędu " << http_status << endl;
+		return 1;
+	}
 
 	return 0;
 }

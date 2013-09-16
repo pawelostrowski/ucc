@@ -4,17 +4,20 @@
 #include <fstream>		// pliki
 //#include <sys/socket.h>
 #include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
+#include <fcntl.h>		// asynchroniczne gniazdo (sokcet)
 #include <unistd.h>		// close() - socket
+#include <cerrno>
 #include "sockets.hpp"
+#include "auth.hpp"
 
 using namespace std;
 	#include <iostream>
 
 
-int socket_a(string &host, string &port, string &data_send, char *c_buffer, long &offset_recv)
+int socket_a(string &host, string &port, string &data_send, char *c_buffer, long &offset_recv, bool useirc)
 {
-	int socketfd; // The socket descripter
-	ssize_t bytes_recv;
+	int socketfd; 			// deskryptor gniazda (socket)
+	int bytes_sent, bytes_recv, data_send_len;
 	char tmp_buffer[2000];
 	bool first_recv = true;		// czy pierwsze pobranie w pętli
 
@@ -30,12 +33,12 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 	if(getaddrinfo(host.c_str(), port.c_str(), &host_info, &host_info_list) != 0)	// pobierz status adresu
 		return 1;		// kod błedu przy niepowodzeniu w pobraniu statusu adresu
 
-	socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);		// utwórz socket
+	socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);		// utwórz deskryptor gniazda (socket)
 
 	if(socketfd == -1)
 	{
 		freeaddrinfo(host_info_list);
-		return 2;		// kod błedu przy niepowodzeniu w tworzeniu socketa
+		return 2;		// kod błedu przy niepowodzeniu w tworzeniu deskryptora gniazda (socket)
 	}
 
 	if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)	// pobierz status połączenia do hosta
@@ -45,34 +48,53 @@ int socket_a(string &host, string &port, string &data_send, char *c_buffer, long
 		return 3;		// kod błędu przy niepowodzeniu połączenia do hosta
 	}
 
-	send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);		// wysłanie zapytania (np. GET /<...>)
+	// wyślij zapytanie do hosta
+	if(data_send.size() != 0)		// jeśli bufor pusty, nie próbuj nic wysyłać
+	{
+		bytes_sent = send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);		// wysłanie zapytania (np. GET /<...>)
+		if(bytes_sent == -1)
+		{
+			freeaddrinfo(host_info_list);
+			close(socketfd);				// zamknij połączenie z hostem
+			return 4;		// kod błędu przy niepowodzeniu w wysłaniu danych do hosta
+		}
+		data_send_len = strlen(data_send.c_str());		// rozmiar danych, jakie chcieliśmy wysłać
+		if(bytes_sent != data_send_len)		// sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
+		{
+			freeaddrinfo(host_info_list);
+			close(socketfd);				// zamknij połączenie z hostem
+			return 5;		// kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
+		}
+	}
 
 	// poniższa pętla pobiera dane z hosta do bufora
 	offset_recv = 0;		// offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
 	do
 	{
 		bytes_recv = recv(socketfd, tmp_buffer, 2000, 0);		// pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-		if(first_recv)
+		if(bytes_recv == -1)				// sprawdź, czy pobieranie danych się powiodło
+		{
+			freeaddrinfo(host_info_list);
+			close(socketfd);				// zamknij połączenie z hostem
+			return 6;		// kod błędu przy niepowodzeniu w pobieraniu danych od hosta
+		}
+		if(first_recv)			// sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
 		{
 			if(bytes_recv == 0)
 			{
 				freeaddrinfo(host_info_list);
 				close(socketfd);				// zamknij połączenie z hostem
-				return 4;		// kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host został wyłączony)
+				return 7;		// kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host został wyłączony)
 			}
 		}
 		first_recv = false;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
 		memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);		// pobrane dane "dopisz" do bufora
 		offset_recv += bytes_recv;		// zwiększ offset
+		if(useirc)
+			break;
 	} while(bytes_recv != 0);
 
-
-	if(bytes_recv == -1)
-	{
-		freeaddrinfo(host_info_list);
-		close(socketfd);				// zamknij połączenie z hostem
-		return 5;		// kod błędu przy niepowodzeniu w pobieraniu danych od hosta
-	}
+	c_buffer[offset_recv] = '\0';
 
 	freeaddrinfo(host_info_list);
 	close(socketfd);				// zamknij połączenie z hostem
@@ -90,13 +112,13 @@ int find_cookies(char *c_buffer, string &cookies)
 	// string(c_buffer) zamienia C string na std::string
 	pos_cookie_start = string(c_buffer).find(cookie_string);	// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
 	if(pos_cookie_start == string::npos)
-		return 6;	// kod błędu, gdy nie znaleziono cookie (pierwszego)
+		return 11;	// kod błędu, gdy nie znaleziono cookie (pierwszego)
 
 	do
 	{
 		pos_cookie_end = string(c_buffer).find(";", pos_cookie_start);	// szukaj ";" od pozycji początku cookie
 		if(pos_cookie_end == string::npos)
-			return 7;	// kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
+			return 12;	// kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
 
 	cookie_tmp.clear();	// wyczyść bufor pomocniczy
 	cookie_tmp.insert(0, string(c_buffer), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);	// skopiuj cookie
@@ -117,12 +139,12 @@ int find_value(char *c_buffer, string &expr_before, string &expr_after, string &
 
 	pos_expr_before = string(c_buffer).find(expr_before);		// znajdź pozycję początku szukanego wyrażenia
 	if(pos_expr_before == string::npos)
-		return 8;		// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+		return 21;		// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
 
 	pos_expr_after = string(c_buffer).find(expr_after, pos_expr_before + expr_before.size());		// znajdź pozycję końca szukanego wyrażenia,
 																									//  zaczynając od znalezionego początku + jego jego długości
 	if(pos_expr_after == string::npos)
-		return 9;		// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
+		return 22;		// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
 
 	f_value.insert(0, string(c_buffer), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());		// wstaw szukaną wartość
 
@@ -227,13 +249,13 @@ int http_3(string &cookies, string &captcha_code, string &err_code)
 
 	if(err_code != "TRUE")
 		if(err_code != "FALSE")
-			return 10;			// kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
+			return 99;			// kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
 
 	return 0;
 }
 
 
-int http_4(string &cookies, string &nick, string &uokey, string &zuousername, string &err_code)
+int http_4(string &cookies, string &nick, string &zuousername, string &uokey, string &err_code)
 {
 	int socket_status, f_value_status;
 	char c_buffer[5000];
@@ -294,8 +316,169 @@ int http_4(string &cookies, string &nick, string &uokey, string &zuousername, st
 }
 
 
-int irc()
+int asyn_socket_send(string &data_send, int &socketfd)
 {
+//	int bytes_sent;
+
+	/*bytes_sent =*/ send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
+
+	return 0;
+}
+
+int asyn_socket_recv(char *c_buffer, int &bytes_recv, int &socketfd)
+{
+
+	do
+	{
+		bytes_recv = recv(socketfd, c_buffer, 2000, 0);
+		if(bytes_recv == -1)
+		{
+			close(socketfd);
+			return 104;
+		}
+	} while(bytes_recv == 0);
+
+	c_buffer[bytes_recv] = '\0';
+
+		cout << c_buffer;
+
+	return 0;
+}
+
+
+int irc(string &zuousername, string &uokey)
+{
+/*
+	int socket_status;
+	char c_buffer[5000];
+	long offset_recv;
+
+	string host = "czat-app.onet.pl";
+	string port = "5015";
+	string data_send;
+
+	data_send.clear();		// niczego nie wysyłaj na tym etapie do serwera
+
+	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv, true);
+	if(socket_status != 0)
+		return socket_status;		// kod błędu, gdy napotkano problem z socketem
+*/
+
+
+	int socketfd; 			// deskryptor gniazda (socket)
+	int bytes_recv, f_value_status;
+	char c_buffer[2000];
+	char authkey[16 + 1];		// AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod zera, aby odróżnić koniec tablicy
+	string data_send, expr_before, expr_after, authkey_s;
+	stringstream authkey_tmp;
+
+	struct hostent *he;
+	struct sockaddr_in www;
+
+	he = gethostbyname("czat-app.onet.pl");
+	if(he == NULL)
+		return 101;
+
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);
+	if(socketfd == -1)
+		return 102;
+
+	fcntl(socketfd, F_SETFL, O_SYNC);		// asynchroniczne gniazdo (socket)
+
+	www.sin_family = AF_INET;
+	www.sin_port = htons(5015);
+	www.sin_addr = *((struct in_addr *)he->h_addr);
+	memset(&(www.sin_zero), '\0', 8);
+
+	if(connect(socketfd, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
+	{
+		perror("connect");
+		close(socketfd);
+		return 103;
+	}
+
+	// połącz z serwerem
+	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+
+
+	// wyślij: NICK <~nick>
+	data_send.clear();
+	data_send = "NICK " + zuousername + "\r\n";
+		cout << "> " + data_send;
+	asyn_socket_send(data_send, socketfd);
+
+
+	// pobierz odpowiedź z serwera
+	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+
+
+	// wyślij: AUTHKEY
+	data_send.clear();
+	data_send = "AUTHKEY\r\n";
+		cout << "> " + data_send;
+	asyn_socket_send(data_send, socketfd);
+
+
+	// pobierz odpowiedź z serwera (AUTHKEY)
+	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+
+	// wyszukaj AUTHKEY
+	expr_before = "801 " + zuousername + " :";
+	expr_after = "\r\n";
+	f_value_status = find_value(c_buffer, expr_before, expr_after, authkey_s);
+	if(f_value_status != 0)
+		return f_value_status + 110;
+
+	// AUTHKEY string na char
+	memcpy(authkey, authkey_s.data(), 16);
+	authkey[16] = '\0';
+
+	// konwersja AUTHKEY
+	if(auth(authkey) != 0)
+		return 104;
+
+	// char na string
+	authkey_tmp << authkey;
+	authkey_s.clear();
+	authkey_s = authkey_tmp.str();
+
+
+	// wyślij: AUTHKEY <AUTHKEY>
+	data_send.clear();
+	data_send = "AUTHKEY " + authkey_s + "\r\n";
+		cout << "> " + data_send;
+	asyn_socket_send(data_send, socketfd);
+
+
+	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
+	data_send.clear();
+	data_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\r\n";
+		cout << "> " + data_send;
+	asyn_socket_send(data_send, socketfd);
+
+
+	// pobierz odpowiedź z serwera
+	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+
+
+	// wyślij: JOIN #scc
+	data_send.clear();
+	data_send = "JOIN #scc\r\n";
+	asyn_socket_send(data_send, socketfd);
+
+
+	// pobierz odpowiedź z serwera
+	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+
+
+	do
+	{
+		data_send.clear();
+		getline(cin, data_send);
+		data_send += "\r\n";
+		asyn_socket_send(data_send, socketfd);
+		asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+	} while(true);
 
 	return 0;
 }
