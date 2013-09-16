@@ -1,5 +1,6 @@
 #include <string>		// std::string
 #include <cstring>		// memset(), strlen(), strstr()
+#include <sstream>		// strumień do string
 #include <fstream>		// pliki
 //#include <sys/socket.h>
 #include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
@@ -7,7 +8,7 @@
 #include "sockets.hpp"
 
 using namespace std;
-	#include <iostream>
+//	#include <iostream>
 
 
 int socket_a(string &host, string &port, string &data_send, char *c_buffer, long &offset_recv)
@@ -172,7 +173,11 @@ int http_3(string &cookies, string &captcha_code, string &err_code)
 	size_t err_code_start, err_code_end;
 	char c_buffer[2000];
 	long offset_recv;
+	stringstream content_length;
 	string err_code_string = "err_code=\"";
+
+	string api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
+	content_length << api_function.size();
 
 	string host = "czat.onet.pl";
 	string port = "80";
@@ -180,12 +185,12 @@ int http_3(string &cookies, string &captcha_code, string &err_code)
 						"Host: " + host + "\r\n"
 						"Connection: Keep-Alive\r\n"
 						"Content-Type: application/x-www-form-urlencoded\r\n"
-						"Content-Length: 60\r\n"
+						"Content-Length: " + content_length.str() + "\r\n"
 						"Cache-Control: no-cache\r\n"
 						"Pragma: no-cache\r\n"
 						"User-Agent: Mozilla/5.0\r\n"
 						"Cookie:" + cookies + "\r\n\r\n"
-						"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
+						+ api_function;
 
 	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
 	if(socket_status != 0)
