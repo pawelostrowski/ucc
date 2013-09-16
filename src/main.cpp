@@ -2,16 +2,14 @@
  * Opis dodam, jak kod się bardziej rozwinie.
  */
 
-#include <iostream>
-#include <string>
-#include <cstring>
+#include <iostream>			// std::cin, std::cout, std::string
+
 #include <stdlib.h>		// system()
 //#include <iconv.h>		// konwersja kodowania znaków
+
 #include "sockets.hpp"
 
 using namespace std;
-
-	#include "auth.hpp"
 
 
 int main(int argc, char *argv[])
@@ -47,7 +45,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	system("eog /tmp/onetcaptcha.gif &");
+	system("eog /tmp/onetcaptcha.gif 2>/dev/null &");
 
 	do
 	{

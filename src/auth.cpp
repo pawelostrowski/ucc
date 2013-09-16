@@ -1,6 +1,7 @@
 #include <cstring>		// strlen(), memcpy()
+
 #include "auth.hpp"
-#include <iostream>
+
 
 int auth(char *authkey)
 {
@@ -34,7 +35,6 @@ int auth(char *authkey)
 		ai[i] = (c > '9' ? c > 'Z' ? (c - 97) + 36 : (c - 65) + 10 : c - 48);
 	}
 
-		std::cout << sizeof(ai) << std::endl;
 	for(int i = 0; i < 16; ++i)
 		ai[i] = f1[ai[i] + i];
 

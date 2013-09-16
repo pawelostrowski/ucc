@@ -6,10 +6,6 @@
 
 int socket_a(std::string &host, std::string &port, std::string &data_send, char *c_buffer, long &offset_recv, bool useirc = false);
 
-int find_cookies(char *c_buffer, std::string &cookies);
-
-int find_value(char *c_buffer, std::string &expr_before, std::string &expr_after, std::string &f_value);	// szuka wartości pomiędzy wyrażeniem początkowym i końcowym
-
 int http_1(std::string &cookies);
 
 int http_2(std::string &cookies);
