@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	system("eog /tmp/onetcaptcha.gif 2>/dev/null &");
+	int eog_stat = system("eog /tmp/onetcaptcha.gif 2>/dev/null &");
+	cout << eog_stat << endl;
 
 	do
 	{
