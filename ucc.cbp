@@ -31,9 +31,17 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="src/auth.cpp" />
+		<Unit filename="src/auth.hpp" />
+		<Unit filename="src/expression.cpp" />
+		<Unit filename="src/expression.hpp" />
+		<Unit filename="src/main.cpp" />
+		<Unit filename="src/sockets.cpp" />
+		<Unit filename="src/sockets.hpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />
+			<envvars />
 		</Extensions>
 	</Project>
 </CodeBlocks_project_file>

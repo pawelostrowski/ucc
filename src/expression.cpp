@@ -12,7 +12,7 @@ int find_cookies(char *c_buffer, string &cookies)
 	string cookie_string = "Set-Cookie:";
 
 	// string(c_buffer) zamienia C string na std::string
-	pos_cookie_start = string(c_buffer).find(cookie_string);	// znajdź pozycję pierwszego cookie (bez pominięcia "Set-Cookie:")
+	pos_cookie_start = string(c_buffer).find(cookie_string);	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
 	if(pos_cookie_start == string::npos)
 		return 11;	// kod błędu, gdy nie znaleziono cookie (pierwszego)
 
