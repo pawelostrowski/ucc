@@ -151,7 +151,7 @@ int http_2(string &cookies)
 	if(cookies_status != 0)
 		return cookies_status;		// kod błędu, gdy napotkano problem z cookies
 
-	gif_buffer = strstr(c_buffer, "GIF");
+	gif_buffer = strstr(c_buffer, "GIF");		// daj wskaźnik na początek obrazka
 	if(gif_buffer == NULL)
 		return 8;		// kod błędu, gdy nie znaleziono obrazka w danych
 
