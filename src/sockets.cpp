@@ -152,12 +152,14 @@ int http_2(string &cookies)
 		return cookies_status;		// kod błędu, gdy napotkano problem z cookies
 
 	gif_buffer = strstr(c_buffer, "GIF");
-	if(gif_buffer)
-	{
-		ofstream gif_file("/tmp/onetcaptcha.gif", ios::binary);
-		gif_file.write(gif_buffer, offset_recv);				// POPRAWIĆ offset_recv NA (offset_recv - początek nagłówka GIF)
-		gif_file.close();
-	}
+	if(gif_buffer == NULL)
+		return 8;		// kod błędu, gdy nie znaleziono obrazka w danych
+
+	// zapisz obrazek z captcha na dysku
+	ofstream gif_file("/tmp/onetcaptcha.gif", ios::binary);
+	gif_file.write(gif_buffer, offset_recv);				// POPRAWIĆ offset_recv NA (offset_recv - początek nagłówka GIF)
+	gif_file.close();
+
 
 	return 0;
 }
