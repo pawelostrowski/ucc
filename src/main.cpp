@@ -9,87 +9,87 @@
 
 #include "sockets.hpp"
 
-using namespace std;
+// Celowo nie używam 'using namespace std;', aby pokazać, gdzie używane są elementy standardowych bibliotek C++
 
 
 int main(int argc, char *argv[])
 {
-	string nick, cookies, captcha_code, err_code, uokey, zuousername;
+	std::string nick, cookies, captcha_code, err_code, uokey, zuousername;
 	int http_status;
 
-	cout << "Ucieszony Chat Client" << endl;
+	std::cout << "Ucieszony Chat Client" << std::endl;
 
 	do
 	{
-		cout << "Podaj nick tymczasowy: ";
-		getline(cin, nick);
-		while(nick.find(" ") != string::npos)
+		std::cout << "Podaj nick tymczasowy: ";
+		getline(std::cin, nick);
+		while(nick.find(" ") != std::string::npos)
 			nick.erase(nick.find(" "), 1);		// usuń spacje z nicka (nie może istnieć taki nick)
 	} while(! nick.size());
 
-	cout << "Pobieranie obrazka z kodem do przepisania... " << endl;
+	std::cout << "Pobieranie obrazka z kodem do przepisania... " << std::endl;
 
-	cout << "http_1()" << endl;
+	std::cout << "http_1()" << std::endl;
 	http_status = http_1(cookies);
 	if(http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_1, kod błędu " << http_status << endl;
+		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_1, kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
-	cout << "http_2()" << endl;
+	std::cout << "http_2()" << std::endl;
 	http_status = http_2(cookies);
 	if(http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_2, kod błędu " << http_status << endl;
+		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_2, kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
 	int eog_stat = system("/usr/bin/eog /tmp/onetcaptcha.gif 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
-	cout << eog_stat << endl;
+	std::cout << eog_stat << std::endl;
 
 	do
 	{
-		cout << "Przepisz kod z obrazka: ";
-		getline(cin, captcha_code);
+		std::cout << "Przepisz kod z obrazka: ";
+		getline(std::cin, captcha_code);
 		if(captcha_code.size() != 6)
-			cout << "Kod musi mieć 6 znaków!" << endl;
+			std::cout << "Kod musi mieć 6 znaków!" << std::endl;
 	} while(captcha_code.size() != 6);
 
-	cout << "http_3()" << endl;
+	std::cout << "http_3()" << std::endl;
 	http_status = http_3(cookies, captcha_code, err_code);
 	if(http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_3, kod błędu " << http_status << endl;
+		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_3, kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
 	if(err_code == "FALSE")
 	{
-		cout << "Wpisany kod jest błędny!" << endl << "Zakończono." << endl;
+		std::cout << "Wpisany kod jest błędny!" << std::endl << "Zakończono." << std::endl;
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
-	cout << "http_4()" << endl;
+	std::cout << "http_4()" << std::endl;
 	http_status = http_4(cookies, nick, zuousername, uokey, err_code);
 	if(http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_4, kod błędu " << http_status << endl;
+		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_4, kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
 	if(err_code != "TRUE")
 	{
-		cout << "Błąd serwera (nieprawidłowy nick?): " << err_code << endl;
-		cout << "Zakończono." << endl;
+		std::cout << "Błąd serwera (nieprawidłowy nick?): " << err_code << std::endl;
+		std::cout << "Zakończono." << std::endl;
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
-	cout << "irc()" << endl;
+	std::cout << "irc()" << std::endl;
 	http_status = irc(zuousername, uokey);
 	if(http_status != 0)
 	{
-		cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania irc, kod błędu " << http_status << endl;
+		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania irc, kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
