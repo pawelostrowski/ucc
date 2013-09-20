@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 	do
 	{
 		std::cout << "Podaj nick tymczasowy: ";
+		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl+D
 		getline(std::cin, nick);
 		while(nick.find(" ") != std::string::npos)
 			nick.erase(nick.find(" "), 1);		// usuń spacje z nicka (nie może istnieć taki nick)
@@ -45,12 +46,13 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	int eog_stat = system("/usr/bin/eog /tmp/onetcaptcha.gif 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+	int eog_stat = system("/usr/bin/eog "GIF_FILE" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
 	std::cout << eog_stat << std::endl;
 
 	do
 	{
 		std::cout << "Przepisz kod z obrazka: ";
+		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl+D
 		getline(std::cin, captcha_code);
 		if(captcha_code.size() != 6)
 			std::cout << "Kod musi mieć 6 znaków!" << std::endl;

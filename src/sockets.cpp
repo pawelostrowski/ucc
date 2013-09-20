@@ -155,7 +155,8 @@ int http_2(std::string &cookies)
 		return 8;		// kod błędu, gdy nie znaleziono obrazka w danych
 
 	// zapisz obrazek z captcha na dysku
-	std::ofstream gif_file("/tmp/onetcaptcha.gif", std::ios::binary);
+	std::ofstream gif_file(GIF_FILE, std::ios::binary);
+		std::cout << "Status pliku: " << gif_file << std::endl;
 	gif_file.write(gif_buffer, offset_recv);				// POPRAWIĆ offset_recv NA (offset_recv - początek nagłówka GIF)
 	gif_file.close();
 
@@ -414,16 +415,16 @@ int irc(std::string &zuousername, std::string &uokey)
 	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 
 
-	// wyślij: JOIN #scc
+	// wyślij: JOIN #<kanal>
 	data_send.clear();
-	data_send = "JOIN #scc\r\n";
+	data_send = "JOIN #Towarzyski\r\n";
 	asyn_socket_send(data_send, socketfd);
 
 
 	// pobierz odpowiedź z serwera
 	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 
-
+/*
 	do
 	{
 		data_send.clear();
@@ -431,6 +432,24 @@ int irc(std::string &zuousername, std::string &uokey)
 		data_send += "\r\n";
 		asyn_socket_send(data_send, socketfd);
 		asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+	} while(true);
+*/
+
+	// czekaj na ping i odpowiedz pong oraz "wiś" na kanale
+	std::string pong_send;
+	do
+	{
+		asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+		expr_before = "PING :";
+		expr_after = "\r\n";
+		find_value(c_buffer, expr_before, expr_after, pong_send);
+		if(pong_send.size() != 0)
+		{
+			data_send.clear();
+			data_send = "PONG :" + pong_send + "\r\n";
+			std::cout << "> " + data_send;
+			asyn_socket_send(data_send, socketfd);
+		}
 	} while(true);
 
 	return 0;
