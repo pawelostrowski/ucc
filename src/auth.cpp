@@ -23,43 +23,47 @@ int auth(char *authkey)
 
 	int p2[] = { 1, 13,  5,  8,  7, 10,  0, 15, 12,  3, 14, 11,  2,  9,  6,  4};
 
+	int i, j;
+
 	int ai[16], ai1[16];
+
+	char c;
 
 	if(strlen(authkey) != 16)		// AUTHKEY musi mieć dokładnie 16 znaków
 		return 1;
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 	{
-		char c = authkey[i];		// zamiana ASCII na DEC
+		c = authkey[i];				// zamiana ASCII na DEC
 		ai[i] = (c > '9' ? c > 'Z' ? (c - 97) + 36 : (c - 65) + 10 : c - 48);
 	}
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		ai[i] = f1[ai[i] + i];
 
 	memcpy(ai1, ai, sizeof(ai));	// skopiuj ai do ai1
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		ai[i] = (ai[i] + ai1[p1[i]]) % 62;
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		ai[i] = f2[ai[i] + i];
 
 	memcpy(ai1, ai, sizeof(ai));	// skopiuj ai do ai1
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		ai[i] = (ai[i] + ai1[p2[i]]) % 62;
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		ai[i] = f3[ai[i] + i];
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 	{
-		int j = ai[i];
+		j = ai[i];
 		ai[i] = j >= 10 ? j >= 36 ? (97 + j) - 36 : (65 + j) - 10 : 48 + j;
 	}
 
-	for(int i = 0; i < 16; ++i)
+	for(i = 0; i < 16; ++i)
 		authkey[i] = (char)ai[i];	// zamiana DEC na ASCII
 
 	return 0;
