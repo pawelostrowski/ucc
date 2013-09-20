@@ -3,13 +3,11 @@
  */
 
 #include <iostream>			// std::cin, std::cout, std::string
-
 #include <stdlib.h>		// system()
 //#include <iconv.h>		// konwersja kodowania znaków
-
 #include "sockets.hpp"
 
-// Celowo nie używam 'using namespace std;', aby pokazać, gdzie używane są elementy standardowych bibliotek C++
+// Celowo nie używam 'using namespace std;', aby pokazać, gdzie używane są obiekty standardowych bibliotek C++
 
 
 int main(int argc, char *argv[])

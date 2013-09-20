@@ -1,8 +1,6 @@
 #ifndef EXPRESSION_HPP
 #define EXPRESSION_HPP
-
 #define EXPRESSION_HPP_NAME "expression"
-
 
 int find_cookies(char *c_buffer, std::string &cookies);
 

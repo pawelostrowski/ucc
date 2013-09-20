@@ -1,5 +1,4 @@
 #include <cstring>		// strlen(), memcpy()
-
 #include "auth.hpp"
 
 
@@ -38,7 +37,7 @@ int auth(char *authkey)
 	for(int i = 0; i < 16; ++i)
 		ai[i] = f1[ai[i] + i];
 
-	std::memcpy(ai1, ai, sizeof(ai));	// skopiuj ai do ai1
+	memcpy(ai1, ai, sizeof(ai));	// skopiuj ai do ai1
 
 	for(int i = 0; i < 16; ++i)
 		ai[i] = (ai[i] + ai1[p1[i]]) % 62;

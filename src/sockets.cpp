@@ -1,12 +1,10 @@
 #include <cstring>		// memset(), strlen(), strstr()
 #include <sstream>		// std::stringstream, std::string
 #include <fstream>		// pliki
-
 //#include <sys/socket.h>
 #include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
 //#include <fcntl.h>		// asynchroniczne gniazdo (sokcet)
 #include <unistd.h>		// close() - socket
-
 #include "sockets.hpp"
 #include "expression.hpp"
 #include "auth.hpp"
