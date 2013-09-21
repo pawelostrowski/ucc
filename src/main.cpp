@@ -20,11 +20,13 @@ int main(int argc, char *argv[])
 	do
 	{
 		std::cout << "Podaj nick tymczasowy: ";
-		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl+D
+		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl-D
 		getline(std::cin, nick);
+		if(std::cin.eof() == 1)		// jeśli wciśnięto Ctrl-D, przejdź do nowego wiersza i ponownie wypisz komunikat
+			std::cout << std::endl;
 		while(nick.find(" ") != std::string::npos)
 			nick.erase(nick.find(" "), 1);		// usuń spacje z nicka (nie może istnieć taki nick)
-	} while(! nick.size());
+	} while(nick.size() == 0);
 
 	std::cout << "Pobieranie obrazka z kodem do przepisania... " << std::endl;
 
@@ -50,8 +52,10 @@ int main(int argc, char *argv[])
 	do
 	{
 		std::cout << "Przepisz kod z obrazka: ";
-		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl+D
+		std::cin.clear();		// zapobiega zapętleniu się programu przy kombinacji Ctrl-D
 		getline(std::cin, captcha_code);
+		if(std::cin.eof() == 1)		// jeśli wciśnięto Ctrl-D, przejdź do nowego wiersza i ponownie wypisz komunikat
+			std::cout << std::endl;
 		if(captcha_code.size() != 6)
 			std::cout << "Kod musi mieć 6 znaków!" << std::endl;
 	} while(captcha_code.size() != 6);
