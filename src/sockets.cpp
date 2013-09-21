@@ -156,7 +156,7 @@ int http_2(std::string &cookies)
 	std::ofstream gif_file(GIF_FILE, std::ios::binary);
 	if(gif_file == NULL)
 	{
-		perror("gif_file");
+		perror("gif_file: " GIF_FILE);
 		return 9;
 	}
 	gif_file.write(gif_buffer, &c_buffer[offset_recv] - gif_buffer);	// &c_buffer[offset_recv] - gif_buffer <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
