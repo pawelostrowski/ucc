@@ -2,9 +2,9 @@
  * Opis dodam, jak kod się bardziej rozwinie.
  */
 
-#include <iostream>			// std::cin, std::cout, std::string
+#include <iostream>		// std::cin, std::cout, std::string
 #include <stdlib.h>		// system()
-//#include <iconv.h>		// konwersja kodowania znaków
+//#include <iconv.h>	// konwersja kodowania znaków
 #include "sockets.hpp"
 
 // Celowo nie używam 'using namespace std;', aby pokazać, gdzie używane są obiekty standardowych bibliotek C++

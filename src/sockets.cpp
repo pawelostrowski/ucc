@@ -1,6 +1,6 @@
 #include <cstring>		// memset(), strlen(), strstr()
 #include <sstream>		// std::stringstream, std::string
-#include <fstream>		// pliki
+#include <fstream>		// std::ofstream, perror()
 //#include <sys/socket.h>
 #include <netdb.h>		// getaddrinfo(), freeaddrinfo(), socket()
 //#include <fcntl.h>		// asynchroniczne gniazdo (sokcet)
@@ -154,8 +154,12 @@ int http_2(std::string &cookies)
 
 	// zapisz obrazek z captcha na dysku
 	std::ofstream gif_file(GIF_FILE, std::ios::binary);
-		std::cout << "Status pliku: " << gif_file << std::endl;
-	gif_file.write(gif_buffer, offset_recv);				// POPRAWIĆ offset_recv NA (offset_recv - początek nagłówka GIF)
+	if(gif_file == NULL)
+	{
+		perror("gif_file");
+		return 9;
+	}
+	gif_file.write(gif_buffer, &c_buffer[offset_recv] - gif_buffer);	// &c_buffer[offset_recv] - gif_buffer <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
 	gif_file.close();
 
 
@@ -415,7 +419,8 @@ int irc(std::string &zuousername, std::string &uokey)
 
 	// wyślij: JOIN #<kanal>
 	data_send.clear();
-	data_send = "JOIN #Towarzyski\r\n";
+	data_send = "JOIN #20_21_22_23_lat\r\n";
+		std::cout << "> " + data_send;
 	asyn_socket_send(data_send, socketfd);
 
 
@@ -440,8 +445,8 @@ int irc(std::string &zuousername, std::string &uokey)
 		asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 		expr_before = "PING :";
 		expr_after = "\r\n";
-		find_value(c_buffer, expr_before, expr_after, pong_send);
-		if(pong_send.size() != 0)
+		f_value_status = find_value(c_buffer, expr_before, expr_after, pong_send);
+		if(f_value_status == 0)
 		{
 			data_send.clear();
 			data_send = "PONG :" + pong_send + "\r\n";
