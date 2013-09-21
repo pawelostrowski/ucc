@@ -34,17 +34,16 @@ int find_value(char *c_buffer, std::string &expr_before, std::string &expr_after
 {
 	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
 
-	f_value.clear();	// wyczyść bufor szukanej wartości
-
 	pos_expr_before = std::string(c_buffer).find(expr_before);		// znajdź pozycję początku szukanego wyrażenia
 	if(pos_expr_before == std::string::npos)
 		return 21;		// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
 
 	pos_expr_after = std::string(c_buffer).find(expr_after, pos_expr_before + expr_before.size());		// znajdź pozycję końca szukanego wyrażenia,
-																									//  zaczynając od znalezionego początku + jego jego długości
+																										//  zaczynając od znalezionego początku + jego jego długości
 	if(pos_expr_after == std::string::npos)
 		return 22;		// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
 
+	f_value.clear();	// wyczyść bufor szukanej wartości
 	f_value.insert(0, std::string(c_buffer), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());		// wstaw szukaną wartość
 
 	return 0;

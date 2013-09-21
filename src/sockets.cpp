@@ -150,7 +150,7 @@ int http_2(std::string &cookies)
 
 	gif_buffer = strstr(c_buffer, "GIF");		// daj wskaźnik na początek obrazka
 	if(gif_buffer == NULL)
-		return 8;		// kod błędu, gdy nie znaleziono obrazka w danych
+		return 8;		// kod błędu, gdy nie znaleziono obrazka w buforze
 
 	// zapisz obrazek z captcha na dysku
 	std::ofstream gif_file(GIF_FILE, std::ios::binary);
