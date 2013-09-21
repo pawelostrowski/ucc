@@ -111,7 +111,7 @@ int http_1(std::string &cookies)
 	std::string port = "80";
 	std::string data_send =	"GET /_s/kropka/1?DV=czat/applet/FULL HTTP/1.1\r\n"
 							"Host: " + host + "\r\n"
-							"Connection: Keep-Alive\r\n\r\n";
+							"Connection: Close\r\n\r\n";
 
 	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
 	if(socket_status != 0)
@@ -137,7 +137,7 @@ int http_2(std::string &cookies)
 	std::string port = "80";
 	std::string data_send =	"GET /myimg.gif HTTP/1.1\r\n"
 							"Host: " + host + "\r\n"
-							"Connection: Keep-Alive\r\n"
+							"Connection: Close\r\n"
 							"Cookie:" + cookies + "\r\n\r\n";
 
 	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
@@ -162,7 +162,6 @@ int http_2(std::string &cookies)
 	gif_file.write(gif_buffer, &c_buffer[offset_recv] - gif_buffer);	// &c_buffer[offset_recv] - gif_buffer <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
 	gif_file.close();
 
-
 	return 0;
 }
 
@@ -183,7 +182,7 @@ int http_3(std::string &cookies, std::string &captcha_code, std::string &err_cod
 	std::string port = "80";
 	std::string data_send =	"POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
 							"Host: " + host + "\r\n"
-							"Connection: Keep-Alive\r\n"
+							"Connection: Close\r\n"
 							"Content-Type: application/x-www-form-urlencoded\r\n"
 							"Content-Length: " + content_length.str() + "\r\n"
 							"Cache-Control: no-cache\r\n"
@@ -230,7 +229,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 	std::string port = "80";
 	std::string data_send =	"POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
 							"Host: " + host + "\r\n"
-							"Connection: Keep-Alive\r\n"
+							"Connection: Close\r\n"
 							"Content-Type: application/x-www-form-urlencoded\r\n"
 							"Content-Length: " + content_length.str() + "\r\n"
 							"Cache-Control: no-cache\r\n"
