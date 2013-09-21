@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	http_status = http_1(cookies);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_1, kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w http_1(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 	http_status = http_2(cookies);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_2, kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w http_2(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	http_status = http_3(cookies, captcha_code, err_code);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_3, kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w http_3(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 	http_status = http_4(cookies, nick, zuousername, uokey, err_code);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania http_4, kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w http_4(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 	http_status = irc(zuousername, uokey);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w module " << SOCKETS_HPP_NAME << " podczas wywołania irc, kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w irc(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
