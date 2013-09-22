@@ -239,8 +239,8 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
 	nick_length << nick.size();
 
-	api_function =	"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\"" + nick
-					+ "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
+	api_function =	"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\""
+                    + nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
 
     header_post("czat.onet.pl", cookies, api_function, data_send);
 
@@ -416,7 +416,7 @@ int irc(std::string &zuousername, std::string &uokey)
 
 	// wyślij: JOIN #<kanal>
 	data_send.clear();
-	data_send = "JOIN #Computers\r\n";
+	data_send = "JOIN #Towarzyski\r\n";
 		std::cout << "> " + data_send;
 	asyn_socket_send(data_send, socketfd);
 
