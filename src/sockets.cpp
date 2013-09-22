@@ -101,7 +101,7 @@ int socket_a(std::string host, std::string port, std::string data_send, char *c_
 }
 
 
-void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies = false)
+void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies)
 {
     data_send.clear();
 
@@ -199,7 +199,7 @@ int http_2(std::string &cookies)
 }
 
 
-int http_3(std::string &cookies, std::string &captcha_code, std::string &err_code)
+int http_3(std::string &cookies, std::string captcha_code, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
