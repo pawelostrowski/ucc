@@ -1,7 +1,7 @@
 #ifndef SOCKETS_HPP
 #define SOCKETS_HPP
 #define SOCKETS_HPP_NAME "sockets"
-#define GIF_FILE "/tmp/onetcaptcha.gif"		// plik z kodem captcha
+#define GIF_FILE "/tmp/onetcaptcha.gif"     // plik z kodem captcha
 
 int socket_a(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc = false);
 
@@ -15,4 +15,4 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
 int irc(std::string &zuousername, std::string &uokey);
 
-#endif // SOCKETS_HPP
+#endif      // SOCKETS_HPP

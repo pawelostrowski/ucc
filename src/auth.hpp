@@ -4,4 +4,4 @@
 
 int auth(char *authkey);
 
-#endif // AUTH_HPP
+#endif      // AUTH_HPP
