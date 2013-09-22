@@ -278,21 +278,26 @@ int asyn_socket_send(std::string &data_send, int &socketfd)
     return 0;
 }
 
-int asyn_socket_recv(char *c_buffer, int &bytes_recv, int &socketfd)
+int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
 {
+    int offset_recv = 0;
+    char tmp_buffer[2000];
+
     do
     {
-        bytes_recv = recv(socketfd, c_buffer, 2000, 0);
+        bytes_recv = recv(socketfd, tmp_buffer, 2000 - 1, 0);
         if(bytes_recv == -1)
         {
             close(socketfd);
-            return 104;
+            return bytes_recv;
         }
+        memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);     // pobrane dane "dopisz" do bufora
+        offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
     } while(bytes_recv == 0);
 
     c_buffer[bytes_recv] = '\0';
 
-        std::cout << c_buffer;
+    std::cout << c_buffer;
 
     return 0;
 }
@@ -316,12 +321,13 @@ int irc(std::string &zuousername, std::string &uokey)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem
 */
 
-
+    size_t first_line_char;
+    bool connect_status = true;
     int socketfd;       // deskryptor gniazda (socket)
-    int bytes_recv, f_value_status;
-    char c_buffer[2000];
+    int bytes_recv = 0, f_value_status;
+    char c_buffer[50000];
     char authkey[16 + 1];       // AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod zera, aby odróżnić koniec tablicy
-    std::string data_send, authkey_s;
+    std::string data_send, authkey_s, f_value;
     std::stringstream authkey_tmp;
 
     struct hostent *he;
@@ -413,7 +419,7 @@ int irc(std::string &zuousername, std::string &uokey)
 
     // wyślij: JOIN #<kanal>
     data_send.clear();
-    data_send = "JOIN #Towarzyski\r\n";
+    data_send = "JOIN #scc\r\n";
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
 
@@ -433,19 +439,32 @@ int irc(std::string &zuousername, std::string &uokey)
 */
 
     // czekaj na ping i odpowiedz pong oraz "wiś" na kanale
-    std::string pong_send;
     do
     {
-        asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-        f_value_status = find_value(c_buffer, "PING :", "\r\n", pong_send);
-        if(f_value_status == 0)
+        if(asyn_socket_recv(c_buffer, bytes_recv, socketfd) != 0)   // czekaj na rekord do pobrania
         {
-            data_send.clear();
-            data_send = "PONG :" + pong_send + "\r\n";
-            std::cout << "> " + data_send;
-            asyn_socket_send(data_send, socketfd);
+            std::cerr << "Host zakończył połączenie!" << std::endl;
+            close(socketfd);
+            return 98;
         }
-    } while(true);
+        first_line_char = std::string(c_buffer).find(":");  // na której pozycji jest pierwszy :
+        if(first_line_char != 0)    // gdy pierwszym znakiem nie jest :
+        {
+            f_value_status = find_value(c_buffer, "PING :", "\r\n", f_value);
+            if(f_value_status == 0)     // jeśli PING, wyślij PONG
+            {
+                data_send.clear();
+                data_send = "PONG :" + f_value + "\r\n";
+                std::cout << "> " + data_send;
+                asyn_socket_send(data_send, socketfd);
+            }
+            f_value_status = find_value(c_buffer, "ERROR :", "\r\n", f_value);
+            if(f_value_status == 0)
+                connect_status = false;     // zakończ, gdy odebrano błąd połączenia
+        }
+    } while(connect_status);    // zanim nie napotamy błedu, krąż w pętli
+
+    close(socketfd);
 
     return 0;
 }
