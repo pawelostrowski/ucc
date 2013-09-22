@@ -111,7 +111,7 @@ void header_get(std::string host, std::string data_get, std::string cookies, std
                 "Connection: close\r\n"
 				"Cache-Control: no-cache\r\n"
 				"Pragma: no-cache\r\n"
-				"User-Agent: Mozilla/5.0\r\n";
+				"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n";
 
     if(add_cookies)
         data_send += "Cookie:" + cookies + "\r\n";
@@ -136,7 +136,7 @@ void header_post(std::string host, std::string cookies, std::string api_function
 				"Content-Length: " + content_length.str() + "\r\n"          // content_length.str()  <--- zamienia liczbę na std::string
 				"Cache-Control: no-cache\r\n"
 				"Pragma: no-cache\r\n"
-				"User-Agent: Mozilla/5.0\r\n"
+				"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
 				"Cookie:" + cookies + "\r\n\r\n"
 				+ api_function;
 }

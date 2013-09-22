@@ -2,6 +2,8 @@
 #include <cstring>		// strlen()
 #include "expression.hpp"
 
+#define COOKIE_STRING "Set-Cookie:"
+
 
 int find_cookies(char *c_buffer, std::string &cookies)
 {
