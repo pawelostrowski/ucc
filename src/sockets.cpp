@@ -16,7 +16,7 @@ int socket_a(std::string host, std::string port, std::string data_send, char *c_
 {
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv, data_send_len;
-    char tmp_buffer[2000];
+    char tmp_buffer[1024];      // bufor tymczasowy pobranych danych
     bool first_recv = true;     // czy to pierwsze pobranie w pętli
 
     struct addrinfo host_info;          // The struct that getaddrinfo() fills up with data.
@@ -69,7 +69,7 @@ int socket_a(std::string host, std::string port, std::string data_send, char *c_
     offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
     do
     {
-        bytes_recv = recv(socketfd, tmp_buffer, 2000, 0);       // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+        bytes_recv = recv(socketfd, tmp_buffer, 1024 - 1, 0);       // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
         if(bytes_recv == -1)        // sprawdź, czy pobieranie danych się powiodło
         {
             freeaddrinfo(host_info_list);
