@@ -3,7 +3,7 @@
  */
 
 #include <iostream>		// std::cin, std::cout, std::string
-#include <stdlib.h>		// system()
+#include <cstdlib>		// system()
 //#include <iconv.h>	// konwersja kodowania znaków
 #include "sockets.hpp"
 
@@ -12,7 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-	std::string nick, cookies, captcha_code, err_code, uokey, zuousername;
+	std::string nick, cookies, captcha_code, err_code, zuousername, uokey;
 	int http_status;
 
 	std::cout << "Ucieszony Chat Client" << std::endl;
@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 	} while(nick.size() == 0);
 
 	std::cout << "Pobieranie obrazka z kodem do przepisania... " << std::endl;
+
 
 	std::cout << "http_1()" << std::endl;
 	http_status = http_1(cookies);

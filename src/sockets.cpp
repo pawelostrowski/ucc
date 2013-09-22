@@ -12,7 +12,7 @@
 #include <iostream>		// docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
-int socket_a(std::string &host, std::string &port, std::string &data_send, char *c_buffer, long &offset_recv, bool useirc)
+int socket_a(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
 {
 	int socketfd; 			// deskryptor gniazda (socket)
 	int bytes_sent, bytes_recv, data_send_len;
@@ -98,49 +98,83 @@ int socket_a(std::string &host, std::string &port, std::string &data_send, char 
 	close(socketfd);				// zamknij połączenie z hostem
 
 	return 0;
+
+}
+
+
+void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies = false)
+{
+    data_send.clear();
+
+    data_send = "GET " + data_get + " HTTP/1.1\r\n"
+                "Host: " + host + "\r\n"
+                "Connection: close\r\n"
+				"Cache-Control: no-cache\r\n"
+				"Pragma: no-cache\r\n"
+				"User-Agent: Mozilla/5.0\r\n";
+
+    if(add_cookies)
+        data_send += "Cookie:" + cookies + "\r\n";
+
+    data_send += "\r\n";
+}
+
+
+void header_post(std::string host, std::string cookies, std::string api_function, std::string &data_send)
+{
+    std::stringstream content_length;
+
+    content_length.clear();
+    data_send.clear();
+
+	content_length << api_function.size();      // wczytaj długość zapytania
+
+    data_send = "POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
+                "Host: " + host + "\r\n"
+                "Connection: close\r\n"
+                "Content-Type: application/x-www-form-urlencoded\r\n"
+				"Content-Length: " + content_length.str() + "\r\n"          // content_length.str()  <--- zamienia liczbę na std::string
+				"Cache-Control: no-cache\r\n"
+				"Pragma: no-cache\r\n"
+				"User-Agent: Mozilla/5.0\r\n"
+				"Cookie:" + cookies + "\r\n\r\n"
+				+ api_function;
 }
 
 
 int http_1(std::string &cookies)
 {
 	int socket_status, cookies_status;
-	char c_buffer[2000];
 	long offset_recv;
+	char c_buffer[50000];
+	std::string data_send;
 
-	std::string host = "kropka.onet.pl";
-	std::string port = "80";
-	std::string data_send =	"GET /_s/kropka/1?DV=czat/applet/FULL HTTP/1.1\r\n"
-							"Host: " + host + "\r\n"
-							"Connection: Close\r\n\r\n";
+    header_get("kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", cookies, data_send);   // utwórz zapytanie do wysłania
 
-	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
+	socket_status = socket_a("kropka.onet.pl", "80", data_send, c_buffer, offset_recv);     // wyślij dane
 	if(socket_status != 0)
 		return socket_status;		// kod błędu, gdy napotkano problem z socketem
 
 	cookies.clear();		// wyczyść bufor cookies
-	cookies_status = find_cookies(c_buffer, cookies);
+	cookies_status = find_cookies(c_buffer, cookies);   // z bufora c_buffer pobierz cookies
 	if(cookies_status != 0)
 		return cookies_status;		// kod błędu, gdy napotkano problem z cookies
 
-	return 0;
+    return 0;
 }
 
 
 int http_2(std::string &cookies)
 {
-	int socket_status, cookies_status;
-	char c_buffer[100000];				// TO JAKOŚ POTEM PRZEROBIĆ, TYMCZASOWO TAK JEST
-	long offset_recv;
+    int socket_status, cookies_status;
+    long offset_recv;
+    char c_buffer[50000];
 	char *gif_buffer;
+    std::string data_send;
 
-	std::string host = "czat.onet.pl";
-	std::string port = "80";
-	std::string data_send =	"GET /myimg.gif HTTP/1.1\r\n"
-							"Host: " + host + "\r\n"
-							"Connection: Close\r\n"
-							"Cookie:" + cookies + "\r\n\r\n";
+    header_get("czat.onet.pl", "/myimg.gif", cookies, data_send, true);
 
-	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
+	socket_status = socket_a("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
 	if(socket_status != 0)
 		return socket_status;		// kod błędu, gdy napotkano problem z socketem
 
@@ -162,43 +196,28 @@ int http_2(std::string &cookies)
 	gif_file.write(gif_buffer, &c_buffer[offset_recv] - gif_buffer);	// &c_buffer[offset_recv] - gif_buffer <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
 	gif_file.close();
 
-	return 0;
+
+    return 0;
 }
 
 
 int http_3(std::string &cookies, std::string &captcha_code, std::string &err_code)
 {
-	int socket_status, f_value_status;
-	char c_buffer[5000];
-	long offset_recv;
-	std::string expr_before, expr_after;
-	std::stringstream content_length;
+    int socket_status, f_value_status;
+    long offset_recv;
+    char c_buffer[50000];
+    std::string api_function, data_send;
 
-	std::string api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
+	api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
 
-	content_length << api_function.size();
+    header_post("czat.onet.pl", cookies, api_function, data_send);
 
-	std::string host = "czat.onet.pl";
-	std::string port = "80";
-	std::string data_send =	"POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
-							"Host: " + host + "\r\n"
-							"Connection: Close\r\n"
-							"Content-Type: application/x-www-form-urlencoded\r\n"
-							"Content-Length: " + content_length.str() + "\r\n"
-							"Cache-Control: no-cache\r\n"
-							"Pragma: no-cache\r\n"
-							"User-Agent: Mozilla/5.0\r\n"
-							"Cookie:" + cookies + "\r\n\r\n"
-							+ api_function;
-
-	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
+	socket_status = socket_a("czat.onet.pl", "80",data_send, c_buffer, offset_recv);
 	if(socket_status != 0)
 		return socket_status;		// kod błędu, gdy napotkano problem z socketem
 
 	// sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE)
-	expr_before = "err_code=\"";	// szukaj wartości, przed którą jest wyrażenie: err_code="
-	expr_after = "\"";				// szukaj wartości, po której jest wyrażenie: "
-	f_value_status = find_value(c_buffer, expr_before, expr_after, err_code);
+	f_value_status = find_value(c_buffer, "err_code=\"", "\"", err_code);	// szukaj wartości między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
 	if(f_value_status != 0)
 		return f_value_status;		// kod błedu, gdy nie udało się pobrać err_code
 
@@ -206,46 +225,31 @@ int http_3(std::string &cookies, std::string &captcha_code, std::string &err_cod
 		if(err_code != "FALSE")
 			return 99;			// kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
 
-	return 0;
+    return 0;
 }
 
 
 int http_4(std::string &cookies, std::string &nick, std::string &zuousername, std::string &uokey, std::string &err_code)
 {
-	int socket_status, f_value_status;
-	char c_buffer[5000];
-	long offset_recv;
-	std::string expr_before, expr_after;
-	std::stringstream nick_length, content_length;
+    int socket_status, f_value_status;
+    long offset_recv;
+    char c_buffer[50000];
+    std::string api_function, data_send;
+	std::stringstream nick_length;
 
 	nick_length << nick.size();
 
-	std::string api_function =	"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\"" + nick
-								+ "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
+	api_function =	"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\"" + nick
+					+ "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
 
-	content_length << api_function.size();
+    header_post("czat.onet.pl", cookies, api_function, data_send);
 
-	std::string host = "czat.onet.pl";
-	std::string port = "80";
-	std::string data_send =	"POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
-							"Host: " + host + "\r\n"
-							"Connection: Close\r\n"
-							"Content-Type: application/x-www-form-urlencoded\r\n"
-							"Content-Length: " + content_length.str() + "\r\n"
-							"Cache-Control: no-cache\r\n"
-							"Pragma: no-cache\r\n"
-							"User-Agent: Mozilla/5.0\r\n"
-							"Cookie:" + cookies + "\r\n\r\n"
-							+ api_function;
-
-	socket_status = socket_a(host, port, data_send, c_buffer, offset_recv);
+	socket_status = socket_a("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
 	if(socket_status != 0)
 		return socket_status;		// kod błędu, gdy napotkano problem z socketem
 
 	// pobierz kod błędu
-	expr_before = "err_code=\"";
-	expr_after = "\"";
-	f_value_status = find_value(c_buffer, expr_before, expr_after, err_code);
+	f_value_status = find_value(c_buffer, "err_code=\"", "\"", err_code);
 	if(f_value_status != 0)
 		return f_value_status;		// kod błędu, gdy nie udało się pobrać err_code
 
@@ -254,16 +258,12 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 		return 0;			// 0, bo to nie jest błąd programu
 
 	// pobierz uoKey
-	expr_before = "<uoKey>";
-	expr_after = "</uoKey>";
-	f_value_status = find_value(c_buffer, expr_before, expr_after, uokey);
+	f_value_status = find_value(c_buffer, "<uoKey>", "</uoKey>", uokey);
 	if(f_value_status != 0)
 		return f_value_status + 10;	// kod błedu, gdy nie udało się pobrać uoKey (+10, aby można było go odróżnić od poprzedniego użycia find_value() )
 
 	// pobierz zuoUsername (nick, który zwrócił serwer)
-	expr_before = "<zuoUsername>";
-	expr_after = "</zuoUsername>";
-	f_value_status = find_value(c_buffer, expr_before, expr_after, zuousername);
+	f_value_status = find_value(c_buffer, "<zuoUsername>", "</zuoUsername>", zuousername);
 	if(f_value_status != 0)
 		return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (+20, aby można było go odróżnić od poprzedniego użycia find_value() )
 
@@ -324,7 +324,7 @@ int irc(std::string &zuousername, std::string &uokey)
 	int bytes_recv, f_value_status;
 	char c_buffer[2000];
 	char authkey[16 + 1];		// AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod zera, aby odróżnić koniec tablicy
-	std::string data_send, expr_before, expr_after, authkey_s;
+	std::string data_send, authkey_s;
 	std::stringstream authkey_tmp;
 
 	struct hostent *he;
@@ -378,9 +378,7 @@ int irc(std::string &zuousername, std::string &uokey)
 	asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 
 	// wyszukaj AUTHKEY
-	expr_before = "801 " + zuousername + " :";
-	expr_after = "\r\n";
-	f_value_status = find_value(c_buffer, expr_before, expr_after, authkey_s);
+	f_value_status = find_value(c_buffer, "801 " + zuousername + " :", "\r\n", authkey_s);
 	if(f_value_status != 0)
 		return f_value_status + 110;
 
@@ -418,7 +416,7 @@ int irc(std::string &zuousername, std::string &uokey)
 
 	// wyślij: JOIN #<kanal>
 	data_send.clear();
-	data_send = "JOIN #20_21_22_23_lat\r\n";
+	data_send = "JOIN #Computers\r\n";
 		std::cout << "> " + data_send;
 	asyn_socket_send(data_send, socketfd);
 
@@ -442,9 +440,7 @@ int irc(std::string &zuousername, std::string &uokey)
 	do
 	{
 		asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-		expr_before = "PING :";
-		expr_after = "\r\n";
-		f_value_status = find_value(c_buffer, expr_before, expr_after, pong_send);
+		f_value_status = find_value(c_buffer, "PING :", "\r\n", pong_send);
 		if(f_value_status == 0)
 		{
 			data_send.clear();
