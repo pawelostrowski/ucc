@@ -70,7 +70,7 @@ void header_get(std::string host, std::string data_get, std::string cookies, std
 }
 
 
-void header_post(std::string host, std::string cookies, std::string api_function, std::string &data_send)
+void header_post(std::string cookies, std::string api_function, std::string &data_send)
 {
     std::stringstream content_length;
 
@@ -80,7 +80,7 @@ void header_post(std::string host, std::string cookies, std::string api_function
     content_length << api_function.size();      // wczytaj długość zapytania
 
     data_send = "POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
+                "Host: czat.onet.pl\r\n"
                 "Connection: close\r\n"
                 "Content-Type: application/x-www-form-urlencoded\r\n"
                 "Content-Length: " + content_length.str() + "\r\n"      // content_length.str()  <--- zamienia liczbę na std::string

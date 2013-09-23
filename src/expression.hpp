@@ -8,6 +8,6 @@ int find_value(char *c_buffer, std::string expr_before, std::string expr_after, 
 
 void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies = false);
 
-void header_post(std::string host, std::string cookies, std::string api_function, std::string &data_send);
+void header_post(std::string cookies, std::string api_function, std::string &data_send);
 
 #endif      // EXPRESSION_HPP

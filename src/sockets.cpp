@@ -13,7 +13,7 @@
 #include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
-int socket_http(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
+int socket_http(std::string host, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
 {
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv, data_send_len;
@@ -29,7 +29,7 @@ int socket_http(std::string host, std::string port, std::string data_send, char 
     host_info.ai_socktype = SOCK_STREAM;    // Use SOCK_STREAM for TCP or SOCK_DGRAM for UDP.
 
     // zapis przykładowo host.c_str() oznacza, że string zostaje zamieniony na const char
-    if(getaddrinfo(host.c_str(), port.c_str(), &host_info, &host_info_list) != 0)   // pobierz status adresu
+    if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
         return 1;		// kod błedu przy niepowodzeniu w pobraniu statusu adresu
 
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);     // utwórz deskryptor gniazda (socket)
@@ -66,7 +66,7 @@ int socket_http(std::string host, std::string port, std::string data_send, char 
         }
     }
 
-    // poniższa pętla pobiera dane z hosta do bufora
+    // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
     offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
     do
     {
