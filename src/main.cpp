@@ -5,6 +5,7 @@
 #include <iostream>		// std::cin, std::cout, std::string
 #include <cstdlib>		// system()
 //#include <iconv.h>	// konwersja kodowania znaków
+#include "auth_http.hpp"
 #include "sockets.hpp"
 
 // Celowo nie używam 'using namespace std;', aby pokazać, gdzie używane są obiekty standardowych bibliotek C++
