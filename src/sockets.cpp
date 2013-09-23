@@ -1,6 +1,7 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
 #include <fstream>      // std::ofstream, perror()
+//#include <sys/select.h>
 //#include <sys/socket.h>
 #include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
 //#include <fcntl.h>      // asynchroniczne gniazdo (sokcet)
@@ -98,46 +99,6 @@ int socket_a(std::string host, std::string port, std::string data_send, char *c_
     close(socketfd);        // zamknij połączenie z hostem
 
     return 0;
-}
-
-
-void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies)
-{
-    data_send.clear();
-
-    data_send = "GET " + data_get + " HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
-                "Connection: close\r\n"
-                "Cache-Control: no-cache\r\n"
-                "Pragma: no-cache\r\n"
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n";
-
-    if(add_cookies)
-        data_send += "Cookie:" + cookies + "\r\n";
-
-    data_send += "\r\n";
-}
-
-
-void header_post(std::string host, std::string cookies, std::string api_function, std::string &data_send)
-{
-    std::stringstream content_length;
-
-    content_length.clear();
-    data_send.clear();
-
-    content_length << api_function.size();      // wczytaj długość zapytania
-
-    data_send = "POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
-                "Connection: close\r\n"
-                "Content-Type: application/x-www-form-urlencoded\r\n"
-                "Content-Length: " + content_length.str() + "\r\n"      // content_length.str()  <--- zamienia liczbę na std::string
-                "Cache-Control: no-cache\r\n"
-                "Pragma: no-cache\r\n"
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
-                "Cookie:" + cookies + "\r\n\r\n"
-                + api_function;
 }
 
 
@@ -419,7 +380,7 @@ int irc(std::string &zuousername, std::string &uokey)
 
     // wyślij: JOIN #<kanal>
     data_send.clear();
-    data_send = "JOIN #scc\r\n";
+    data_send = "JOIN #20_21_22_23_lat\r\n";
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
 

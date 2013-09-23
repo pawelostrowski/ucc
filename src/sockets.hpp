@@ -5,10 +5,6 @@
 
 int socket_a(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc = false);
 
-void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies = false);
-
-void header_post(std::string host, std::string cookies, std::string api_function, std::string &data_send);
-
 int http_1(std::string &cookies);
 
 int http_2(std::string &cookies);
