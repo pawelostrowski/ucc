@@ -1,16 +1,15 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
-#include <sys/select.h> // select()
-//#include <sys/socket.h>
 #include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
-#include <fcntl.h>
+#include <fcntl.h>      // fcntl()
 #include <unistd.h>     // close() - socket
+#include <sys/select.h> // select()
 #include "sockets.hpp"
 #include "auth_http.hpp"
 #include "auth_code.hpp"
 #include "expression.hpp"
 
-#define STDIN 0
+#define STDIN 0         // deskryptor pliku dla standardowego wejścia
 
 #include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
@@ -117,36 +116,23 @@ int asyn_socket_send(std::string &data_send, int &socketfd)
 
 int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
 {
-/*
-    int offset_recv = 0;
-    char tmp_buffer[2000];
-
-    do
-    {
-        bytes_recv = recv(socketfd, tmp_buffer, 2000 - 1, 0);
-        if(bytes_recv == -1)
-        {
-            close(socketfd);
-            return bytes_recv;
-        }
-        memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);     // pobrane dane "dopisz" do bufora
-        offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
-    } while(bytes_recv == 0);
-*/
-
-    bytes_recv = recv(socketfd, c_buffer, 1500, 0);
-
-    c_buffer[bytes_recv] = '\0';
-
+    bytes_recv = recv(socketfd, c_buffer, 1500 - 1, 0);
     if(bytes_recv == -1)
     {
         close(socketfd);
         return bytes_recv;
     }
+    if(bytes_recv == 0)
+    {
+        close(socketfd);
+        return 1;
+    }
 
-        std::cout << "Początek ramki -->" <<std::endl;
+    c_buffer[bytes_recv] = '\0';
+
+//        std::cout << "Początek ramki -->" <<std::endl;
     std::cout << c_buffer;
-        std::cout << "<-- Koniec ramki" << std::endl;
+//        std::cout << "<-- Koniec ramki" << std::endl;
 
     return 0;
 }
@@ -158,9 +144,9 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     bool connect_status = true;
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_recv = 0, f_value_status;
-    char c_buffer[50000];
+    char c_buffer[1500];
     char authkey[16 + 1];       // AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod zera, aby odróżnić koniec tablicy
-    std::string data_send, authkey_s, f_value;
+    std::string data_send, authkey_s, f_value, kbd_buf;
     std::stringstream authkey_tmp;
 
     struct hostent *he;
@@ -174,7 +160,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     if(socketfd == -1)
         return 102;
 
-    fcntl(socketfd, F_SETFL, O_ASYNC);
+    fcntl(socketfd, F_SETFL, O_ASYNC);      // asynchroniczne gniazdo (socket)
 
     www.sin_family = AF_INET;
     www.sin_port = htons(5015);
@@ -247,19 +233,26 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 */
 
     fd_set readfds;
+    fd_set readfds_tmp;
 
     FD_ZERO(&readfds);
-    FD_SET(socketfd, &readfds);
+    FD_SET(STDIN, &readfds);    // klawiatura
+    FD_SET(socketfd, &readfds); // gniazdo (socket)
 
     do
     {
-        select(socketfd + 1, &readfds, NULL, NULL, NULL);
-        if(FD_ISSET(socketfd, &readfds))
+        readfds_tmp = readfds;
+        select(socketfd + 1, &readfds_tmp, NULL, NULL, NULL);
+        if(FD_ISSET(socketfd, &readfds_tmp))    // sprawdź, czy to gniazdo (socket) jest gotowe do odebrania danych
         {
-            asyn_socket_recv(c_buffer, bytes_recv, socketfd);   // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
+            // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
+            if(asyn_socket_recv(c_buffer, bytes_recv, socketfd) != 0)
+            {
+                std::cerr << "Połączenie zerwane lub problem z siecią!" << std::endl;
+                return 1;
+            }
             // odpowiedz na PING
-            f_value_status = find_value(c_buffer, "PING :", "\r\n", f_value);
-            if(f_value_status == 0)     // jeśli PING, wyślij PONG
+            if(find_value(c_buffer, "PING :", "\r\n", f_value) == 0)
             {
                 data_send.clear();
                 data_send = "PONG :" + f_value + "\r\n";
@@ -267,55 +260,18 @@ int socket_irc(std::string &zuousername, std::string &uokey)
                 asyn_socket_send(data_send, socketfd);
             }
             // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
-            f_value_status = find_value(c_buffer, "ERROR :", "\r\n", f_value);
-            if(f_value_status == 0)
+            if(find_value(c_buffer, "ERROR :", "\r\n", f_value) == 0)
                 connect_status = false;     // zakończ, gdy odebrano błąd połączenia
+        }
+        if(FD_ISSET(STDIN, &readfds_tmp))   // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
+        {
+            getline(std::cin, kbd_buf);     // pobierz zawartość bufora klawiatury
+            data_send.clear();
+            data_send = kbd_buf + "\r\n";
+            std::cout << "> " + data_send;
+            asyn_socket_send(data_send, socketfd);
         }
     } while(connect_status);
-/*
-
-    // pobierz odpowiedź z serwera
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-
-
-    // wyślij: JOIN #<kanal>
-    data_send.clear();
-    data_send = "JOIN #20_21_22_23_lat\r\n";
-    std::cout << "> " + data_send;
-    asyn_socket_send(data_send, socketfd);
-
-
-    // pobierz odpowiedź z serwera
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-
-
-    // czekaj na ping i odpowiedz pong oraz "wiś" na kanale
-    do
-    {
-        if(asyn_socket_recv(c_buffer, bytes_recv, socketfd) != 0)   // czekaj na rekord do pobrania
-        {
-            std::cerr << "Host zakończył połączenie!" << std::endl;
-            close(socketfd);
-            return 98;
-        }
-        first_line_char = std::string(c_buffer).find(":");  // na której pozycji jest pierwszy :
-        if(first_line_char != 0)    // gdy pierwszym znakiem nie jest :
-        {
-            f_value_status = find_value(c_buffer, "PING :", "\r\n", f_value);
-            if(f_value_status == 0)     // jeśli PING, wyślij PONG
-            {
-                data_send.clear();
-                data_send = "PONG :" + f_value + "\r\n";
-                std::cout << "> " + data_send;
-                asyn_socket_send(data_send, socketfd);
-            }
-            f_value_status = find_value(c_buffer, "ERROR :", "\r\n", f_value);
-            if(f_value_status == 0)
-                connect_status = false;     // zakończ, gdy odebrano błąd połączenia
-        }
-    } while(connect_status);    // zanim nie napotamy błedu, krąż w pętli
-
-*/
 
     close(socketfd);
 
