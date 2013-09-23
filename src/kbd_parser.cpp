@@ -20,9 +20,11 @@ int kbd_parser(std::string kbd_buf, std::string data_send, int &socketfd)
             asyn_socket_send(data_send, socketfd);
         }
         else
+        {
             kbd_buf.erase(0, 1);    // usuń / z pierwszego pola
             std::cout << "> " + kbd_buf << std::endl;
             asyn_socket_send(kbd_buf + "\r\n", socketfd);
+        }
     }
 
     return 0;
