@@ -16,7 +16,7 @@
 int socket_http(std::string host, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
 {
     int socketfd;       // deskryptor gniazda (socket)
-    int bytes_sent, bytes_recv, data_send_len;
+    int bytes_sent, bytes_recv, data_send_length;
     char tmp_buffer[1500];      // bufor tymczasowy pobranych danych
 //    bool first_recv = true;     // czy to pierwsze pobranie w pętli
 
@@ -57,8 +57,8 @@ int socket_http(std::string host, std::string data_send, char *c_buffer, long &o
             close(socketfd);
             return 4;       // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
 		}
-        data_send_len = strlen(data_send.c_str());      // rozmiar danych, jakie chcieliśmy wysłać
-        if(bytes_sent != data_send_len)         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
+        data_send_length = strlen(data_send.c_str());      // rozmiar danych, jakie chcieliśmy wysłać
+        if(bytes_sent != data_send_length)         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
