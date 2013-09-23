@@ -15,7 +15,7 @@ int http_1(std::string &cookies)
 
     header_get("kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", cookies, data_send);   // utwórz zapytanie do wysłania
 
-    socket_status = socket_a("kropka.onet.pl", "80", data_send, c_buffer, offset_recv);     // wyślij dane
+    socket_status = socket_http("kropka.onet.pl", "80", data_send, c_buffer, offset_recv);     // wyślij dane
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem
 
@@ -38,7 +38,7 @@ int http_2(std::string &cookies)
 
     header_get("czat.onet.pl", "/myimg.gif", cookies, data_send, true);
 
-    socket_status = socket_a("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
+    socket_status = socket_http("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem
 
@@ -75,7 +75,7 @@ int http_3(std::string &cookies, std::string captcha_code, std::string &err_code
 
     header_post("czat.onet.pl", cookies, api_function, data_send);
 
-    socket_status = socket_a("czat.onet.pl", "80",data_send, c_buffer, offset_recv);
+    socket_status = socket_http("czat.onet.pl", "80",data_send, c_buffer, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem
 
@@ -107,7 +107,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
     header_post("czat.onet.pl", cookies, api_function, data_send);
 
-    socket_status = socket_a("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
+    socket_status = socket_http("czat.onet.pl", "80", data_send, c_buffer, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem
 

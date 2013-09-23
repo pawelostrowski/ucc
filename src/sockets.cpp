@@ -1,7 +1,7 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
 //#include <sys/select.h>
-//#include <sys/socket.h>
+#include <sys/socket.h>
 #include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
 //#include <fcntl.h>      // asynchroniczne gniazdo (sokcet)
 #include <unistd.h>     // close() - socket
@@ -13,12 +13,12 @@
 #include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
-int socket_a(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
+int socket_http(std::string host, std::string port, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
 {
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv, data_send_len;
-    char tmp_buffer[1024];      // bufor tymczasowy pobranych danych
-    bool first_recv = true;     // czy to pierwsze pobranie w pętli
+    char tmp_buffer[1500];      // bufor tymczasowy pobranych danych
+//    bool first_recv = true;     // czy to pierwsze pobranie w pętli
 
     struct addrinfo host_info;          // The struct that getaddrinfo() fills up with data.
     struct addrinfo *host_info_list;    // Pointer to the to the linked list of host_info's.
@@ -70,23 +70,25 @@ int socket_a(std::string host, std::string port, std::string data_send, char *c_
     offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
     do
     {
-        bytes_recv = recv(socketfd, tmp_buffer, 1024 - 1, 0);       // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+        bytes_recv = recv(socketfd, tmp_buffer, 1500, 0);       // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
         if(bytes_recv == -1)        // sprawdź, czy pobieranie danych się powiodło
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
             return 6;       // kod błędu przy niepowodzeniu w pobieraniu danych od hosta
         }
+/*
         if(first_recv)      // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
         {
             if(bytes_recv == 0)
             {
                 freeaddrinfo(host_info_list);
                 close(socketfd);
-                return 7;       // kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host został wyłączony)
+                return 7;       // kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host zakończył połączenie)
             }
         }
         first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
+*/
         memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);     // pobrane dane "dopisz" do bufora
         offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
         if(useirc)
@@ -136,7 +138,7 @@ int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
 }
 
 
-int irc(std::string &zuousername, std::string &uokey)
+int socket_irc(std::string &zuousername, std::string &uokey)
 {
 /*
     int socket_status;

@@ -91,11 +91,11 @@ int main(int argc, char *argv[])
 		return 0;		// 0, bo to nie jest błąd programu
 	}
 
-	std::cout << "irc()" << std::endl;
-	http_status = irc(zuousername, uokey);
+	std::cout << "socket_irc()" << std::endl;
+	http_status = socket_irc(zuousername, uokey);
 	if(http_status != 0)
 	{
-		std::cerr << "Błąd w irc(), kod błędu " << http_status << std::endl;
+		std::cerr << "Błąd w socket_irc(), kod błędu " << http_status << std::endl;
 		return 1;
 	}
 
