@@ -31,10 +31,16 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
-		<Unit filename="src/auth.cpp" />
-		<Unit filename="src/auth.hpp" />
+		<Unit filename="src/auth_code.cpp" />
+		<Unit filename="src/auth_code.hpp" />
+		<Unit filename="src/auth_http.cpp" />
+		<Unit filename="src/auth_http.hpp" />
 		<Unit filename="src/expression.cpp" />
 		<Unit filename="src/expression.hpp" />
+		<Unit filename="src/irc_parser.cpp" />
+		<Unit filename="src/irc_parser.hpp" />
+		<Unit filename="src/kbd_parser.cpp" />
+		<Unit filename="src/kbd_parser.hpp" />
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/sockets.cpp" />
 		<Unit filename="src/sockets.hpp" />

@@ -8,6 +8,8 @@
 #include "auth_http.hpp"
 #include "auth_code.hpp"
 #include "expression.hpp"
+#include "irc_parser.hpp"
+#include "kbd_parser.hpp"
 
 #define STDIN 0         // deskryptor pliku dla standardowego wejścia
 
@@ -243,37 +245,23 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     {
         readfds_tmp = readfds;
         select(socketfd + 1, &readfds_tmp, NULL, NULL, NULL);
-        if(FD_ISSET(socketfd, &readfds_tmp))    // sprawdź, czy to gniazdo (socket) jest gotowe do odebrania danych
-        {
-            // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
-            if(asyn_socket_recv(c_buffer, bytes_recv, socketfd) != 0)
+        // sprawdź, czy to gniazdo (socket) jest gotowe do odebrania danych
+        if(FD_ISSET(socketfd, &readfds_tmp))
+            if(irc_parser(c_buffer, data_send, socketfd, connect_status))
             {
-                std::cerr << "Połączenie zerwane lub problem z siecią!" << std::endl;
+                close(socketfd);
+                std::cerr << "Błąd w module irc_error!" << std::endl;
                 return 1;
             }
-            // odpowiedz na PING
-            if(find_value(c_buffer, "PING :", "\r\n", f_value) == 0)
+        // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
+        if(FD_ISSET(STDIN, &readfds_tmp))
+            if(kbd_parser(kbd_buf, data_send, socketfd) != 0)       // wykonaj obsługę bufora klawiatury
             {
-                data_send.clear();
-                data_send = "PONG :" + f_value + "\r\n";
-                std::cout << "> " + data_send;
-                asyn_socket_send(data_send, socketfd);
+                close(socketfd);
+                std::cerr << "Błąd w module kbd_error!" << std::endl;
+                return 1;
             }
-            // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
-            if(find_value(c_buffer, "ERROR :", "\r\n", f_value) == 0)
-                connect_status = false;     // zakończ, gdy odebrano błąd połączenia
-        }
-        if(FD_ISSET(STDIN, &readfds_tmp))   // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
-        {
-            getline(std::cin, kbd_buf);     // pobierz zawartość bufora klawiatury
-            if(kbd_buf.size() != 0)
-            {
-                data_send.clear();
-                data_send = kbd_buf + "\r\n";
-                std::cout << "> " + data_send;
-                asyn_socket_send(data_send, socketfd);
-            }
-        }
+
     } while(connect_status);
 
     close(socketfd);
