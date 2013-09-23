@@ -9,7 +9,7 @@
 int irc_parser(char *c_buffer, std::string &data_send, int &socketfd, bool &connect_status)
 {
     int bytes_recv = 0;
-    std::string f_value;
+    std::string f_value, user_msg;
 
     // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
     if(asyn_socket_recv(c_buffer, bytes_recv, socketfd) != 0)
@@ -23,9 +23,18 @@ int irc_parser(char *c_buffer, std::string &data_send, int &socketfd, bool &conn
     {
         data_send.clear();
         data_send = "PONG :" + f_value + "\r\n";
-        std::cout << "> " + data_send;
+//        std::cout << "> " + data_send;
         asyn_socket_send(data_send, socketfd);
     }
+    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o #Computers), aby pokazać w komunikat usera
+    else if(find_value(c_buffer, "PRIVMSG #Computers :", "\r\n", user_msg) == 0)
+    {
+        find_value(c_buffer, ":", "!", f_value);
+        std::cout << "* " + f_value + ": " + user_msg << std::endl;
+    }
+    else
+        std::cout << c_buffer;
+
     // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
     if(find_value(c_buffer, "ERROR :", "\r\n", f_value) == 0)
         connect_status = false;     // zakończ, gdy odebrano błąd połączenia

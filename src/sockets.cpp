@@ -107,7 +107,7 @@ int socket_http(std::string host, std::string data_send, char *c_buffer, long &o
 }
 
 
-int asyn_socket_send(std::string &data_send, int &socketfd)
+int asyn_socket_send(std::string data_send, int &socketfd)
 {
 //	int bytes_sent;
 
@@ -131,10 +131,6 @@ int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
     }
 
     c_buffer[bytes_recv] = '\0';
-
-//        std::cout << "Początek ramki -->" <<std::endl;
-    std::cout << c_buffer;
-//        std::cout << "<-- Koniec ramki" << std::endl;
 
     return 0;
 }
@@ -181,6 +177,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+    std::cout << c_buffer;
 
     // wyślij: NICK <~nick>
     data_send.clear();
@@ -190,6 +187,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
     // pobierz odpowiedź z serwera
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+    std::cout << c_buffer;
 
     // wyślij: AUTHKEY
     data_send.clear();
@@ -199,6 +197,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
     // pobierz odpowiedź z serwera (AUTHKEY)
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+    std::cout << c_buffer;
 
     // wyszukaj AUTHKEY
     f_value_status = find_value(c_buffer, "801 " + zuousername + " :", "\r\n", authkey_s);
