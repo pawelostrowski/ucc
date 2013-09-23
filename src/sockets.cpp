@@ -1,14 +1,16 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
-//#include <sys/select.h>
-#include <sys/socket.h>
+#include <sys/select.h> // select()
+//#include <sys/socket.h>
 #include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
-//#include <fcntl.h>      // asynchroniczne gniazdo (sokcet)
+#include <fcntl.h>
 #include <unistd.h>     // close() - socket
 #include "sockets.hpp"
 #include "auth_http.hpp"
 #include "auth_code.hpp"
 #include "expression.hpp"
+
+#define STDIN 0
 
 #include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
@@ -115,6 +117,7 @@ int asyn_socket_send(std::string &data_send, int &socketfd)
 
 int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
 {
+/*
     int offset_recv = 0;
     char tmp_buffer[2000];
 
@@ -129,10 +132,21 @@ int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
         memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);     // pobrane dane "dopisz" do bufora
         offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
     } while(bytes_recv == 0);
+*/
+
+    bytes_recv = recv(socketfd, c_buffer, 1500, 0);
 
     c_buffer[bytes_recv] = '\0';
 
+    if(bytes_recv == -1)
+    {
+        close(socketfd);
+        return bytes_recv;
+    }
+
+        std::cout << "Początek ramki -->" <<std::endl;
     std::cout << c_buffer;
+        std::cout << "<-- Koniec ramki" << std::endl;
 
     return 0;
 }
@@ -140,23 +154,7 @@ int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
 
 int socket_irc(std::string &zuousername, std::string &uokey)
 {
-/*
-    int socket_status;
-    char c_buffer[5000];
-    long offset_recv;
-
-    std::string host = "czat-app.onet.pl";
-    std::string port = "5015";
-    std::string data_send;
-
-    data_send.clear();      // niczego nie wysyłaj na tym etapie do serwera
-
-    socket_status = socket_a(host, port, data_send, c_buffer, offset_recv, true);
-    if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem
-*/
-
-    size_t first_line_char;
+//    size_t first_line_char;
     bool connect_status = true;
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_recv = 0, f_value_status;
@@ -176,7 +174,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     if(socketfd == -1)
         return 102;
 
-//    fcntl(socketfd, F_SETFL, O_SYNC);     // asynchroniczne gniazdo (socket)
+    fcntl(socketfd, F_SETFL, O_ASYNC);
 
     www.sin_family = AF_INET;
     www.sin_port = htons(5015);
@@ -185,14 +183,16 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
     if(connect(socketfd, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
     {
-//        perror("connect");
         close(socketfd);
         return 103;
     }
 
-    // połącz z serwerem
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
+/*
+    Od tego momentu zostaje nawiązane połączenie IRC
+*/
 
+    // pobierz pierwszą odpowiedż serwera po połączeniu
+    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 
     // wyślij: NICK <~nick>
     data_send.clear();
@@ -200,17 +200,14 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
 
-
     // pobierz odpowiedź z serwera
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-
 
     // wyślij: AUTHKEY
     data_send.clear();
     data_send = "AUTHKEY\r\n";
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
-
 
     // pobierz odpowiedź z serwera (AUTHKEY)
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
@@ -233,13 +230,11 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     authkey_s.clear();
     authkey_s = authkey_tmp.str();
 
-
     // wyślij: AUTHKEY <AUTHKEY>
     data_send.clear();
     data_send = "AUTHKEY " + authkey_s + "\r\n";
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
-
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
     data_send.clear();
@@ -247,6 +242,37 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     std::cout << "> " + data_send;
     asyn_socket_send(data_send, socketfd);
 
+/*
+    Od tej pory obsługa gniazda będzie zależała od jego stanu, który wykrywać będzie select()
+*/
+
+    fd_set readfds;
+
+    FD_ZERO(&readfds);
+    FD_SET(socketfd, &readfds);
+
+    do
+    {
+        select(socketfd + 1, &readfds, NULL, NULL, NULL);
+        if(FD_ISSET(socketfd, &readfds))
+        {
+            asyn_socket_recv(c_buffer, bytes_recv, socketfd);   // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
+            // odpowiedz na PING
+            f_value_status = find_value(c_buffer, "PING :", "\r\n", f_value);
+            if(f_value_status == 0)     // jeśli PING, wyślij PONG
+            {
+                data_send.clear();
+                data_send = "PONG :" + f_value + "\r\n";
+                std::cout << "> " + data_send;
+                asyn_socket_send(data_send, socketfd);
+            }
+            // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
+            f_value_status = find_value(c_buffer, "ERROR :", "\r\n", f_value);
+            if(f_value_status == 0)
+                connect_status = false;     // zakończ, gdy odebrano błąd połączenia
+        }
+    } while(connect_status);
+/*
 
     // pobierz odpowiedź z serwera
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
@@ -262,16 +288,6 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     // pobierz odpowiedź z serwera
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
 
-/*
-    do
-    {
-        data_send.clear();
-        getline(std::cin, data_send);
-        data_send += "\r\n";
-        asyn_socket_send(data_send, socketfd);
-        asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-    } while(true);
-*/
 
     // czekaj na ping i odpowiedz pong oraz "wiś" na kanale
     do
@@ -298,6 +314,8 @@ int socket_irc(std::string &zuousername, std::string &uokey)
                 connect_status = false;     // zakończ, gdy odebrano błąd połączenia
         }
     } while(connect_status);    // zanim nie napotamy błedu, krąż w pętli
+
+*/
 
     close(socketfd);
 
