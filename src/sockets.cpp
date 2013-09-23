@@ -266,10 +266,13 @@ int socket_irc(std::string &zuousername, std::string &uokey)
         if(FD_ISSET(STDIN, &readfds_tmp))   // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
         {
             getline(std::cin, kbd_buf);     // pobierz zawartość bufora klawiatury
-            data_send.clear();
-            data_send = kbd_buf + "\r\n";
-            std::cout << "> " + data_send;
-            asyn_socket_send(data_send, socketfd);
+            if(kbd_buf.size() != 0)
+            {
+                data_send.clear();
+                data_send = kbd_buf + "\r\n";
+                std::cout << "> " + data_send;
+                asyn_socket_send(data_send, socketfd);
+            }
         }
     } while(connect_status);
 
