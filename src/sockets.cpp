@@ -249,7 +249,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
             if(irc_parser(c_buffer, data_send, socketfd, connect_status))
             {
                 close(socketfd);
-                std::cerr << "Błąd w module irc_error!" << std::endl;
+                std::cerr << "Błąd w module irc_parser!" << std::endl;
                 return 1;
             }
         // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
@@ -257,7 +257,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
             if(kbd_parser(kbd_buf, data_send, socketfd) != 0)       // wykonaj obsługę bufora klawiatury
             {
                 close(socketfd);
-                std::cerr << "Błąd w module kbd_error!" << std::endl;
+                std::cerr << "Błąd w module kbd_parser!" << std::endl;
                 return 1;
             }
 
