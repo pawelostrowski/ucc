@@ -16,20 +16,20 @@
 #include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
-int socket_http(std::string host, std::string data_send, char *c_buffer, long &offset_recv, bool useirc)
+int socket_http(std::string host, std::string data_send, char *buffer_recv, long &offset_recv, bool useirc)
 {
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv, data_send_length;
-    char tmp_buffer[1500];      // bufor tymczasowy pobranych danych
-//    bool first_recv = true;     // czy to pierwsze pobranie w pętli
+    char buffer_tmp[1500];      // bufor tymczasowy pobranych danych
+    bool first_recv = true;     // czy to pierwsze pobranie w pętli
 
-    struct addrinfo host_info;          // The struct that getaddrinfo() fills up with data.
-    struct addrinfo *host_info_list;    // Pointer to the to the linked list of host_info's.
+    struct addrinfo host_info;          // ta struktura wypełni się danymi w getaddrinfo()
+    struct addrinfo *host_info_list;    // wskaźnik do połączonej listy host_info
 
     memset(&host_info, 0, sizeof host_info);
 
-    host_info.ai_family = AF_UNSPEC;        // IP version not specified. Can be both.
-    host_info.ai_socktype = SOCK_STREAM;    // Use SOCK_STREAM for TCP or SOCK_DGRAM for UDP.
+    host_info.ai_family = AF_UNSPEC;        // wersja IP niesprecyzowana (można ją określić)
+    host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
 
     // zapis przykładowo host.c_str() oznacza, że string zostaje zamieniony na const char
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
@@ -73,14 +73,13 @@ int socket_http(std::string host, std::string data_send, char *c_buffer, long &o
     offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
     do
     {
-        bytes_recv = recv(socketfd, tmp_buffer, 1500, 0);       // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+        bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);   // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
         if(bytes_recv == -1)        // sprawdź, czy pobieranie danych się powiodło
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
             return 6;       // kod błędu przy niepowodzeniu w pobieraniu danych od hosta
         }
-/*
         if(first_recv)      // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
         {
             if(bytes_recv == 0)
@@ -91,14 +90,13 @@ int socket_http(std::string host, std::string data_send, char *c_buffer, long &o
             }
         }
         first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
-*/
-        memcpy(c_buffer + offset_recv, tmp_buffer, bytes_recv);     // pobrane dane "dopisz" do bufora
+        memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
         offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
         if(useirc)
             break;
     } while(bytes_recv != 0);
 
-    c_buffer[offset_recv] = '\0';
+    buffer_recv[offset_recv] = '\0';
 
     freeaddrinfo(host_info_list);
     close(socketfd);        // zamknij połączenie z hostem
@@ -119,9 +117,9 @@ int asyn_socket_send(std::string data_send, int &socketfd)
     return 0;
 }
 
-int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
+int asyn_socket_recv(char *buffer_recv, int bytes_recv, int &socketfd)
 {
-    bytes_recv = recv(socketfd, c_buffer, 1500 - 1, 0);
+    bytes_recv = recv(socketfd, buffer_recv, 1500 - 1, 0);
     if(bytes_recv == -1)
     {
         close(socketfd);
@@ -133,7 +131,7 @@ int asyn_socket_recv(char *c_buffer, int bytes_recv, int &socketfd)
         return 1;
     }
 
-    c_buffer[bytes_recv] = '\0';
+    buffer_recv[bytes_recv] = '\0';
 
     return 0;
 }
@@ -145,7 +143,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     bool connect_status = true;
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_recv = 0, f_value_status;
-    char c_buffer[1500];
+    char buffer_recv[1500];
     char authkey[16 + 1];       // AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod zera, aby odróżnić koniec tablicy
     std::string data_send, authkey_s, f_value, kbd_buf;
     std::stringstream authkey_tmp;
@@ -179,25 +177,25 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 */
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-    std::cout << c_buffer;
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    std::cout << buffer_recv;
 
     // wyślij: NICK <~nick>
     asyn_socket_send("NICK " + zuousername, socketfd);
 
     // pobierz odpowiedź z serwera
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-    std::cout << c_buffer;
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    std::cout << buffer_recv;
 
     // wyślij: AUTHKEY
     asyn_socket_send("AUTHKEY", socketfd);
 
     // pobierz odpowiedź z serwera (AUTHKEY)
-    asyn_socket_recv(c_buffer, bytes_recv, socketfd);
-    std::cout << c_buffer;
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    std::cout << buffer_recv;
 
     // wyszukaj AUTHKEY
-    f_value_status = find_value(c_buffer, "801 " + zuousername + " :", "\r\n", authkey_s);
+    f_value_status = find_value(buffer_recv, "801 " + zuousername + " :", "\r\n", authkey_s);
     if(f_value_status != 0)
         return f_value_status + 110;
 
@@ -237,7 +235,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
         select(socketfd + 1, &readfds_tmp, NULL, NULL, NULL);
         // sprawdź, czy to gniazdo (socket) jest gotowe do odebrania danych
         if(FD_ISSET(socketfd, &readfds_tmp))
-            if(irc_parser(c_buffer, data_send, socketfd, connect_status))
+            if(irc_parser(buffer_recv, data_send, socketfd, connect_status))
             {
                 close(socketfd);
                 std::cerr << "Błąd w module irc_parser!" << std::endl;

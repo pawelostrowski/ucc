@@ -1,7 +1,7 @@
 #ifndef AUTH_HTTP_HPP
 #define AUTH_HTTP_HPP
 #define AUTH_HTTP_HPP_NAME "auth_http"
-#define GIF_FILE "/tmp/onetcaptcha.gif"     // plik z kodem captcha
+#define FILE_GIF "/tmp/onetcaptcha.gif"     // plik z kodem captcha
 
 int http_1(std::string &cookies);
 

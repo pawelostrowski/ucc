@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	int eog_stat = system("/usr/bin/eog "GIF_FILE" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+	int eog_stat = system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
 	std::cout << eog_stat << std::endl;
 
 	do

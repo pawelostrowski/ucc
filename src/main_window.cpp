@@ -31,7 +31,7 @@ int main_window()
 
     if(use_colors)
     {
-        init_pair(1, COLOR_GREEN, COLOR_WHITE);
+        init_pair(1, COLOR_GREEN, COLOR_BLACK);
         attron(COLOR_PAIR(1));
     }
     printw("Ucieszony Chat Client\n");
@@ -59,8 +59,6 @@ int main_window()
     getch();
 
     endwin();           // powrót do normalnego trybu terminala
-
-    std::cout << "Kolory: " << use_colors << std::endl;
 
     return 0;
 }
