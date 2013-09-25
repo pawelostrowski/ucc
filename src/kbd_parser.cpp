@@ -3,7 +3,7 @@
 #include "sockets.hpp"
 
 
-int kbd_parser(std::string kbd_buf, std::string data_send, int &socketfd)
+int kbd_parser(std::string kbd_buf, std::string data_send, int socketfd)
 {
     char command_slash;
 

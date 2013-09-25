@@ -4,6 +4,26 @@
 #include "ncursesw/ncurses.h"
 #include "main_window.hpp"
 
+#define UCC_VER "0.1"
+
+
+void check_colors(bool &use_colors)
+{
+
+    use_colors = has_colors();      // sprawdź, czy terminal obsługuje kolory
+
+    if(! use_colors)
+        return;         // jeśli konsola nie wspiera kolorów, zakończ
+
+/*
+    Gdy konsola obsługuje kolory, włącz ich obsługę oraz zdefiniuj pary kolorów
+*/
+
+    start_color();
+
+//    init_pair(1, COLOR_);
+}
+
 
 int main_window()
 {
@@ -24,17 +44,16 @@ int main_window()
     raw();       // zablokuj możliwość wciśnięcia kombinacji Ctrl-C, Ctrl-Z (nie działa z getnstr() )
     keypad(stdscr, TRUE);   // klawisze sterujące nie będą wypisywane na konsoli
 
-    use_colors = has_colors();      // sprawdź, czy terminal obsługuje kolory
+    check_colors(use_colors);
 
-    if(use_colors)
-        start_color();              // jeśli terminal obsługuje kolory, włącz ich używanie
+    printw("COLORS: %d, COLOR_PAIR: %d\n", COLORS, COLOR_PAIR(1));
 
     if(use_colors)
     {
         init_pair(1, COLOR_GREEN, COLOR_BLACK);
         attron(COLOR_PAIR(1));
     }
-    printw("Ucieszony Chat Client\n");
+    printw("Ucieszony Chat Client, wersja %s\n", UCC_VER);
 
     attrset(A_NORMAL);
 	printw("Podaj nick tymczasowy: ");

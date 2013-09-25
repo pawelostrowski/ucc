@@ -1,9 +1,13 @@
+#include <sstream>      // std::string, std::stringstream
 #include <cstring>      // strlen(), memcpy()
 #include "auth_code.hpp"
 
 
-int auth(char *authkey)
+int auth(std::string &authkey)
 {
+    if(authkey.size() != 16)        // AUTHKEY musi mieć dokładnie 16 znaków
+        return 1;
+
     const int f1[] = {29, 43,  7,  5, 52, 58, 30, 59, 26, 35, 35, 49, 45,  4, 22,  4,  0,  7,  4, 30,
                       51, 39, 16,  6, 32, 13, 40, 44, 14, 58, 27, 41, 52, 33,  9, 30, 30, 52, 16, 45,
                       43, 18, 27, 52, 40, 52, 10,  8, 10, 14, 10, 38, 27, 54, 48, 58, 17, 34,  6, 29,
@@ -24,17 +28,17 @@ int auth(char *authkey)
     const int p2[] = { 1, 13,  5,  8,  7, 10,  0, 15, 12,  3, 14, 11,  2,  9,  6,  4};
 
     int i, j;
-
     int ai[16], ai1[16];
-
     char c;
+    char authkey_c[16 + 1];         // AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod '\0', aby odróżnić koniec tablicy
+    std::stringstream authkey_tmp;
 
-    if(strlen(authkey) != 16)       // AUTHKEY musi mieć dokładnie 16 znaków
-        return 1;
+    memcpy(authkey_c, authkey.data(), 16);  // skopiuj authkey (std::string) do authkey_c (C string)
+    authkey[16] = '\0';
 
     for(i = 0; i < 16; ++i)
     {
-        c = authkey[i];             // zamiana ASCII na DEC
+        c = authkey_c[i];           // zamiana ASCII na DEC
         ai[i] = (c > '9' ? c > 'Z' ? (c - 97) + 36 : (c - 65) + 10 : c - 48);
     }
 
@@ -64,7 +68,11 @@ int auth(char *authkey)
     }
 
     for(i = 0; i < 16; ++i)
-        authkey[i] = (char)ai[i];   // zamiana DEC na ASCII
+        authkey_c[i] = (char)ai[i]; // zamiana DEC na ASCII
+
+    authkey_tmp << authkey_c;
+    authkey.clear();
+    authkey = authkey_tmp.str();
 
     return 0;
 }

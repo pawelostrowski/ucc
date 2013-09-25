@@ -6,8 +6,10 @@
 #include "expression.hpp"
 
 
-int irc_parser(char *buffer_recv, std::string &data_send, int &socketfd, bool &connect_status)
+int irc_parser(char *buffer_recv, std::string &data_send, int socketfd, bool &connect_status)
 {
+            std::cout << "[-- Nowa ramka -->" << std::endl;
+
     int bytes_recv = 0;
     std::string f_value, user_msg;
 
