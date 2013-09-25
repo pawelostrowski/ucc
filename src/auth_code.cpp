@@ -1,4 +1,4 @@
-#include <sstream>      // std::string, std::stringstream
+#include <string>       // std::string
 #include <cstring>      // strlen(), memcpy()
 #include "auth_code.hpp"
 
@@ -30,15 +30,10 @@ int auth(std::string &authkey)
     int i, j;
     int ai[16], ai1[16];
     char c;
-    char authkey_c[16 + 1];         // AUTHKEY ma co prawda 16 znaków, ale w 17. będzie wpisany kod '\0', aby odróżnić koniec tablicy
-    std::stringstream authkey_tmp;
-
-    memcpy(authkey_c, authkey.data(), 16);  // skopiuj authkey (std::string) do authkey_c (C string)
-    authkey[16] = '\0';
 
     for(i = 0; i < 16; ++i)
     {
-        c = authkey_c[i];           // zamiana ASCII na DEC
+        c = authkey[i];             // std::string na char (po jednym znaku)
         ai[i] = (c > '9' ? c > 'Z' ? (c - 97) + 36 : (c - 65) + 10 : c - 48);
     }
 
@@ -68,11 +63,7 @@ int auth(std::string &authkey)
     }
 
     for(i = 0; i < 16; ++i)
-        authkey_c[i] = (char)ai[i]; // zamiana DEC na ASCII
-
-    authkey_tmp << authkey_c;
-    authkey.clear();
-    authkey = authkey_tmp.str();
+        authkey[i] = ai[i];           // int na std::string (po jednym znaku)
 
     return 0;
 }
