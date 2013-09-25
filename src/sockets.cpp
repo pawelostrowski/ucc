@@ -111,6 +111,9 @@ int asyn_socket_send(std::string data_send, int &socketfd)
 {
 //	int bytes_sent;
 
+    data_send += "\r\n";    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+
+    std::cout << "> " + data_send;
     /*bytes_sent =*/ send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
 
     return 0;
@@ -180,20 +183,14 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     std::cout << c_buffer;
 
     // wyślij: NICK <~nick>
-    data_send.clear();
-    data_send = "NICK " + zuousername + "\r\n";
-    std::cout << "> " + data_send;
-    asyn_socket_send(data_send, socketfd);
+    asyn_socket_send("NICK " + zuousername, socketfd);
 
     // pobierz odpowiedź z serwera
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
     std::cout << c_buffer;
 
     // wyślij: AUTHKEY
-    data_send.clear();
-    data_send = "AUTHKEY\r\n";
-    std::cout << "> " + data_send;
-    asyn_socket_send(data_send, socketfd);
+    asyn_socket_send("AUTHKEY", socketfd);
 
     // pobierz odpowiedź z serwera (AUTHKEY)
     asyn_socket_recv(c_buffer, bytes_recv, socketfd);
@@ -218,16 +215,10 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     authkey_s = authkey_tmp.str();
 
     // wyślij: AUTHKEY <AUTHKEY>
-    data_send.clear();
-    data_send = "AUTHKEY " + authkey_s + "\r\n";
-    std::cout << "> " + data_send;
-    asyn_socket_send(data_send, socketfd);
+    asyn_socket_send("AUTHKEY " + authkey_s, socketfd);
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-    data_send.clear();
-    data_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\r\n";
-    std::cout << "> " + data_send;
-    asyn_socket_send(data_send, socketfd);
+    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd);
 
 /*
     Od tej pory obsługa gniazda będzie zależała od jego stanu, który wykrywać będzie select()

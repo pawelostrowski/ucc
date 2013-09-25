@@ -18,20 +18,18 @@ int irc_parser(char *c_buffer, std::string &data_send, int &socketfd, bool &conn
         std::cerr << "Połączenie zerwane lub problem z siecią!" << std::endl;
         return 1;
     }
+
     // odpowiedz na PING
     if(find_value(c_buffer, "PING :", "\r\n", f_value) == 0)
-    {
-        data_send.clear();
-        data_send = "PONG :" + f_value + "\r\n";
-//        std::cout << "> " + data_send;
-        asyn_socket_send(data_send, socketfd);
-    }
-    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o #Computers), aby pokazać w komunikat usera
-    else if(find_value(c_buffer, "PRIVMSG #Computers :", "\r\n", user_msg) == 0)
+        asyn_socket_send("PONG :" + f_value, socketfd);
+
+    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o #scc), aby pokazać w komunikat usera
+    else if(find_value(c_buffer, "PRIVMSG #scc :", "\r\n", user_msg) == 0)
     {
         find_value(c_buffer, ":", "!", f_value);
         std::cout << "* " + f_value + ": " + user_msg << std::endl;
     }
+
     else
         std::cout << c_buffer;
 
