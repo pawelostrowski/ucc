@@ -1,6 +1,7 @@
 //#include <cstring>      // strlen()
 #include <string>       // std::string, setlocale()
 #include <sys/select.h> // select()
+#include <cstdlib>      // setenv()
 #include "ncursesw/ncurses.h"
 #include "main_window.hpp"
 
@@ -37,6 +38,7 @@ void txt_color(bool use_colors, short color_font)
 int main_window()
 {
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
+//    setenv("TERM", "xterm-256color", 1);    // rozszerz obsługiwaną liczbę kolorów do 256 (jeśli możliwe)
 
     if(! initscr())         // inicjalizacja ncurses
         return 1;
@@ -68,7 +70,12 @@ int main_window()
     for(int i = 0; i < term_x; i++)
         printw(" ");
 
+    move(term_y - 3, 0);
+    for(int i = 0; i < term_x; i++)
+        printw(" ");
 
+
+    move(1, 0);
     txt_color(use_colors, 2);
     printw("Ucieszony Chat Client\n");
 
@@ -83,9 +90,9 @@ int main_window()
     {
         getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
 
-//        move(6, 0);
-//        printw("Pozycja kursora: %d", kbd_buf_pos);
-//        clrtoeol();
+        move(3, 0);
+        printw("Wielkość bufora: %d, pozycja kursora: %d", kbd_buf_max, kbd_buf_pos);
+        clrtoeol();
 
         // wyczyść przedostatni wiersz, aby przy zmianie rozmiaru okna terminala nie było śmieci
         move(term_y - 2, 0);
@@ -169,9 +176,9 @@ int main_window()
                 }
             }
 
-//            move(7, 0);
-//            printw("Kod klawisza: %d", key_code);
-//            clrtoeol();
+            move(4, 0);
+            printw("Kod klawisza: %d", key_code);
+            clrtoeol();
 
         }
 
