@@ -1,6 +1,5 @@
-//#include <iostream>
-#include <cstring>      // strlen()
-#include <sstream>
+//#include <cstring>      // strlen()
+#include <string>       // std::string, setlocale()
 #include <sys/select.h> // select()
 #include "ncursesw/ncurses.h"
 #include "main_window.hpp"
@@ -16,14 +15,13 @@ bool check_colors()
 
     start_color();
 
-    init_pair(1, COLOR_BLACK, COLOR_WHITE);
-    init_pair(2, COLOR_RED, COLOR_BACKGROUND);
-    init_pair(3, COLOR_GREEN, COLOR_BACKGROUND);
-    init_pair(4, COLOR_YELLOW, COLOR_BACKGROUND);
-    init_pair(5, COLOR_BLUE, COLOR_BACKGROUND);
-    init_pair(6, COLOR_MAGENTA, COLOR_BACKGROUND);
-    init_pair(7, COLOR_CYAN, COLOR_BACKGROUND);
-    init_pair(8, COLOR_WHITE, COLOR_BACKGROUND);
+    init_pair(1, COLOR_RED, COLOR_BACKGROUND);
+    init_pair(2, COLOR_GREEN, COLOR_BACKGROUND);
+    init_pair(3, COLOR_YELLOW, COLOR_BACKGROUND);
+    init_pair(4, COLOR_BLUE, COLOR_BACKGROUND);
+    init_pair(5, COLOR_MAGENTA, COLOR_BACKGROUND);
+    init_pair(6, COLOR_CYAN, COLOR_BACKGROUND);
+    init_pair(7, COLOR_WHITE, COLOR_BACKGROUND);
 
     return true;
 }
@@ -32,7 +30,7 @@ bool check_colors()
 void txt_color(bool use_colors, short color_font)
 {
     if(use_colors)
-        attron(COLOR_PAIR(color_font));
+        attrset(COLOR_PAIR(color_font));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
 }
 
 
@@ -58,17 +56,24 @@ int main_window()
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
-    noecho();               // nie pokazuj wprowadzanych danych
+    noecho();               // nie pokazuj wprowadzanych danych (bo w tym celu będzie używany bufor)
 
     use_colors = check_colors();    // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów
 
     getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
 
-    txt_color(use_colors, 4);
+
+    if(use_colors)
+        attron(COLOR_PAIR(4) | A_REVERSE);
+    for(int i = 0; i < term_x; i++)
+        printw(" ");
+
+
+    txt_color(use_colors, 2);
     printw("Ucieszony Chat Client\n");
 
-    txt_color(use_colors, 8);
-    printw("Podaj nick tymczasowy:");
+    txt_color(use_colors, 7);
+//    printw("Podaj nick tymczasowy:");
 
     move(term_y - 1, 0);
 
@@ -78,18 +83,18 @@ int main_window()
     {
         getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
 
-        move(6, 0);
-        printw("Pozycja kursora: %d", kbd_buf_pos);
-        clrtoeol();
+//        move(6, 0);
+//        printw("Pozycja kursora: %d", kbd_buf_pos);
+//        clrtoeol();
 
         // wyczyść przedostatni wiersz, aby przy zmianie rozmiaru okna terminala nie było śmieci
         move(term_y - 2, 0);
         clrtoeol();
 
         move(term_y - 1, 0);
-        printw("%s", kbd_buf.c_str());
+        printw(">%s", kbd_buf.c_str());
         clrtoeol();
-        move(term_y - 1, kbd_buf_pos);
+        move(term_y - 1, kbd_buf_pos + 1);      // + 1, bo na początku jest znak >
 
         refresh();
 
@@ -139,20 +144,23 @@ int main_window()
 //
             else if(key_code == '\n')
             {
-                move(10, 0);
-                printw("Wpisałeś: %s", kbd_buf.c_str());
-                    if(kbd_buf == "quit")
-                        ucc_quit = true;
-                clrtoeol();
-                kbd_buf.clear();
-                kbd_buf_pos = 0;
-                kbd_buf_max = 0;
+                move(2, 0);
+                if(kbd_buf.size() != 0)
+                {
+                    printw("Wpisałeś: %s", kbd_buf.c_str());
+                    if(kbd_buf == "/quit")
+                    ucc_quit = true;
+                    clrtoeol();
+                    kbd_buf.clear();
+                    kbd_buf_pos = 0;
+                    kbd_buf_max = 0;
+                }
                 refresh();
             }
 //
-            else if(key_code < 256)     // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
+            else if(key_code >= 32 && key_code <= 255)   // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
             {
-                if(key_code >= 32)
+                if(kbd_buf_max < 256)       // ogranicz pojemność bufora wejściowego
                 {
                     key_code_tmp = key_code;
                     kbd_buf.insert(kbd_buf_pos, key_code_tmp);
@@ -161,9 +169,9 @@ int main_window()
                 }
             }
 
-            move(7, 0);
-            printw("Kod klawisza: %d", key_code);
-            clrtoeol();
+//            move(7, 0);
+//            printw("Kod klawisza: %d", key_code);
+//            clrtoeol();
 
         }
 
