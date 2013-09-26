@@ -17,14 +17,12 @@ int main(int argc, char *argv[])
 	std::string nick, cookies, captcha_code, err_code, zuousername, uokey;
 	int window_status, http_status;
 
-/*
 //	std::cout << "Ucieszony Chat Client" << std::endl;
     window_status = main_window();
     if(! window_status)
         return window_status;
 
         return 0;
-*/
 
 	do
 	{
