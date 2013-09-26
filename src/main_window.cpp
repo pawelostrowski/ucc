@@ -42,16 +42,24 @@ int main_window()
 
     if(! initscr())
     {
-        std::cerr << "Nie udało się zainicjalizować biblioteki ncurses!" << std::endl;
+        std::cerr << "Nie udało się zainicjalizować biblioteki ncursesw!" << std::endl;
         return 1;
     }
 
     bool use_colors;
+    bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     int term_y, term_x;     // wymiary terminala
+    int kbd_buf_pos = 0, kbd_buf_max = 0;
+    int key_code;
+    std::string kbd_buf, key_code_tmp;
 
-    raw();
-    keypad(stdscr, TRUE);
-    noecho();
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(STDIN, &readfds);    // klawiatura
+
+    raw();                  // blokuje Ctrl-C i Ctrl-Z
+    keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
+    noecho();               // nie pokazuj wprowadzanych danych
 
     use_colors = check_colors();
 
@@ -65,16 +73,6 @@ int main_window()
     move(term_y - 1, 0);
 
     refresh();
-
-
-    fd_set readfds;
-
-    FD_ZERO(&readfds);
-    FD_SET(STDIN, &readfds);    // klawiatura
-
-    int kbd_buf_pos = 0, kbd_buf_max = 0;
-    int key_code;
-    std::string kbd_buf, key_code_tmp;
 
     do
     {
@@ -144,10 +142,7 @@ int main_window()
                 move(10, 0);
                 printw("Wpisałeś: %s", kbd_buf.c_str());
                     if(kbd_buf == "quit")
-                    {
-                        endwin();
-                        return 0;
-                    }
+                        ucc_quit = true;
                 clrtoeol();
                 kbd_buf.clear();
                 kbd_buf_pos = 0;
@@ -172,8 +167,7 @@ int main_window()
 
         }
 
-    } while(true);
-
+    } while(! ucc_quit);
 
     endwin();
 
