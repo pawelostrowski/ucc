@@ -7,15 +7,20 @@
 
 bool check_colors()
 {
-    if(! has_colors())
+    if(has_colors() == FALSE)       // gdy nie da się używać kolorów, nie kończ programu, po prostu używaj czarno-białego terminala
         return false;
 
+    if(start_color() == ERR)
+        return false;
+
+    short font_color = COLOR_WHITE;
     short background_color = COLOR_BLACK;
 
-    start_color();
-
     if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
+    {
         background_color = -1;
+        font_color = -1;
+    }
 
     init_pair(1, COLOR_RED, background_color);
     init_pair(2, COLOR_GREEN, background_color);
@@ -23,7 +28,7 @@ bool check_colors()
     init_pair(4, COLOR_BLUE, background_color);
     init_pair(5, COLOR_MAGENTA, background_color);
     init_pair(6, COLOR_CYAN, background_color);
-    init_pair(7, COLOR_WHITE, background_color);
+    init_pair(7, font_color, background_color);
 
     return true;
 }
@@ -80,7 +85,7 @@ int main_window()
     printw("Ucieszony Chat Client\n");
 
 //    txt_color(use_colors, 7);
-    attrset(A_NORMAL);
+    attrset(COLOR_PAIR(7));
 
 //    printw("Podaj nick tymczasowy:");
 
