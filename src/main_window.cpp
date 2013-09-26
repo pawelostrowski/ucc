@@ -1,11 +1,9 @@
 //#include <cstring>      // strlen()
 #include <string>       // std::string, setlocale()
 #include <sys/select.h> // select()
-#include <cstdlib>      // setenv()
 #include "ncursesw/ncurses.h"
 #include "main_window.hpp"
 
-#define COLOR_BACKGROUND COLOR_BLACK
 #define STDIN 0
 
 
@@ -14,15 +12,20 @@ bool check_colors()
     if(! has_colors())
         return false;
 
+    short background_color = COLOR_BLACK;
+
     start_color();
 
-    init_pair(1, COLOR_RED, COLOR_BACKGROUND);
-    init_pair(2, COLOR_GREEN, COLOR_BACKGROUND);
-    init_pair(3, COLOR_YELLOW, COLOR_BACKGROUND);
-    init_pair(4, COLOR_BLUE, COLOR_BACKGROUND);
-    init_pair(5, COLOR_MAGENTA, COLOR_BACKGROUND);
-    init_pair(6, COLOR_CYAN, COLOR_BACKGROUND);
-    init_pair(7, COLOR_WHITE, COLOR_BACKGROUND);
+    if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
+        background_color = -1;
+
+    init_pair(1, COLOR_RED, background_color);
+    init_pair(2, COLOR_GREEN, background_color);
+    init_pair(3, COLOR_YELLOW, background_color);
+    init_pair(4, COLOR_BLUE, background_color);
+    init_pair(5, COLOR_MAGENTA, background_color);
+    init_pair(6, COLOR_CYAN, background_color);
+    init_pair(7, COLOR_WHITE, background_color);
 
     return true;
 }
@@ -38,7 +41,6 @@ void txt_color(bool use_colors, short color_font)
 int main_window()
 {
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
-//    setenv("TERM", "xterm-256color", 1);    // rozszerz obsługiwaną liczbę kolorów do 256 (jeśli możliwe)
 
     if(! initscr())         // inicjalizacja ncurses
         return 1;
@@ -79,7 +81,9 @@ int main_window()
     txt_color(use_colors, 2);
     printw("Ucieszony Chat Client\n");
 
-    txt_color(use_colors, 7);
+//    txt_color(use_colors, 7);
+    attrset(A_NORMAL);
+
 //    printw("Podaj nick tymczasowy:");
 
     move(term_y - 1, 0);
