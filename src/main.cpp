@@ -17,10 +17,15 @@ int main(int argc, char *argv[])
 	std::string nick, cookies, captcha_code, err_code, zuousername, uokey;
 	int window_status, http_status;
 
-//	std::cout << "Ucieszony Chat Client" << std::endl;
     window_status = main_window();
-    if(! window_status)
+    if(window_status != 0)
+    {
+        if(window_status == 1)
+            std::cerr << "Nie udało się zainicjalizować biblioteki ncursesw!" << std::endl;
+
+        std::cerr << "Kończenie." << std::endl;
         return window_status;
+    }
 
         return 0;
 

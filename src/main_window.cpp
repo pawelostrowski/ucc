@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 #include <cstring>      // strlen()
 #include <sstream>
 #include <sys/select.h> // select()
@@ -40,34 +40,34 @@ int main_window()
 {
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
-    if(! initscr())
-    {
-        std::cerr << "Nie udało się zainicjalizować biblioteki ncursesw!" << std::endl;
+    if(! initscr())         // inicjalizacja ncurses
         return 1;
-    }
 
     bool use_colors;
     bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     int term_y, term_x;     // wymiary terminala
-    int kbd_buf_pos = 0, kbd_buf_max = 0;
-    int key_code;
-    std::string kbd_buf, key_code_tmp;
+    int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
+    int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
+    int key_code;           // kod ostatnio wciśniętego klawisza
+    std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
+    std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
 
-    fd_set readfds;
+    fd_set readfds;         // deskryptor dla select()
     FD_ZERO(&readfds);
     FD_SET(STDIN, &readfds);    // klawiatura
 
-    raw();                  // blokuje Ctrl-C i Ctrl-Z
+    raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
     noecho();               // nie pokazuj wprowadzanych danych
 
-    use_colors = check_colors();
+    use_colors = check_colors();    // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów
 
     getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
 
     txt_color(use_colors, 4);
     printw("Ucieszony Chat Client\n");
 
+    txt_color(use_colors, 8);
     printw("Podaj nick tymczasowy:");
 
     move(term_y - 1, 0);
@@ -101,7 +101,17 @@ int main_window()
 
             key_code = getch();
 
-            if(key_code == KEY_BACKSPACE)
+            if(key_code == KEY_LEFT)
+            {
+                if(kbd_buf_pos > 0)
+                    --kbd_buf_pos;
+            }
+            else if(key_code == KEY_RIGHT)
+            {
+                if(kbd_buf_pos < kbd_buf_max)
+                    ++kbd_buf_pos;
+            }
+            else if(key_code == KEY_BACKSPACE)
             {
                 if(kbd_buf_pos > 0)
                 {
@@ -110,7 +120,7 @@ int main_window()
                     kbd_buf.erase(kbd_buf_pos, 1);
                 }
             }
-            else if(key_code == KEY_DC)     // klawisz Delete
+            else if(key_code == KEY_DC)     // Delete
             {
                 if(kbd_buf_pos < kbd_buf_max)
                 {
@@ -126,16 +136,6 @@ int main_window()
             {
                 kbd_buf_pos = kbd_buf_max;
             }
-            else if(key_code == KEY_LEFT)
-            {
-                if(kbd_buf_pos > 0)
-                    --kbd_buf_pos;
-            }
-            else if(key_code == KEY_RIGHT)
-            {
-                if(kbd_buf_pos < kbd_buf_max)
-                    ++kbd_buf_pos;
-            }
 //
             else if(key_code == '\n')
             {
@@ -150,7 +150,7 @@ int main_window()
                 refresh();
             }
 //
-            else if(key_code < 256)
+            else if(key_code < 256)     // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
             {
                 if(key_code >= 32)
                 {
