@@ -1,10 +1,8 @@
 //#include <cstring>      // strlen()
 #include <string>       // std::string, setlocale()
 #include <sys/select.h> // select()
-#include "ncursesw/ncurses.h"
+#include "ncursesw/ncurses.h"   // wersja ncurses ze wsparciem dla UTF-8
 #include "main_window.hpp"
-
-#define STDIN 0
 
 
 bool check_colors()
@@ -188,7 +186,7 @@ int main_window()
 
     } while(! ucc_quit);
 
-    endwin();
+    endwin();       // zakończ tryb ncurses
 
     return 0;
 }
