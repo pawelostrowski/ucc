@@ -250,7 +250,7 @@ int socket_irc(std::string &zuousername, std::string &uokey)
             }
         // sprawdź, czy klawiatura coś wysłała (zgłoszenie następuje dopiero po wciśnięciu Enter)
         if(FD_ISSET(STDIN, &readfds_tmp))
-            if(kbd_parser(kbd_buf, data_send, socketfd) != 0)       // wykonaj obsługę bufora klawiatury
+// //            if(kbd_parser(kbd_buf, data_send, socketfd) != 0)       // wykonaj obsługę bufora klawiatury
             {
                 close(socketfd);
                 std::cerr << "Błąd w module kbd_parser!" << std::endl;

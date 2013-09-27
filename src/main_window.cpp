@@ -3,6 +3,7 @@
 #include <sys/select.h> // select()
 #include "ncursesw/ncurses.h"   // wersja ncurses ze wsparciem dla UTF-8
 #include "main_window.hpp"
+#include "kbd_parser.hpp"
 
 
 bool check_colors()
@@ -18,8 +19,8 @@ bool check_colors()
 
     if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
     {
-        background_color = -1;
         font_color = -1;
+        background_color = -1;
     }
 
     init_pair(1, COLOR_RED, background_color);
@@ -34,13 +35,6 @@ bool check_colors()
 }
 
 
-void txt_color(bool use_colors, short color_font)
-{
-    if(use_colors)
-        attrset(COLOR_PAIR(color_font));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
-}
-
-
 int main_window()
 {
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
@@ -51,9 +45,11 @@ int main_window()
     bool use_colors;
     bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     int term_y, term_x;     // wymiary terminala
+    int cur_y, cur_x;       // aktualna pozycja kursora
     int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
     int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;           // kod ostatnio wciśniętego klawisza
+    int socketfd = 0;       // gniazdo (socket), ale to używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
 
@@ -61,76 +57,92 @@ int main_window()
     FD_ZERO(&readfds);
     FD_SET(STDIN, &readfds);    // klawiatura
 
+
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
     noecho();               // nie pokazuj wprowadzanych danych (bo w tym celu będzie używany bufor)
 
     use_colors = check_colors();    // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów
 
-    getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
+    // utwórz okno, w którym będą komunikaty serwera oraz inne (np. diagnostyczne)
+    getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
+    WINDOW *win_diag;
+    win_diag = newwin(term_y - 3, term_x, 1, 0);
+    scrollok(win_diag, TRUE);       // włącz przewijanie w tym oknie
 
-
+    // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
     if(use_colors)
-        attron(COLOR_PAIR(4) | A_REVERSE);
-    for(int i = 0; i < term_x; i++)
-        printw(" ");
+        wattrset(win_diag, COLOR_PAIR(2));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
+    else
+        wattrset(win_diag, A_NORMAL);
+    wprintw(win_diag, "Ucieszony Chat Client\n\n"
+                      "* Aby rozpocząć, wpisz (wielkość liter bez znaczenia):\n"
+                      "/NICK nazwa_nicka\n"
+                      "/CONNECT\n"
+                      "* Aby zobaczyć dostępne polecenia, wpisz:\n"
+                      "/HELP\n"
+                      "* Aby zakończyć działanie programu, wpisz:\n"
+                      "/QUIT\n");
 
-    move(term_y - 3, 0);
-    for(int i = 0; i < term_x; i++)
-        printw(" ");
+    wrefresh(stdscr);
+    wrefresh(win_diag);
 
-
-    move(1, 0);
-    txt_color(use_colors, 2);
-    printw("Ucieszony Chat Client\n");
-
-//    txt_color(use_colors, 7);
-    attrset(COLOR_PAIR(7));
-
-//    printw("Podaj nick tymczasowy:");
-
-    move(term_y - 1, 0);
-
-    refresh();
+    getyx(win_diag, cur_y, cur_x);
 
     do
     {
-        getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala
+        getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
+        wresize(stdscr, term_y, term_x);     // zmień wymiary okna głównego, gdy terminal zmieni romiar
+        wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
 
-        move(3, 0);
-        printw("Wielkość bufora: %d, pozycja kursora: %d", kbd_buf_max, kbd_buf_pos);
-        clrtoeol();
+        // tymczasowo wykasuj 3 od końca wiersz
+//        wmove(stdscr, term_y - 3, 0);
+//        wclrtoeol(stdscr);
 
-        // wyczyść przedostatni wiersz, aby przy zmianie rozmiaru okna terminala nie było śmieci
-        move(term_y - 2, 0);
-        clrtoeol();
+        // paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
+        if(use_colors)
+            wattrset(stdscr, COLOR_PAIR(4) | A_REVERSE);
+        else
+            wattrset(stdscr, A_REVERSE);
+        wmove(stdscr, 0, 0);
+        for(int i = 0; i < term_x; i++)
+            wprintw(stdscr, " ");
+        wmove(stdscr, term_y - 2, 0);
+        for(int i = 0; i < term_x; i++)
+            wprintw(stdscr, " ");
 
-        move(term_y - 1, 0);
-        printw(">%s", kbd_buf.c_str());
-        clrtoeol();
-        move(term_y - 1, kbd_buf_pos + 1);      // + 1, bo na początku jest znak >
+        // wypisz bufor w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
+        wattrset(stdscr, A_NORMAL);      // tekst wypisywany z bufora ze zwykłymi atrybutami
+        wmove(stdscr, term_y - 1, 0);    // przenieś kursor do ostatniego wiersza
+        wprintw(stdscr, ">%s", kbd_buf.c_str());     // wypisz > oraz zawartość bufora
+        wclrtoeol(stdscr);             // pozostałe znaki w wierszu wykasuj
+        wmove(stdscr, term_y - 1, kbd_buf_pos + 1);      // + 1, bo na początku jest znak >
 
-        refresh();
+        wrefresh(win_diag);
+        wrefresh(stdscr);
 
-        select(STDIN + 1, &readfds, NULL, NULL, NULL);
+        select(STDIN + 1, &readfds, NULL, NULL, NULL);  // czekaj na aktywność klawiatury lub gniazda (socket)
 
         if(FD_ISSET(STDIN, &readfds))
         {
-            refresh();
+            wrefresh(win_diag);
+            wrefresh(stdscr);      // odświeżenie w tym miejscu jest wymagane, gdy zmieniamy wymiary terminala
 
             key_code = getch();
 
-            if(key_code == KEY_LEFT)
+            if(key_code == KEY_LEFT)                // Left Arrow
             {
                 if(kbd_buf_pos > 0)
                     --kbd_buf_pos;
             }
-            else if(key_code == KEY_RIGHT)
+
+            else if(key_code == KEY_RIGHT)          // Right Arrow
             {
                 if(kbd_buf_pos < kbd_buf_max)
                     ++kbd_buf_pos;
             }
-            else if(key_code == KEY_BACKSPACE)
+
+            else if(key_code == KEY_BACKSPACE)      // Backspace
             {
                 if(kbd_buf_pos > 0)
                 {
@@ -139,7 +151,8 @@ int main_window()
                     kbd_buf.erase(kbd_buf_pos, 1);
                 }
             }
-            else if(key_code == KEY_DC)     // Delete
+
+            else if(key_code == KEY_DC)             // Delete
             {
                 if(kbd_buf_pos < kbd_buf_max)
                 {
@@ -147,31 +160,46 @@ int main_window()
                     kbd_buf.erase(kbd_buf_pos, 1);
                 }
             }
-            else if(key_code == KEY_HOME)
+
+            else if(key_code == KEY_HOME)           // Home
             {
                 kbd_buf_pos = 0;
             }
-            else if(key_code == KEY_END)
+
+            else if(key_code == KEY_END)            // End
             {
                 kbd_buf_pos = kbd_buf_max;
             }
-//
-            else if(key_code == '\n')
+
+            else if(key_code == KEY_PPAGE)          // PageUp
             {
-                move(2, 0);
-                if(kbd_buf.size() != 0)
+                //wscrl(win_diag, 1);
+            }
+
+            else if(key_code == KEY_NPAGE)          // PageDown
+            {
+                //wscrl(win_diag, -1);
+            }
+
+            else if(key_code == '\n')               // Enter
+            {
+                if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
-                    printw("Wpisałeś: %s", kbd_buf.c_str());
-                    if(kbd_buf == "/quit")
-                    ucc_quit = true;
-                    clrtoeol();
+                    // dodaj kod nowej linii na końcu bufora
+                    kbd_buf.insert(kbd_buf_pos, "\n");
+                    // ustaw kursor w miejscu, gdzie był po ostatnim wypisaniu tekstu
+                    wmove(win_diag, cur_y, cur_x);
+                    // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
+                    wattrset(win_diag, A_NORMAL);
+                    kbd_parser(kbd_buf, win_diag, socketfd, ucc_quit);
+                    getyx(win_diag, cur_y, cur_x);
+                    // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
                     kbd_buf_pos = 0;
                     kbd_buf_max = 0;
                 }
-                refresh();
             }
-//
+
             else if(key_code >= 32 && key_code <= 255)   // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
             {
                 if(kbd_buf_max < 256)       // ogranicz pojemność bufora wejściowego
@@ -183,14 +211,11 @@ int main_window()
                 }
             }
 
-            move(4, 0);
-            printw("Kod klawisza: %d", key_code);
-            clrtoeol();
-
         }
 
     } while(! ucc_quit);
 
+    delwin(win_diag);
     endwin();       // zakończ tryb ncurses
 
     return 0;

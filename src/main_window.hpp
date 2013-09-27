@@ -4,6 +4,8 @@
 
 #define STDIN 0
 
+bool check_colors();
+
 int main_window();
 
 #endif      // MAIN_WINDOW_HPP
