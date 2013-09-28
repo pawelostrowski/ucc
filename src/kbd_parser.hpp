@@ -4,8 +4,11 @@
 
 #include <ncursesw/ncurses.h>
 
-void kbd_parser(std::string kbd_buf, WINDOW *win_diag, int socketfd, bool &ucc_quit);
+void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string kbd_buf, std::string &cookies,
+                std::string &nick, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit);
 
-int find_command(std::string kbd_buf, std::string &f_command);
+int find_command(std::string kbd_buf, std::string &f_command, size_t &arg_start);
+
+void find_arg(std::string kbd_buf, std::string &f_arg, size_t &arg_start, bool lower2upper = true);
 
 #endif      // KBD_PARSER_HPP

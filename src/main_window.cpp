@@ -44,6 +44,8 @@ int main_window()
 
     bool use_colors;
     bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
+    bool captcha_ok = false;    // stan wczytania captcha (jego pobranie z serwera)
+    bool irc_ok = false;    // stan połączenia z czatem
     int term_y, term_x;     // wymiary terminala
     int cur_y, cur_x;       // aktualna pozycja kursora
     int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
@@ -52,6 +54,7 @@ int main_window()
     int socketfd = 0;       // gniazdo (socket), ale to używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
+    std::string cookies, nick, room;
 
     fd_set readfds;         // deskryptor dla select()
     FD_ZERO(&readfds);
@@ -75,14 +78,16 @@ int main_window()
         wattrset(win_diag, COLOR_PAIR(2));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
     else
         wattrset(win_diag, A_NORMAL);
-    wprintw(win_diag, "Ucieszony Chat Client\n\n"
-                      "* Aby rozpocząć, wpisz (wielkość liter bez znaczenia):\n"
-                      "/NICK nazwa_nicka\n"
-                      "/CONNECT\n"
+    wprintw(win_diag, "Ucieszony Chat Client\n"
+                      "* Aby rozpocząć, wpisz:\n"
+                      "/nick nazwa_nicka\n"
+                      "/connect\n"
+                      "* Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
+                      "/captcha kod_z_obrazka\n"
                       "* Aby zobaczyć dostępne polecenia, wpisz:\n"
-                      "/HELP\n"
+                      "/help\n"
                       "* Aby zakończyć działanie programu, wpisz:\n"
-                      "/QUIT\n");
+                      "/quit\n");
 
     wrefresh(stdscr);
     wrefresh(win_diag);
@@ -186,12 +191,12 @@ int main_window()
                 if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
                     // dodaj kod nowej linii na końcu bufora
-                    kbd_buf.insert(kbd_buf_pos, "\n");
+                    kbd_buf.insert(kbd_buf_max, "\n");
                     // ustaw kursor w miejscu, gdzie był po ostatnim wypisaniu tekstu
                     wmove(win_diag, cur_y, cur_x);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
                     wattrset(win_diag, A_NORMAL);
-                    kbd_parser(kbd_buf, win_diag, socketfd, ucc_quit);
+                    kbd_parser(win_diag, use_colors, socketfd, kbd_buf, cookies, nick, room, captcha_ok, irc_ok, ucc_quit);
                     getyx(win_diag, cur_y, cur_x);
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();

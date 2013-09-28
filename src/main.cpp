@@ -3,7 +3,6 @@
  */
 
 #include <iostream>		// std::cin, std::cout, std::string
-#include <cstdlib>		// system()
 //#include <iconv.h>	// konwersja kodowania znaków
 #include "main_window.hpp"
 #include "auth_http.hpp"
@@ -15,7 +14,7 @@
 int main(int argc, char *argv[])
 {
 	std::string nick, cookies, captcha_code, err_code, zuousername, uokey;
-	int window_status, http_status;
+	int window_status;
 
     window_status = main_window();
     if(window_status != 0)
@@ -28,7 +27,7 @@ int main(int argc, char *argv[])
     }
 
         return 0;
-
+/*
 	do
 	{
 		std::cout << "Podaj nick tymczasowy: ";
@@ -111,4 +110,5 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
+*/
 }
