@@ -3,7 +3,7 @@
 #define SOCKETS_HPP_NAME "sockets"
 
 #include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
-#include <fcntl.h>      // fcntl()
+//#include <fcntl.h>      // fcntl()
 #include <unistd.h>     // close() - socket
 //#include <sys/select.h> // select()
 #include <ncursesw/ncurses.h>

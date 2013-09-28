@@ -1,29 +1,28 @@
 #include <iostream>     // find(), erase(), std::string
-#include <cstdlib>		// system()
 #include "kbd_parser.hpp"
 #include "sockets.hpp"
 #include "auth_http.hpp"
 
 
-void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::string kbd_buf, std::string &cookies,
-                std::string &nick, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit)
+void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set &readfds, std::string kbd_buf, std::string &cookies,
+                std::string &nick, std::string &zuousername, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit)
 {
     int f_command_status;
     int http_status;
     size_t arg_start = 0;   // pozycja początkowa kolejnego argumentu
     std::string f_command;  // znalezione polecenie w buforze klawiatury
     std::string f_arg;      // kolejne argumenty podane za poleceniem
-    std::string captcha, err_code, zuousername, uokey;
+    std::string captcha, err_code, uokey;
 
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
         wattrset(active_room, COLOR_PAIR(5));
-        wprintw(active_room, "%s: %s", nick.c_str(), kbd_buf.c_str());
+        wprintw(active_room, "%s: %s", zuousername.c_str(), kbd_buf.c_str());
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
 //            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_room);
         // usuń kod "\n" z końca bufora (zostanie on zastąpiony "\r\n" w poniższej funkcji)
         kbd_buf.erase(kbd_buf.size(), 1);
-        asyn_socket_send("PRIVMSG #Towarzyski :" + kbd_buf, socketfd_irc, active_room);
+        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_room);
         return;
     }
 
@@ -178,7 +177,7 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::st
         else
             wattrset(active_room, A_NORMAL);
         wprintw(active_room, "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)\n");
-        system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+//        system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
         captcha_ok = true;
         return;
     }
@@ -198,7 +197,7 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::st
     else if(f_command == "JOIN")
     {
         // tymczasowo!!!
-        asyn_socket_send("JOIN #Towarzyski", socketfd_irc, active_room);
+        asyn_socket_send("JOIN #Computers", socketfd_irc, active_room);
         return;
     }
 

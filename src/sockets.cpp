@@ -127,33 +127,30 @@ void show_buffer_recv(char *buffer_recv, WINDOW *active_room)
 }
 
 
-int asyn_socket_send(std::string data_send, int socketfd, WINDOW *active_room)
+int asyn_socket_send(std::string data_send, int socketfd_irc, WINDOW *active_room)
 {
 //	int bytes_sent;
 
     data_send += "\r\n";    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
 
 //    std::cout << "> " + data_send;
-            // tymczasowo!!!
-            if(data_send.find("PONG :") != std::string::npos)
-                show_buffer_send(data_send, active_room);
 
-    /*bytes_sent =*/ send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
+    /*bytes_sent =*/ send(socketfd_irc, data_send.c_str(), strlen(data_send.c_str()), 0);
 
     return 0;
 }
 
-int asyn_socket_recv(char *buffer_recv, int bytes_recv, int socketfd)
+int asyn_socket_recv(char *buffer_recv, int bytes_recv, int socketfd_irc)
 {
-    bytes_recv = recv(socketfd, buffer_recv, 1500 - 1, 0);
+    bytes_recv = recv(socketfd_irc, buffer_recv, 1500 - 1, 0);
     if(bytes_recv == -1)
     {
-        close(socketfd);
+//        close(socketfd_irc);
         return bytes_recv;
     }
     if(bytes_recv == 0)
     {
-        close(socketfd);
+//        close(socketfd_irc);
         return 1;
     }
 
@@ -167,7 +164,7 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 {
 //    size_t first_line_char;
 //    bool connect_status = true;
-    int socketfd;       // deskryptor gniazda (socket)
+//    int socketfd;       // deskryptor gniazda (socket)
     int bytes_recv = 0, f_value_status;
     char buffer_recv[1500];
     std::string data_send, authkey, f_value, kbd_buf;
@@ -179,20 +176,20 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
     if(he == NULL)
         return 101;
 
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
-    if(socketfd == -1)
+    socketfd_irc = socket(AF_INET, SOCK_STREAM, 0);
+    if(socketfd_irc == -1)
         return 102;
 
-    fcntl(socketfd, F_SETFL, O_ASYNC);      // asynchroniczne gniazdo (socket)
+//    fcntl(socketfd_irc, F_SETFL, O_ASYNC);      // asynchroniczne gniazdo (socket)
 
     www.sin_family = AF_INET;
     www.sin_port = htons(5015);
     www.sin_addr = *((struct in_addr *)he->h_addr);
     memset(&(www.sin_zero), '\0', 8);
 
-    if(connect(socketfd, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
+    if(connect(socketfd_irc, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
     {
-        close(socketfd);
+        close(socketfd_irc);
         return 103;
     }
 
@@ -201,23 +198,25 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 */
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: NICK <~nick>
-    asyn_socket_send("NICK " + zuousername, socketfd, active_room);
+    asyn_socket_send("NICK " + zuousername, socketfd_irc, active_room);
+        show_buffer_send("NICK " + zuousername + "\n", active_room);
 
     // pobierz odpowiedź z serwera
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: AUTHKEY
-    asyn_socket_send("AUTHKEY", socketfd, active_room);
+    asyn_socket_send("AUTHKEY", socketfd_irc, active_room);
+        show_buffer_send("AUTHKEY\n", active_room);
 
     // pobierz odpowiedź z serwera (AUTHKEY)
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
+    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
@@ -238,7 +237,7 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 //    authkey[16] = '\0';
 
     // konwersja AUTHKEY
-    if(auth(authkey) != 0)
+    if(! auth(authkey))
         return 104;
 
     // char na string
@@ -248,13 +247,15 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 
 
     // wyślij: AUTHKEY <AUTHKEY>
-    asyn_socket_send("AUTHKEY " + authkey, socketfd, active_room);
+    asyn_socket_send("AUTHKEY " + authkey, socketfd_irc, active_room);
+        show_buffer_send("AUTHKEY " + authkey + "\n", active_room);
 
 
 
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd, active_room);
+    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd_irc, active_room);
+        show_buffer_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\n", active_room);
 
 /*
     Od tej pory obsługa gniazda będzie zależała od jego stanu, który wykrywać będzie select()

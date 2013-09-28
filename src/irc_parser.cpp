@@ -26,11 +26,11 @@ int irc_parser(char *buffer_recv, int socketfd, WINDOW *active_room)
         asyn_socket_send("PONG :" + f_value, socketfd, active_room);
 
     // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać w komunikat usera
-    else if(find_value(buffer_recv, "PRIVMSG #Towarzyski :", "\r\n", user_msg) == 0)
+    else if(find_value(buffer_recv, "PRIVMSG #Computers :", "\r\n", user_msg) == 0)
     {
         find_value(buffer_recv, ":", "!", f_value);
 //        std::cout << "* " + f_value + ": " + user_msg << std::endl;
-            show_buffer_send(">" + f_value + ": " + user_msg + "\n", active_room);
+            show_buffer_send(f_value + ": " + user_msg + "\n", active_room);
     }
 
     else
