@@ -18,7 +18,7 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::st
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
         wattrset(active_room, COLOR_PAIR(5));
-        wprintw(active_room, "%s: %s\n", nick.c_str(), kbd_buf.c_str());
+        wprintw(active_room, "%s: %s", nick.c_str(), kbd_buf.c_str());
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
 //            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_room);
         // usuń kod "\n" z końca bufora (zostanie on zastąpiony "\r\n" w poniższej funkcji)

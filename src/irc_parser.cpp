@@ -30,7 +30,7 @@ int irc_parser(char *buffer_recv, int socketfd, WINDOW *active_room)
     {
         find_value(buffer_recv, ":", "!", f_value);
 //        std::cout << "* " + f_value + ": " + user_msg << std::endl;
-            show_buffer_send(">" + f_value + ": " + user_msg, active_room);
+            show_buffer_send(">" + f_value + ": " + user_msg + "\n", active_room);
     }
 
     else
