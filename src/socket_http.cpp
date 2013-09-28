@@ -22,21 +22,21 @@ int socket_http(std::string host, std::string data_send, char *buffer_recv, long
 
     // zapis przykładowo host.c_str() oznacza, że string zostaje zamieniony na const char
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
-        return 1;		// kod błedu przy niepowodzeniu w pobraniu statusu adresu
+        return 31;          // kod błedu przy niepowodzeniu w pobraniu statusu adresu
 
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);     // utwórz deskryptor gniazda (socket)
 
     if(socketfd == -1)
     {
         freeaddrinfo(host_info_list);
-        return 2;       // kod błedu przy niepowodzeniu w tworzeniu deskryptora gniazda (socket)
+        return 32;          // kod błedu przy niepowodzeniu w tworzeniu deskryptora gniazda (socket)
     }
 
     if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)        // pobierz status połączenia do hosta
     {
         freeaddrinfo(host_info_list);
         close(socketfd);        // zamknij połączenie z hostem
-        return 3;       // kod błędu przy niepowodzeniu połączenia do hosta
+        return 33;          // kod błędu przy niepowodzeniu połączenia do hosta
     }
 
     // wyślij zapytanie do hosta
@@ -47,14 +47,14 @@ int socket_http(std::string host, std::string data_send, char *buffer_recv, long
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
-            return 4;       // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
+            return 34;      // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
 		}
         data_send_length = strlen(data_send.c_str());      // rozmiar danych, jakie chcieliśmy wysłać
         if(bytes_sent != data_send_length)         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
-            return 5;       // kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
+            return 35;      // kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
         }
     }
 
@@ -67,7 +67,7 @@ int socket_http(std::string host, std::string data_send, char *buffer_recv, long
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
-            return 6;       // kod błędu przy niepowodzeniu w pobieraniu danych od hosta
+            return 36;      // kod błędu przy niepowodzeniu w pobieraniu danych od hosta
         }
         if(first_recv)      // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
         {
@@ -75,7 +75,7 @@ int socket_http(std::string host, std::string data_send, char *buffer_recv, long
             {
                 freeaddrinfo(host_info_list);
                 close(socketfd);
-                return 7;       // kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host zakończył połączenie)
+                return 37;  // kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host zakończył połączenie)
             }
         }
         first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych

@@ -170,7 +170,7 @@ int http_1(std::string &cookies)
 
     socket_status = socket_http("kropka.onet.pl", data_send, buffer_recv, offset_recv);     // wyślij dane
     if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem
+        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
     cookies.clear();        // wyczyść bufor cookies
     cookies_status = find_cookies(buffer_recv, cookies);    // pobierz cookies z buffer_recv
@@ -193,7 +193,7 @@ int http_2(std::string &cookies)
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem
+        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
     cookies_status = find_cookies(buffer_recv, cookies);
     if(cookies_status != 0)
@@ -232,7 +232,7 @@ int http_3(std::string &cookies, std::string captcha_code, std::string &err_code
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem
+        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
     // sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE)
     f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);    // szukaj wartości między wyrażeniami:
@@ -265,7 +265,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem
+        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
     // pobierz kod błędu
     f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);
