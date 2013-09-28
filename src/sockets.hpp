@@ -8,8 +8,6 @@
 //#include <sys/select.h> // select()
 #include <ncursesw/ncurses.h>
 
-int socket_http(std::string host, std::string data_send, char *buffer_recv, long &offset_recv);
-
 void show_buffer_send(std::string data_send, WINDOW *active_room);
 
 void show_buffer_recv(char *buffer_recv, WINDOW *active_room);

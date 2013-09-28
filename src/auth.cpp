@@ -1,12 +1,12 @@
 #include <cstring>          // strlen(), memcpy()
 #include <sstream>          // std::string, std::stringstream
 #include <fstream>          // std::ofstream
-#include <cstdlib>		    // system()
+#include <cstdlib>          // system()
 #include "auth.hpp"
-#include "sockets.hpp"
+#include "socket_http.hpp"
 
 
-bool auth(std::string &authkey)
+bool auth_code(std::string &authkey)
 {
     if(authkey.size() != 16)        // AUTHKEY musi mieć dokładnie 16 znaków
         return false;
@@ -120,13 +120,13 @@ int find_cookies(char *buffer_recv, std::string &cookies)
     // std::string(buffer_recv) zamienia C string na std::string
     pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING);   // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
     if(pos_cookie_start == std::string::npos)
-        return 11;      // kod błędu, gdy nie znaleziono cookie (pierwszego)
+        return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
 
     do
     {
         pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);     // szukaj ";" od pozycji początku cookie
         if(pos_cookie_end == std::string::npos)
-            return 12;      // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
+            return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
 
     cookie_tmp.clear();     // wyczyść bufor pomocniczy
     cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + strlen(COOKIE_STRING), pos_cookie_end - pos_cookie_start - strlen(COOKIE_STRING) + 1);   // skopiuj cookie
@@ -145,14 +145,14 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 
     pos_expr_before = std::string(buffer_recv).find(expr_before);      // znajdź pozycję początku szukanego wyrażenia
     if(pos_expr_before == std::string::npos)
-        return 21;      // kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+        return 3;           // kod błędu, gdy nie znaleziono początku szukanego wyrażenia
 
     pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());   // znajdź pozycję końca szukanego wyrażenia,
                                                                                                         //  zaczynając od znalezionego początku + jego jego długości
     if(pos_expr_after == std::string::npos)
-        return 22;      // kod błędu, gdy nie znaleziono końca szukanego wyrażenia
+        return 4;           // kod błędu, gdy nie znaleziono końca szukanego wyrażenia
 
-    f_value.clear();    // wyczyść bufor szukanej wartości
+    f_value.clear();        // wyczyść bufor szukanej wartości
     f_value.insert(0, std::string(buffer_recv), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());   // wstaw szukaną wartość
 
     return 0;
@@ -175,7 +175,7 @@ int http_1(std::string &cookies)
     cookies.clear();        // wyczyść bufor cookies
     cookies_status = find_cookies(buffer_recv, cookies);    // pobierz cookies z buffer_recv
     if(cookies_status != 0)
-        return cookies_status;      // kod błędu, gdy napotkano problem z cookies
+        return cookies_status;      // kod błędu, gdy napotkano problem z cookies (1 lub 2)
 
     return 0;
 }
@@ -197,16 +197,16 @@ int http_2(std::string &cookies)
 
     cookies_status = find_cookies(buffer_recv, cookies);
     if(cookies_status != 0)
-        return cookies_status;      // kod błędu, gdy napotkano problem z cookies
+        return cookies_status;      // kod błędu, gdy napotkano problem z cookies (1 lub 2)
 
     buffer_gif = strstr(buffer_recv, "GIF");        // daj wskaźnik na początek obrazka
     if(buffer_gif == NULL)
-        return 8;       // kod błędu, gdy nie znaleziono obrazka w buforze
+        return 5;           // kod błędu, gdy nie znaleziono obrazka w buforze
 
     // zapisz obrazek z captcha na dysku
     std::ofstream file_gif(FILE_GIF, std::ios::binary);
     if(file_gif == NULL)
-        return 9;
+        return 6;           // kod błędu, gdy nie udało się zapisać pliku z obrazkiem
 
     file_gif.write(buffer_gif, &buffer_recv[offset_recv] - buffer_gif);     // &buffer_recv[offset_recv] - buffer_gif
                                                                             //  <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
@@ -238,11 +238,11 @@ int http_3(std::string &cookies, std::string captcha_code, std::string &err_code
     f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);    // szukaj wartości między wyrażeniami:
                                                                                 //  err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
     if(f_value_status != 0)
-        return f_value_status;      // kod błedu, gdy nie udało się pobrać err_code
+        return f_value_status;      // kod błedu, gdy nie udało się pobrać err_code (3 lub 4)
 
     if(err_code != "TRUE")
         if(err_code != "FALSE")
-            return 99;              // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
+            return 7;               // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
 
     return 0;
 }
@@ -270,7 +270,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
     // pobierz kod błędu
     f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);
     if(f_value_status != 0)
-        return f_value_status;      // kod błędu, gdy nie udało się pobrać err_code
+        return f_value_status;      // kod błędu, gdy nie udało się pobrać err_code (3 lub 4)
 
     // sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
     if(err_code != "TRUE")
@@ -279,12 +279,12 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
     // pobierz uoKey
     f_value_status = find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey);
     if(f_value_status != 0)
-        return f_value_status + 10; // kod błedu, gdy nie udało się pobrać uoKey (+10, aby można było go odróżnić od poprzedniego użycia find_value() )
+        return f_value_status + 10; // kod błedu, gdy nie udało się pobrać uoKey (13 lub 14)
 
     // pobierz zuoUsername (nick, który zwrócił serwer)
     f_value_status = find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername);
     if(f_value_status != 0)
-        return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (+20, aby można było go odróżnić od poprzedniego użycia find_value() )
+        return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (23 lub 24)
 
     return 0;
 }
