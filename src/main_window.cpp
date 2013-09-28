@@ -4,6 +4,8 @@
 #include "ncursesw/ncurses.h"   // wersja ncurses ze wsparciem dla UTF-8
 #include "main_window.hpp"
 #include "kbd_parser.hpp"
+#include "irc_parser.hpp"
+#include "sockets.hpp"
 
 
 bool check_colors()
@@ -51,14 +53,17 @@ int main_window()
     int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
     int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;           // kod ostatnio wciśniętego klawisza
-    int socketfd = 0;       // gniazdo (socket), ale to używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
+    int socketfd_irc = 2;   // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
     std::string cookies, nick, room;
+    char buffer_recv[1500];
 
     fd_set readfds;         // deskryptor dla select()
+    fd_set readfds_tmp;
     FD_ZERO(&readfds);
     FD_SET(STDIN, &readfds);    // klawiatura
+    FD_SET(socketfd_irc, &readfds); // gniazdo (socket)
 
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
@@ -78,7 +83,7 @@ int main_window()
         wattrset(win_diag, COLOR_PAIR(2));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
     else
         wattrset(win_diag, A_NORMAL);
-    wprintw(win_diag, "Ucieszony Chat Client\n"
+    wprintw(win_diag, "Ucieszony Chat Client\r\n"
                       "* Aby rozpocząć, wpisz:\n"
                       "/nick nazwa_nicka\n"
                       "/connect\n"
@@ -96,6 +101,8 @@ int main_window()
 
     do
     {
+        readfds_tmp = readfds;
+
         getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
         wresize(stdscr, term_y, term_x);     // zmień wymiary okna głównego, gdy terminal zmieni romiar
         wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
@@ -126,9 +133,19 @@ int main_window()
         wrefresh(win_diag);
         wrefresh(stdscr);
 
-        select(STDIN + 1, &readfds, NULL, NULL, NULL);  // czekaj na aktywność klawiatury lub gniazda (socket)
+        select(STDIN + socketfd_irc + 1, &readfds_tmp, NULL, NULL, NULL);  // czekaj na aktywność klawiatury lub gniazda (socket)
 
-        if(FD_ISSET(STDIN, &readfds))
+        if(FD_ISSET(socketfd_irc, &readfds_tmp))
+        {
+//            wrefresh(win_diag);
+//            wrefresh(stdscr);
+
+            irc_parser(buffer_recv, socketfd_irc, win_diag);
+            getyx(win_diag, cur_y, cur_x);
+            wrefresh(win_diag);
+        }
+
+        if(FD_ISSET(STDIN, &readfds_tmp))
         {
             wrefresh(win_diag);
             wrefresh(stdscr);      // odświeżenie w tym miejscu jest wymagane, gdy zmieniamy wymiary terminala
@@ -196,7 +213,7 @@ int main_window()
                     wmove(win_diag, cur_y, cur_x);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
                     wattrset(win_diag, A_NORMAL);
-                    kbd_parser(win_diag, use_colors, socketfd, kbd_buf, cookies, nick, room, captcha_ok, irc_ok, ucc_quit);
+                    kbd_parser(win_diag, use_colors, socketfd_irc, kbd_buf, cookies, nick, room, captcha_ok, irc_ok, ucc_quit);
                     getyx(win_diag, cur_y, cur_x);
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
@@ -219,6 +236,9 @@ int main_window()
         }
 
     } while(! ucc_quit);
+
+    if(socketfd_irc)
+        close(socketfd_irc);
 
     delwin(win_diag);
     endwin();       // zakończ tryb ncurses

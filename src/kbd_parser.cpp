@@ -5,7 +5,7 @@
 #include "auth_http.hpp"
 
 
-void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string kbd_buf, std::string &cookies,
+void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::string kbd_buf, std::string &cookies,
                 std::string &nick, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit)
 {
     int f_command_status;
@@ -17,9 +17,13 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string 
 
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
+        wattrset(active_room, COLOR_PAIR(5));
+        wprintw(active_room, "%s: %s\n", nick.c_str(), kbd_buf.c_str());
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
-        wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "%s: %s", nick.c_str(), kbd_buf.c_str());
+//            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_room);
+        // usuń kod "\n" z końca bufora (zostanie on zastąpiony "\r\n" w poniższej funkcji)
+        kbd_buf.erase(kbd_buf.size(), 1);
+        asyn_socket_send("PRIVMSG #Towarzyski :" + kbd_buf, socketfd_irc, active_room);
         return;
     }
 
@@ -49,6 +53,7 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string 
         return;
     }
 
+    // wykonaj polecenie (o ile istnieje)
     else if(f_command == "CAPTCHA")
     {
         if(! captcha_ok)
@@ -121,11 +126,20 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string 
             return;
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
-                        wprintw(active_room, "OK\n");
+        // socket_irc()
+        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_room);
+        if(http_status != 0)
+        {
+            if(use_colors)
+                wattrset(active_room, COLOR_PAIR(1));
+            else
+                wattrset(active_room, A_NORMAL);
+            wprintw(active_room, "Błąd podczas wywoływania socket_irc(), kod błędu: %d\n", http_status);
+            return;
+        }
         return;
     }
 
-    // wykonaj polecenie (o ile istnieje)
     else if(f_command == "CONNECT")
     {
         if(nick.size() == 0)
@@ -176,8 +190,15 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string 
         else
             wattrset(active_room, A_NORMAL);
         wprintw(active_room, "* Dostępne polecenia (w kolejności alfabetycznej):\n"
-                             "/captcha\n/connect\n/help\n/nick\n/quit\n");
+                             "/captcha\n/connect\n/help\n/join\n/nick\n/quit\n");
         // dopisać listę poleceń
+        return;
+    }
+
+    else if(f_command == "JOIN")
+    {
+        // tymczasowo!!!
+        asyn_socket_send("JOIN #Towarzyski", socketfd_irc, active_room);
         return;
     }
 

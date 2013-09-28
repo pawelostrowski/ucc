@@ -4,7 +4,7 @@
 
 #include <ncursesw/ncurses.h>
 
-void kbd_parser(WINDOW *active_room, bool use_colors, int socketfd, std::string kbd_buf, std::string &cookies,
+void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, std::string kbd_buf, std::string &cookies,
                 std::string &nick, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit);
 
 int find_command(std::string kbd_buf, std::string &f_command, size_t &arg_start);

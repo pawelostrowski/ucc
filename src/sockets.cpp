@@ -1,9 +1,5 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
-#include <netdb.h>      // getaddrinfo(), freeaddrinfo(), socket()
-#include <fcntl.h>      // fcntl()
-#include <unistd.h>     // close() - socket
-#include <sys/select.h> // select()
 #include "sockets.hpp"
 #include "auth_http.hpp"
 #include "auth_code.hpp"
@@ -13,7 +9,7 @@
 
 #define STDIN 0         // deskryptor pliku dla standardowego wejścia
 
-#include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
+//#include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
 int socket_http(std::string host, std::string data_send, char *buffer_recv, long &offset_recv)
@@ -103,13 +99,45 @@ int socket_http(std::string host, std::string data_send, char *buffer_recv, long
 }
 
 
-int asyn_socket_send(std::string data_send, int socketfd)
+void show_buffer_send(std::string data_send, WINDOW *active_room)
+{
+    int data_send_len = data_send.size();
+
+    wattrset(active_room, COLOR_PAIR(3));
+
+    for(int i = 0; i < data_send_len; ++i)
+    {
+        if(data_send[i] != '\r')
+            wprintw(active_room, "%c", data_send[i]);
+    }
+}
+
+
+void show_buffer_recv(char *buffer_recv, WINDOW *active_room)
+{
+    int buffer_recv_len = strlen(buffer_recv);
+
+    wattrset(active_room, A_NORMAL);
+
+    for(int i = 0; i < buffer_recv_len; ++i)
+    {
+        if(buffer_recv[i] != '\r')
+            wprintw(active_room, "%c", buffer_recv[i]);
+    }
+}
+
+
+int asyn_socket_send(std::string data_send, int socketfd, WINDOW *active_room)
 {
 //	int bytes_sent;
 
     data_send += "\r\n";    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
 
-    std::cout << "> " + data_send;
+//    std::cout << "> " + data_send;
+            // tymczasowo!!!
+            if(data_send.find("PONG :") != std::string::npos)
+                show_buffer_send(data_send, active_room);
+
     /*bytes_sent =*/ send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
 
     return 0;
@@ -135,10 +163,10 @@ int asyn_socket_recv(char *buffer_recv, int bytes_recv, int socketfd)
 }
 
 
-int socket_irc(std::string &zuousername, std::string &uokey)
+int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, WINDOW *active_room)
 {
 //    size_t first_line_char;
-    bool connect_status = true;
+//    bool connect_status = true;
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_recv = 0, f_value_status;
     char buffer_recv[1500];
@@ -174,21 +202,24 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
     asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
-    std::cout << buffer_recv;
+//    std::cout << buffer_recv;
+        show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: NICK <~nick>
-    asyn_socket_send("NICK " + zuousername, socketfd);
+    asyn_socket_send("NICK " + zuousername, socketfd, active_room);
 
     // pobierz odpowiedź z serwera
     asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
-    std::cout << buffer_recv;
+//    std::cout << buffer_recv;
+        show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: AUTHKEY
-    asyn_socket_send("AUTHKEY", socketfd);
+    asyn_socket_send("AUTHKEY", socketfd, active_room);
 
     // pobierz odpowiedź z serwera (AUTHKEY)
     asyn_socket_recv(buffer_recv, bytes_recv, socketfd);
-    std::cout << buffer_recv;
+//    std::cout << buffer_recv;
+        show_buffer_recv(buffer_recv, active_room);
 
 
 
@@ -217,18 +248,22 @@ int socket_irc(std::string &zuousername, std::string &uokey)
 
 
     // wyślij: AUTHKEY <AUTHKEY>
-    asyn_socket_send("AUTHKEY " + authkey, socketfd);
+    asyn_socket_send("AUTHKEY " + authkey, socketfd, active_room);
 
 
 
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd);
+    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd, active_room);
 
 /*
     Od tej pory obsługa gniazda będzie zależała od jego stanu, który wykrywać będzie select()
 */
 
+
+        return 0;
+
+/*
     fd_set readfds;
     fd_set readfds_tmp;
 
@@ -262,4 +297,5 @@ int socket_irc(std::string &zuousername, std::string &uokey)
     close(socketfd);
 
     return 0;
+*/
 }
