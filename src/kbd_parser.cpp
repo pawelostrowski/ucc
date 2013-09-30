@@ -210,12 +210,8 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
 {
     // polecenie może się zakończyć spacją (polecenie z parametrem ) lub końcem bufora (polecenie bez parametru)
 
-    int kbd_buf_length;
-
-    kbd_buf_length = kbd_buf.size();   // pobierz rozmiar bufora klawiatury
-
     // sprawdź, czy za poleceniem są jakieś znaki (sam znak / nie jest poleceniem)
-    if(kbd_buf_length <= 1)
+    if(kbd_buf.size() <= 1)
         return 1;
 
     // sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
@@ -223,12 +219,11 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
         return 2;
 
     size_t pos_command_end;     // pozycja, gdzie się kończy polecenie
-    int f_command_length;       // długość polecenia
 
     // wykryj pozycję końca polecenia
     pos_command_end = kbd_buf.find(" ");        // wykryj, gdzie jest spacja za poleceniem
     if(pos_command_end == std::string::npos)
-        pos_command_end = kbd_buf_length;       // jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
+        pos_command_end = kbd_buf.size();       // jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
 
     f_command.clear();
     f_command.insert(0, kbd_buf, 1, pos_command_end - 1);      // wstaw szukane polecenie (- 1, bo pomijamy znak / )
@@ -238,8 +233,7 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
     f_command_org = f_command;
 
     // zamień małe litery w poleceniu na wielkie (łatwiej będzie je sprawdzać)
-    f_command_length = f_command.size();
-    for(int i = 0; i < f_command_length; ++i)
+    for(int i = 0; i < (int)f_command.size(); ++i)
     {
         if(islower(f_command[i]))
             f_command[i] = toupper(f_command[i]);
@@ -256,26 +250,23 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
 {
     // pobierz argument z bufora klawiatury od pozycji w arg_start, jeśli go nie ma, w arg_start będzie 0
 
-    int kbd_buf_length, f_arg_length;
     size_t arg_end;
 
     f_arg.clear();
 
-    kbd_buf_length = kbd_buf.size();
-
     // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
-    if((int)arg_start >= kbd_buf_length)    // (int)arg_start konwertuje size_t na int
+    if(arg_start >= kbd_buf.size())
     {
         arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
     }
 
     // pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza nim)
-    while(kbd_buf[arg_start] == ' ' && (int)arg_start < kbd_buf_length)
+    while(kbd_buf[arg_start] == ' ' && arg_start < kbd_buf.size())
         ++arg_start;    // kolejny znak w buforze
 
     // jeśli po pominięciu spacji pozycja w arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
-    if((int)arg_start == kbd_buf_length)
+    if(arg_start == kbd_buf.size())
     {
         arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
@@ -284,7 +275,7 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     // wykryj pozycję końca argumentu
     arg_end = kbd_buf.find(" ", arg_start);     // wykryj, gdzie jest spacja za poleceniem lub poprzednim argumentem
     if(arg_end == std::string::npos)
-        arg_end = kbd_buf_length;               // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
+        arg_end = kbd_buf.size();               // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
 
     f_arg.clear();
     f_arg.insert(0, kbd_buf, arg_start, arg_end - arg_start);   // wstaw szukany argument
@@ -292,8 +283,7 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     // jeśli trzeba, zamień małe litery w argumencie na wielkie
     if(lower2upper)
     {
-        f_arg_length = f_arg.size();    // pobierz rozmiar argumentu
-        for(int i = 0; i < f_arg_length; ++i)
+        for(int i = 0; i < (int)f_arg.size(); ++i)
         {
             if(islower(f_arg[i]))
                 f_arg[i] = toupper(f_arg[i]);
