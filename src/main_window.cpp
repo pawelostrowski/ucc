@@ -13,7 +13,7 @@
 
 int main_window(bool use_colors)
 {
-    freopen("/dev/tty", "r", stdin);    // zapobiega zapętleniu się programu po wpisaniu w terminalu echo text | ucc
+    freopen("/dev/tty", "r", stdin);    // zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
 
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
@@ -26,7 +26,7 @@ int main_window(bool use_colors)
     bool irc_ok = false;    // stan połączenia z czatem
     int term_y, term_x;     // wymiary terminala
     int cur_y, cur_x;       // aktualna pozycja kursora
-    int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
+    int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
     int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;           // kod ostatnio wciśniętego klawisza
     int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
@@ -40,10 +40,10 @@ int main_window(bool use_colors)
     // inicjalizacja gniazda (socket) używanego w połączeniu IRC
     socket_irc_init(socketfd_irc);
 
-    fd_set readfds;                     // deskryptor dla select()
+    fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
     FD_ZERO(&readfds);
-    FD_SET(0, &readfds);                // klawiatura (stdin)
+    FD_SET(0, &readfds);    // klawiatura (stdin)
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
@@ -55,10 +55,10 @@ int main_window(bool use_colors)
         use_colors = check_colors();
 
     // utwórz okno, w którym będą komunikaty serwera oraz inne (np. diagnostyczne)
-    getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
+    getmaxyx(stdscr, term_y, term_x);   // pobierz wymiary terminala (okna głównego)
     WINDOW *win_diag;
     win_diag = newwin(term_y - 3, term_x, 1, 0);
-    scrollok(win_diag, TRUE);       // włącz przewijanie w tym oknie
+    scrollok(win_diag, TRUE);           // włącz przewijanie w tym oknie
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
     wattrset_color(win_diag, use_colors, UCC_GREEN);
@@ -238,12 +238,15 @@ int main_window(bool use_colors)
 
             else if(key_code >= 32 && key_code <= 255)   // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
             {
-                if(kbd_buf_max < 256)       // ogranicz pojemność bufora wejściowego
+                if(key_code != '\r')        // ignoruj kod '\r'
                 {
-                    key_code_tmp = key_code;
-                    kbd_buf.insert(kbd_buf_pos, key_code_tmp);
-                    ++kbd_buf_pos;
-                    ++kbd_buf_max;
+                    if(kbd_buf_max < 256)       // ogranicz pojemność bufora wejściowego
+                    {
+                        key_code_tmp = key_code;
+                        kbd_buf.insert(kbd_buf_pos, key_code_tmp);
+                        ++kbd_buf_pos;
+                        ++kbd_buf_max;
+                    }
                 }
             }
 
