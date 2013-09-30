@@ -265,7 +265,7 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     kbd_buf_length = kbd_buf.size();
 
     // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
-    arg_start_tmp = arg_start;
+    arg_start_tmp = arg_start;  // size_t na int
     if(arg_start_tmp >= kbd_buf_length)
     {
         arg_start = 0;      // 0 oznacza, że nie było argumentu
@@ -281,6 +281,14 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
         ++arg_start;
     }
 
+    // jeśli po pominięciu spacji pozycja w arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
+    arg_start_tmp = arg_start;  // size_t na int
+    if(arg_start_tmp == kbd_buf_length)
+    {
+        arg_start = 0;      // 0 oznacza, że nie było argumentu
+        return;
+    }
+
     // wykryj pozycję końca argumentu
     arg_end = kbd_buf.find(" ", arg_start);     // wykryj, gdzie jest spacja za poleceniem lub poprzednim argumentem
     if(arg_end == std::string::npos)
@@ -289,18 +297,10 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     f_arg.clear();
     f_arg.insert(0, kbd_buf, arg_start, arg_end - arg_start);   // wstaw szukany argument
 
-    f_arg_length = f_arg.size();    // pobierz rozmiar argumentu
-
-    // zerowy rozmiar znalezionej pozycji oznacza, że wpisaliśmy same spacje (od miejsca szukania), więc zakończ
-    if(f_arg_length == 0)
-    {
-        arg_start = 0;      // 0 oznacza, że nie było argumentu
-        return;
-    }
-
     // jeśli trzeba, zamień małe litery w argumencie na wielkie
     if(lower2upper)
     {
+        f_arg_length = f_arg.size();    // pobierz rozmiar argumentu
         for(int i = 0; i < f_arg_length; ++i)
         {
             if(islower(f_arg[i]))
