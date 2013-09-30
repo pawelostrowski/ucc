@@ -73,7 +73,7 @@ bool auth_code(std::string &authkey)
 }
 
 
-void header_get(std::string host, std::string data_get, std::string cookies, std::string &data_send, bool add_cookies)
+void header_get(std::string host, std::string data_get, std::string &cookies, std::string &data_send, bool add_cookies)
 {
     data_send.clear();
 
@@ -91,7 +91,7 @@ void header_get(std::string host, std::string data_get, std::string cookies, std
 }
 
 
-void header_post(std::string cookies, std::string api_function, std::string &data_send)
+void header_post(std::string &cookies, std::string &api_function, std::string &data_send)
 {
     std::stringstream content_length;
 
@@ -228,7 +228,7 @@ int http_2(std::string &cookies)
 }
 
 
-int http_3(std::string cookies, std::string captcha, std::string &err_code)
+int http_3(std::string &cookies, std::string &captcha, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
@@ -260,7 +260,7 @@ int http_3(std::string cookies, std::string captcha, std::string &err_code)
 }
 
 
-int http_4(std::string cookies, std::string nick, std::string &zuousername, std::string &uokey, std::string &err_code)
+int http_4(std::string &cookies, std::string &nick, std::string &zuousername, std::string &uokey, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;

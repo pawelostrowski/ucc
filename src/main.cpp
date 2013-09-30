@@ -1,5 +1,5 @@
-#include <iostream>		// std::cerr, std::endl
-//#include <iconv.h>	// konwersja kodowania znaków
+#include <iostream>         // std::cerr, std::endl
+//#include <iconv.h>          // konwersja kodowania znaków
 #include "main_window.hpp"
 
 

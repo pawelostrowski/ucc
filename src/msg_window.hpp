@@ -19,7 +19,7 @@ bool check_colors();
 
 void wattrset_color(WINDOW *active_window, bool use_color, short color_p);
 
-void show_buffer_1(WINDOW *active_window, std::string data_buf);
+void show_buffer_1(WINDOW *active_window, std::string &data_buf);
 
 void show_buffer_2(WINDOW *active_window, char *data_buf);
 

@@ -210,8 +210,8 @@ int main_window(bool use_colors)
             {
                 if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
-                    // dodaj kod nowej linii na końcu bufora
-                    kbd_buf.insert(kbd_buf_max, "\n");
+//                    // dodaj kod nowej linii na końcu bufora
+//                    kbd_buf.insert(kbd_buf_max, "\n");
                     // ustaw kursor w miejscu, gdzie był po ostatnim wypisaniu tekstu
                     wmove(win_diag, cur_y, cur_x);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)

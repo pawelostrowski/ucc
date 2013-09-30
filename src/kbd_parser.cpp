@@ -1,11 +1,11 @@
-#include <iostream>     // find(), erase(), std::string
+#include <string>           // std::string, find(), erase(), c_str(), size()
 #include "kbd_parser.hpp"
 #include "sockets.hpp"
 #include "auth.hpp"
 
 
-void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std::string &cookies, std::string &nick, std::string &zuousername,
-                std::string room, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
+void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, std::string &cookies, std::string &nick, std::string &zuousername,
+                std::string &room, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
 {
     int f_command_status;
     int http_status;
@@ -17,11 +17,9 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
         wattrset_color(active_window, use_colors, UCC_MAGENTA);
-        wprintw(active_window, "%s: %s", zuousername.c_str(), kbd_buf.c_str());
+        wprintw(active_window, "%s: %s\n", zuousername.c_str(), kbd_buf.c_str());
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
 //            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_window);
-        // usuń kod "\n" z końca bufora (zostanie on zastąpiony "\r\n" w poniższej funkcji)
-        kbd_buf.erase(kbd_buf.size(), 1);
 //        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_window);
         return;
     }
@@ -46,8 +44,8 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std
         return;
     }
 
-    // wykonaj polecenie (o ile istnieje)
-    else if(f_command == "CAPTCHA")
+    // wykonaj polecenie (o ile istnieje), poniższe polecenia wpisane są w kolejności alfabetycznej
+    if(f_command == "CAPTCHA")
     {
         if(! captcha_ok)
         {
@@ -186,7 +184,7 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std
 }
 
 
-int find_command(std::string kbd_buf, std::string &f_command, size_t &arg_start)
+int find_command(std::string &kbd_buf, std::string &f_command, size_t &arg_start)
 {
     // polecenie może się zakończyć spacją (polecenie z parametrem lub parametrami) lub kodem "\n" (polecenie bez parametru)
 
@@ -223,7 +221,7 @@ int find_command(std::string kbd_buf, std::string &f_command, size_t &arg_start)
 }
 
 
-void find_arg(std::string kbd_buf, std::string &f_arg, size_t &arg_start, bool lower2upper)
+void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool lower2upper)
 {
     // pobierz argument z bufora klawiatury od pozycji w arg_start
 

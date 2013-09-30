@@ -5,7 +5,7 @@
 #include "socket_http.hpp"
 
 
-int socket_http(std::string host, std::string data_send, char *buffer_recv, long &offset_recv)
+int socket_http(std::string host, std::string &data_send, char *buffer_recv, long &offset_recv)
 {
     int socketfd;       // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv, data_send_length;
