@@ -5,7 +5,7 @@
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>         // close() - socket
 #include "main_window.hpp"
-#include "msg_window.hpp"
+#include "ucc_colors.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
 #include "socket_irc.hpp"
@@ -32,6 +32,8 @@ int main_window(bool use_colors)
     int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
+    std::string msg;        // komunikat do wyświetlenia z kbd_parser() (opcjonalny)
+    short msg_color;        // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
     std::string cookies, nick, zuousername, room;
 //    char buffer_recv[1500];
 
@@ -210,13 +212,17 @@ int main_window(bool use_colors)
             {
                 if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
-//                    // dodaj kod nowej linii na końcu bufora
-//                    kbd_buf.insert(kbd_buf_max, "\n");
                     // ustaw kursor w miejscu, gdzie był po ostatnim wypisaniu tekstu
                     wmove(win_diag, cur_y, cur_x);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
-                    wattrset(win_diag, A_NORMAL);
-                    kbd_parser(win_diag, use_colors, kbd_buf, cookies, nick, zuousername, room, captcha_ok, irc_ok, socketfd_irc, ucc_quit);
+                    kbd_parser(kbd_buf, msg, msg_color, cookies, nick, zuousername, captcha_ok, irc_ok, socketfd_irc, ucc_quit);
+                    // gdy kbd_parser() zwrócił jakąś wiadomość, pokaż ją
+                    if(msg.size() != 0)
+                    {
+                        wattrset_color(win_diag, use_colors, msg_color);
+                        mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                    }
+                    // zachowaj pozycję kursora dla kolejnego komunikatu
                     getyx(win_diag, cur_y, cur_x);
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
@@ -267,4 +273,68 @@ int main_window(bool use_colors)
     endwin();       // zakończ tryb ncurses
 
     return 0;
+}
+
+
+bool check_colors()
+{
+    if(has_colors() == FALSE)       // gdy nie da się używać kolorów, nie kończ programu, po prostu używaj czarno-białego terminala
+        return false;
+
+    if(start_color() == ERR)
+        return false;
+
+    short font_color = COLOR_WHITE;
+    short background_color = COLOR_BLACK;
+
+    if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
+    {
+        font_color = -1;
+        background_color = -1;
+    }
+
+    init_pair(1, COLOR_RED, background_color);
+    init_pair(2, COLOR_GREEN, background_color);
+    init_pair(3, COLOR_YELLOW, background_color);
+    init_pair(4, COLOR_BLUE, background_color);
+    init_pair(5, COLOR_MAGENTA, background_color);
+    init_pair(6, COLOR_CYAN, background_color);
+    init_pair(7, COLOR_WHITE, background_color);
+    init_pair(8, font_color, background_color);
+    init_pair(9, COLOR_BLUE, COLOR_WHITE);
+
+    return true;
+}
+
+
+void wattrset_color(WINDOW *active_window, bool use_color, short color_p)
+{
+    if(use_color)
+        wattrset(active_window, COLOR_PAIR(color_p));    // wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
+    else
+        wattrset(active_window, A_NORMAL);
+}
+
+
+void show_buffer_1(WINDOW *active_window, std::string &data_buf)
+{
+    int data_buf_len = data_buf.size();
+
+    for(int i = 0; i < data_buf_len; ++i)
+    {
+        if(data_buf[i] != '\r')
+            wprintw(active_window, "%c", data_buf[i]);
+    }
+}
+
+
+void show_buffer_2(WINDOW *active_window, char *data_buf)
+{
+    int data_buf_len = strlen(data_buf);
+
+    for(int i = 0; i < data_buf_len; ++i)
+    {
+        if(data_buf[i] != '\r')
+            wprintw(active_window, "%c", data_buf[i]);
+    }
 }

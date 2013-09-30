@@ -1,25 +1,32 @@
 #include <string>           // std::string, find(), erase(), c_str(), size()
 #include "kbd_parser.hpp"
+#include "ucc_colors.hpp"
 #include "sockets.hpp"
 #include "auth.hpp"
 
 
-void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, std::string &cookies, std::string &nick, std::string &zuousername,
-                std::string &room, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &cookies,
+                std::string &nick, std::string &zuousername, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
 {
     int f_command_status;
     int http_status;
-    size_t arg_start = 1;   // pozycja początkowa kolejnego argumentu
-    std::string f_command;  // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
+    size_t arg_start = 1;       // pozycja początkowa kolejnego argumentu
+    std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
     std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
-    std::string f_arg;      // kolejne argumenty podane za poleceniem
+    std::string f_arg;          // kolejne argumenty podane za poleceniem
     std::string captcha, err_code, uokey;
+
+    // domyślnie nie zwracaj komunikatów (dodanie komunikatu następuje w obsłudze poleceń)
+    msg.clear();
+
+    // domyślny kolor komunikatów czerwony (bo takich komunikatów jest więcej)
+    msg_color = UCC_RED;
 
     // zwykłe komunikaty wyślij do aktywnego pokoju (no i analogicznie do aktywnego okna)
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
-        wattrset_color(active_window, use_colors, UCC_MAGENTA);
-        wprintw(active_window, "%s: %s\n", zuousername.c_str(), kbd_buf.c_str());
+        msg_color = UCC_MAGENTA;
+        msg = zuousername + ": " + kbd_buf;
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
 //            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_window);
 //        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_window);
@@ -32,15 +39,13 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
     {
-        wattrset_color(active_window, use_colors, UCC_RED);
-        wprintw(active_window, "* Polecenie błędne (sam znak / nie jest poleceniem)\n");
+        msg = "* Polecenie błędne (sam znak / nie jest poleceniem)";
         return;
     }
 
     else if(f_command_status == 2)
     {
-        wattrset_color(active_window, use_colors, UCC_RED);
-        wprintw(active_window, "* Polecenie błędne (po znaku / nie może być spacji)\n");
+        msg = "* Polecenie błędne (po znaku / nie może być spacji)";
         return;
     }
 
@@ -49,21 +54,18 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
     {
         if(! captcha_ok)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Najpierw wpisz /connect\n");
+            msg = "* Najpierw wpisz /connect";
             return;
         }
         find_arg(kbd_buf, captcha, arg_start, false);
         if(arg_start == 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Nie podano kodu, spróbuj jeszcze raz\n");
+            msg = "* Nie podano kodu, spróbuj jeszcze raz";
             return;
         }
         if(captcha.size() != 6)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Kod musi mieć 6 znaków, spróbuj jeszcze raz\n");
+            msg = "* Kod musi mieć 6 znaków, spróbuj jeszcze raz";
             return;
         }
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
@@ -71,28 +73,24 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
         http_status = http_3(cookies, captcha, err_code);
         if(http_status != 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd podczas wywoływania http_3(), kod błędu: %d\n", http_status);
+            msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status;
             return;
         }
         if(err_code == "FALSE")
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect\n");
+            msg = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";
             return;
         }
         // http_4()
         http_status = http_4(cookies, nick, zuousername, uokey, err_code);
         if(http_status != 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd podczas wywoływania http_4(), kod błędu: %d\n", http_status);
+            msg = "* Błąd podczas wywoływania http_4(), kod błędu: " + http_status;
             return;
         }
         if(err_code != "TRUE")
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd serwera (nieprawidłowy nick?): %s\n", err_code.c_str());
+            msg = "* Błąd serwera (nieprawidłowy nick?), kod błędu: " + err_code;
             return;
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
@@ -100,8 +98,7 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
 //        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_window);
         if(http_status != 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd podczas wywoływania socket_irc(), kod błędu: %d\n", http_status);
+            msg = "* Błąd podczas wywoływania socket_irc(), kod błędu: " + http_status;
             return;
         }
         return;
@@ -111,39 +108,40 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
     {
         if(nick.size() == 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect\n");
+            msg = "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
         }
         // http_1()
         http_status = http_1(cookies);
         if(http_status != 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd podczas wywoływania http_1(), kod błędu: %d\n", http_status);
+            msg = "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status;
             return;
         }
         // http_2()
         http_status = http_2(cookies);
         if(http_status != 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Błąd podczas wywoływania http_2(), kod błędu: %d\n", http_status);
+            msg = "* Błąd podczas wywoływania http_2(), kod błędu: " + http_status;
             return;
         }
-        wattrset_color(active_window, use_colors, UCC_GREEN);
-        wprintw(active_window, "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)\n");
-//        system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
-        captcha_ok = true;
+        msg_color = UCC_GREEN;
+        msg = "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)";
+        captcha_ok = true;      // kod wysłany
         return;
     }
 
     else if(f_command == "HELP")
     {
-        wattrset_color(active_window, use_colors, UCC_GREEN);
-        wprintw(active_window, "* Dostępne polecenia (w kolejności alfabetycznej):\n"
-                             "/captcha\n/connect\n/help\n/join\n/nick\n/quit\n");
-        // dopisać listę poleceń
+        msg_color = UCC_GREEN;
+        msg = "* Dostępne polecenia (w kolejności alfabetycznej):"
+              "\n/captcha"
+              "\n/connect"
+              "\n/help"
+              "\n/join"
+              "\n/nick"
+              "\n/quit";
+        // dopisać resztę poleceń
         return;
     }
 
@@ -159,13 +157,12 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
         find_arg(kbd_buf, nick, arg_start, false);
         if(arg_start == 0)
         {
-            wattrset_color(active_window, use_colors, UCC_RED);
-            wprintw(active_window, "* Nie podano nicka\n");
+            msg = "* Nie podano nicka";
             return;
         }
         // gdy nick wpisano, wyświetl go
-        wattrset_color(active_window, use_colors, UCC_GREEN);
-        wprintw(active_window, "* Nowy nick: %s\n", nick.c_str());
+        msg_color = UCC_GREEN;
+        msg = "* Nowy nick: " + nick;
         return;
     }
 
@@ -177,8 +174,7 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
 
     else
     {
-        wattrset_color(active_window, use_colors, UCC_RED);
-        wprintw(active_window, "/%s: nieznane polecenie\n", f_command_org.c_str());     // tutaj pokaż oryginalnie wpisane polecenie
+        msg = f_command_org + ": nieznane polecenie";       // tutaj pokaż oryginalnie wpisane polecenie
     }
 
 }
@@ -232,7 +228,7 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
 
 void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool lower2upper)
 {
-    // pobierz argument z bufora klawiatury od pozycji w arg_start
+    // pobierz argument z bufora klawiatury od pozycji w arg_start, jeśli go nie ma, w arg_start będzie 0
 
     int kbd_buf_length, f_arg_length;
     int arg_start_tmp;
