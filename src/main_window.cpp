@@ -212,8 +212,10 @@ int main_window(bool use_colors)
             {
                 if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
-                    // ustaw kursor w miejscu, gdzie był po ostatnim wypisaniu tekstu
-                    wmove(win_diag, cur_y, cur_x);
+                    // "wyczyść" pole wpisywanego tekstu (aby nie było widać zwłoki, np. podczas pobierania obrazka z kodem do przepisania)
+                    wmove(stdscr, term_y - 1, 1);   // ostatni parametr na 1, bo pomijamy znak >
+                    clrtoeol();
+                    wrefresh(stdscr);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
                     kbd_parser(kbd_buf, msg, msg_color, cookies, nick, zuousername, captcha_ok, irc_ok, socketfd_irc, ucc_quit);
                     // gdy kbd_parser() zwrócił jakąś wiadomość, pokaż ją

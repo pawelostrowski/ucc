@@ -1,21 +1,12 @@
-#include <string>           // std::string, find(), erase(), c_str(), size()
+#include <sstream>          // std::string, std::stringstream, find(), erase(), c_str(), size()
 #include "kbd_parser.hpp"
 #include "ucc_colors.hpp"
-#include "sockets.hpp"
 #include "auth.hpp"
 
 
 void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &cookies,
                 std::string &nick, std::string &zuousername, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
 {
-    int f_command_status;
-    int http_status;
-    size_t arg_start = 1;       // pozycja początkowa kolejnego argumentu
-    std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
-    std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
-    std::string f_arg;          // kolejne argumenty podane za poleceniem
-    std::string captcha, err_code, uokey;
-
     // domyślnie nie zwracaj komunikatów (dodanie komunikatu następuje w obsłudze poleceń)
     msg.clear();
 
@@ -32,6 +23,15 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 //        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_window);
         return;
     }
+
+    int f_command_status;
+    int http_status;
+    size_t arg_start = 1;       // pozycja początkowa kolejnego argumentu
+    std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
+    std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
+    std::string f_arg;          // kolejne argumenty podane za poleceniem
+    std::string captcha, err_code, uokey;
+    std::stringstream http_status_str;  // użyty pośrednio do zamiany int na std::string
 
     // gdy pierwszym znakiem był / wykonaj obsługę polecenia
     f_command_status = find_command(kbd_buf, f_command, f_command_org, arg_start);      // pobierz polecenie z bufora klawiatury
@@ -71,36 +71,40 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
         // http_3()
         http_status = http_3(cookies, captcha, err_code);
-        if(http_status != 0)
-        {
-            msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status;
-            return;
-        }
         if(err_code == "FALSE")
         {
             msg = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";
             return;
         }
-        // http_4()
-        http_status = http_4(cookies, nick, zuousername, uokey, err_code);
-        if(http_status != 0)
+        else if(http_status != 0)
         {
-            msg = "* Błąd podczas wywoływania http_4(), kod błędu: " + http_status;
+            http_status_str << http_status;
+            msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status_str.str();
             return;
         }
+        // http_4()
+        http_status = http_4(cookies, nick, zuousername, uokey, err_code);
         if(err_code != "TRUE")
         {
             msg = "* Błąd serwera (nieprawidłowy nick?), kod błędu: " + err_code;
             return;
         }
+        else if(http_status != 0)
+        {
+            http_status_str << http_status;
+            msg = "* Błąd podczas wywoływania http_4(), kod błędu: " + http_status_str.str();
+            return;
+        }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
         // socket_irc()
 //        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_window);
-        if(http_status != 0)
-        {
-            msg = "* Błąd podczas wywoływania socket_irc(), kod błędu: " + http_status;
-            return;
-        }
+//        if(http_status != 0)
+//        {
+//            msg = "* Błąd podczas wywoływania socket_irc(), kod błędu: " + http_status;
+//            return;
+//        }
+                    msg_color = UCC_BLUE;
+                    msg = "* OK";
         return;
     }
 
@@ -115,14 +119,16 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         http_status = http_1(cookies);
         if(http_status != 0)
         {
-            msg = "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status;
+            http_status_str << http_status;
+            "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status_str.str();
             return;
         }
         // http_2()
         http_status = http_2(cookies);
         if(http_status != 0)
         {
-            msg = "* Błąd podczas wywoływania http_2(), kod błędu: " + http_status;
+            http_status_str << http_status;
+            msg = "* Błąd podczas wywoływania http_2(), kod błędu: " + http_status_str.str();
             return;
         }
         msg_color = UCC_GREEN;
@@ -174,7 +180,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else
     {
-        msg = f_command_org + ": nieznane polecenie";       // tutaj pokaż oryginalnie wpisane polecenie
+        msg = "/" + f_command_org + ": nieznane polecenie";     // tutaj pokaż oryginalnie wpisane polecenie
     }
 
 }

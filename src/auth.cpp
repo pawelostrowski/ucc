@@ -249,10 +249,18 @@ int http_3(std::string &cookies, std::string &captcha, std::string &err_code)
     if(f_value_status != 0)
         return f_value_status;      // kod błedu, gdy nie udało się pobrać err_code (3 lub 4)
 
-    // oczekiwane wartości to TRUE lub FALSE, gdy nie ma żadnej z nich, zakończ z kodem błedu
+    // jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
+    if(err_code == "FALSE")
+        return 7;                   // kod błędu, gdy wpisany kod captcha był błędny
+
+    // brak TRUE oznacza błąd w odpowiedzi serwera
     if(err_code != "TRUE")
-        if(err_code != "FALSE")
-            return 7;               // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
+        return 8;                   // kod błędu, gdy mimo poprawnie wpisanego kodu captcha serwer nie zwrócił TRUE
+
+    // oczekiwane wartości to TRUE lub FALSE, gdy nie ma żadnej z nich, zakończ z kodem błedu
+//    if(err_code != "TRUE")
+//        if(err_code != "FALSE")
+//            return 7;               // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
 
 // TUTAJ DODAĆ, BY FALSE GENEROWAŁO BŁĄD!!!
 
@@ -286,7 +294,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
     // sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
     if(err_code != "TRUE")
-        return 8;                   // kod błedu, gdy nie udało się wysłać nicka (prawdopodobnie był błędny)
+        return 9;                   // kod błedu, gdy nie udało się wysłać nicka (prawdopodobnie był błędny)
 
     // pobierz uoKey
     f_value_status = find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey);
