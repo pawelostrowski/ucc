@@ -257,7 +257,6 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     // pobierz argument z bufora klawiatury od pozycji w arg_start, jeśli go nie ma, w arg_start będzie 0
 
     int kbd_buf_length, f_arg_length;
-    int arg_start_tmp;
     size_t arg_end;
 
     f_arg.clear();
@@ -265,23 +264,18 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     kbd_buf_length = kbd_buf.size();
 
     // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
-    arg_start_tmp = arg_start;  // size_t na int
-    if(arg_start_tmp >= kbd_buf_length)
+    if((int)arg_start >= kbd_buf_length)    // (int)arg_start konwertuje size_t na int
     {
         arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
     }
 
     // pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza nim)
-    while(kbd_buf[arg_start] == ' ' && arg_start_tmp < kbd_buf_length)
-    {
+    while(kbd_buf[arg_start] == ' ' && (int)arg_start < kbd_buf_length)
         ++arg_start;    // kolejny znak w buforze
-        arg_start_tmp = arg_start;  // size_t na int
-    }
 
     // jeśli po pominięciu spacji pozycja w arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
-    arg_start_tmp = arg_start;  // size_t na int
-    if(arg_start_tmp == kbd_buf_length)
+    if((int)arg_start == kbd_buf_length)
     {
         arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
