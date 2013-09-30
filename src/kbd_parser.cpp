@@ -252,8 +252,6 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
 
     size_t arg_end;
 
-    f_arg.clear();
-
     // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
     if(arg_start >= kbd_buf.size())
     {
