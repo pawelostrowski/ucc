@@ -33,7 +33,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     int f_command_status;
     int http_status;
-    size_t arg_start = 1;       // pozycja początkowa kolejnego argumentu
+    size_t pos_arg_start = 1;   // pozycja początkowa kolejnego argumentu
     std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
     std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
     std::string f_arg;          // kolejne argumenty podane za poleceniem
@@ -41,7 +41,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     std::stringstream http_status_str;  // użyty pośrednio do zamiany int na std::string
 
     // gdy pierwszym znakiem był / wykonaj obsługę polecenia
-    f_command_status = find_command(kbd_buf, f_command, f_command_org, arg_start);      // pobierz polecenie z bufora klawiatury
+    f_command_status = find_command(kbd_buf, f_command, f_command_org, pos_arg_start);      // pobierz polecenie z bufora klawiatury
 
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
@@ -64,8 +64,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Najpierw wpisz /connect";
             return;
         }
-        find_arg(kbd_buf, captcha, arg_start, false);
-        if(arg_start == 0)
+        find_arg(kbd_buf, captcha, pos_arg_start, false);
+        if(pos_arg_start == 0)
         {
             msg = "* Nie podano kodu, spróbuj jeszcze raz";
             return;
@@ -168,8 +168,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else if(f_command == "NICK")
     {
-        find_arg(kbd_buf, nick, arg_start, false);
-        if(arg_start == 0)
+        find_arg(kbd_buf, nick, pos_arg_start, false);
+        if(pos_arg_start == 0)
         {
             msg = "* Nie podano nicka";
             return;
@@ -206,7 +206,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 }
 
 
-int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_command_org, size_t &arg_start)
+int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_command_org, size_t &pos_arg_start)
 {
     // polecenie może się zakończyć spacją (polecenie z parametrem ) lub końcem bufora (polecenie bez parametru)
 
@@ -240,43 +240,43 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
     }
 
     // gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w find_arg() )
-    arg_start = pos_command_end;
+    pos_arg_start = pos_command_end;
 
     return 0;
 }
 
 
-void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool lower2upper)
+void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, bool lower2upper)
 {
-    // pobierz argument z bufora klawiatury od pozycji w arg_start, jeśli go nie ma, w arg_start będzie 0
+    // pobierz argument z bufora klawiatury od pozycji w pos_arg_start, jeśli go nie ma, w pos_arg_start będzie 0
 
-    size_t arg_end;
-
-    // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
-    if(arg_start >= kbd_buf.size())
+    // jeśli pozycja w pos_arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
+    if(pos_arg_start >= kbd_buf.size())
     {
-        arg_start = 0;      // 0 oznacza, że nie było argumentu
+        pos_arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
     }
 
     // pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza nim)
-    while(kbd_buf[arg_start] == ' ' && arg_start < kbd_buf.size())
-        ++arg_start;    // kolejny znak w buforze
+    while(kbd_buf[pos_arg_start] == ' ' && pos_arg_start < kbd_buf.size())
+        ++pos_arg_start;        // kolejny znak w buforze
 
-    // jeśli po pominięciu spacji pozycja w arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
-    if(arg_start == kbd_buf.size())
+    // jeśli po pominięciu spacji pozycja w pos_arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
+    if(pos_arg_start == kbd_buf.size())
     {
-        arg_start = 0;      // 0 oznacza, że nie było argumentu
+        pos_arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
     }
 
+    size_t pos_arg_end;
+
     // wykryj pozycję końca argumentu
-    arg_end = kbd_buf.find(" ", arg_start);     // wykryj, gdzie jest spacja za poleceniem lub poprzednim argumentem
-    if(arg_end == std::string::npos)
-        arg_end = kbd_buf.size();               // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
+    pos_arg_end = kbd_buf.find(" ", pos_arg_start);     // wykryj, gdzie jest spacja za poleceniem lub poprzednim argumentem
+    if(pos_arg_end == std::string::npos)
+        pos_arg_end = kbd_buf.size();           // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
 
     f_arg.clear();
-    f_arg.insert(0, kbd_buf, arg_start, arg_end - arg_start);   // wstaw szukany argument
+    f_arg.insert(0, kbd_buf, pos_arg_start, pos_arg_end - pos_arg_start);       // wstaw szukany argument
 
     // jeśli trzeba, zamień małe litery w argumencie na wielkie
     if(lower2upper)
@@ -289,5 +289,5 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
     }
 
     // wpisz nową pozycję początkową dla ewentualnego kolejnego argumentu
-    arg_start = arg_end;
+    pos_arg_start = pos_arg_end;
 }
