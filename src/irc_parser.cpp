@@ -6,7 +6,7 @@
 //#include "expression.hpp"
 
 
-int irc_parser(char *buffer_recv, int socketfd, WINDOW *active_room)
+int irc_parser(WINDOW *active_room, char *buffer_recv, int socketfd)
 {
 //            std::cout << "[-- Nowa ramka -->" << std::endl;
 

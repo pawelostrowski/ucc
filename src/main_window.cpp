@@ -11,16 +11,16 @@
 #include "socket_irc.hpp"
 
 
-int main_window()
+int main_window(bool use_colors)
 {
-    freopen("/dev/tty", "r", stdin);    // zapobiega wpisaniu w terminalu echo text | ucc
+    freopen("/dev/tty", "r", stdin);    // zapobiega zapętleniu się programu po wpisaniu w terminalu echo text | ucc
 
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
-    if(! initscr())    // inicjalizacja ncurses
+    // inicjalizacja ncurses
+    if(! initscr())
         return 1;
 
-    bool use_colors;
     bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     bool captcha_ok = false;    // stan wczytania captcha (jego pobranie z serwera)
     bool irc_ok = false;    // stan połączenia z czatem
@@ -35,21 +35,22 @@ int main_window()
     std::string cookies, nick, zuousername, room;
 //    char buffer_recv[1500];
 
-    socket_irc_init(socketfd_irc);   // inicjalizacja gniazda (socket) używanego w połączeniu IRC
+    // inicjalizacja gniazda (socket) używanego w połączeniu IRC
+    socket_irc_init(socketfd_irc);
 
-    fd_set readfds;         // deskryptor dla select()
+    fd_set readfds;                     // deskryptor dla select()
     fd_set readfds_tmp;
     FD_ZERO(&readfds);
-    FD_SET(0, &readfds);    // klawiatura
-//    FD_SET(socketfd_irc, &readfds); // gniazdo (socket)
-//        FD_CLR(socketfd_irc, &readfds);                     // PRZYJRZEĆ SIĘ TEMU ROZWIĄZANIU!!!
-
+    FD_SET(0, &readfds);                // klawiatura (stdin)
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
     noecho();               // nie pokazuj wprowadzanych danych (bo w tym celu będzie używany bufor)
 
-    use_colors = check_colors();    // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów
+    // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów,
+    // ale tylko, gdy uruchomiliśmy main_window() z use_colors = true, gdy terminal nie obsługuje kolorów, check_colors() zwróci false
+    if(use_colors)
+        use_colors = check_colors();
 
     // utwórz okno, w którym będą komunikaty serwera oraz inne (np. diagnostyczne)
     getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
@@ -58,7 +59,7 @@ int main_window()
     scrollok(win_diag, TRUE);       // włącz przewijanie w tym oknie
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
-    wattrset_color(use_colors, win_diag, 2);
+    wattrset_color(win_diag, use_colors, UCC_GREEN);
     mvwprintw(win_diag, 0, 0, "Ucieszony Chat Client\n"
                               "* Aby rozpocząć, wpisz:\n"
                               "/nick nazwa_nicka\n"
@@ -97,7 +98,7 @@ int main_window()
         }
 
         // paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-        wattrset_color(use_colors, stdscr, 8);
+        wattrset_color(stdscr, use_colors, UCC_BLUE_WHITE);
         wattron(stdscr, A_REVERSE);
         wmove(stdscr, 0, 0);
         for(int i = 0; i < term_x; i++)
@@ -119,7 +120,7 @@ int main_window()
     Koniec informacji tymczasowych
 */
 
-        // wypisz bufor w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
+        // wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
         wattrset(stdscr, A_NORMAL);     // tekst wypisywany z bufora ze zwykłymi atrybutami
         wmove(stdscr, term_y - 1, 0);   // przenieś kursor do początku ostatniego wiersza
         wprintw(stdscr, ">%s", kbd_buf.c_str());    // wypisz > oraz zawartość bufora
@@ -130,7 +131,7 @@ int main_window()
         wrefresh(stdscr);
 
         // czekaj na aktywność klawiatury lub gniazda (socket)
-        if(select(0 + socketfd_irc, &readfds_tmp, NULL, NULL, NULL) == -1)
+        if(select(socketfd_irc + 1, &readfds_tmp, NULL, NULL, NULL) == -1)
         {
             // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
             if(errno == EINTR)  // Interrupted system call (wywołany np. przez SIGWINCH)
@@ -221,6 +222,9 @@ int main_window()
                     kbd_buf.clear();
                     kbd_buf_pos = 0;
                     kbd_buf_max = 0;
+                    // po połączeniu do IRC dodaj do zestawu select() wartość socketfd_irc
+                    if(irc_ok)
+                        FD_SET(socketfd_irc, &readfds);     // gniazdo IRC (socket)
                 }
             }
 
@@ -252,6 +256,8 @@ int main_window()
 
                 ++is;
     }
+
+//        FD_CLR(socketfd_irc, &readfds);                     // PRZYJRZEĆ SIĘ TEMU ROZWIĄZANIU!!!
 
 //    if(socketfd_irc > 0)
 //        close(socketfd_irc);

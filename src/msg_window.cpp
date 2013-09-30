@@ -26,14 +26,15 @@ bool check_colors()
     init_pair(4, COLOR_BLUE, background_color);
     init_pair(5, COLOR_MAGENTA, background_color);
     init_pair(6, COLOR_CYAN, background_color);
-    init_pair(7, font_color, background_color);
-    init_pair(8, COLOR_BLUE, COLOR_WHITE);
+    init_pair(7, COLOR_WHITE, background_color);
+    init_pair(8, font_color, background_color);
+    init_pair(9, COLOR_BLUE, COLOR_WHITE);
 
     return true;
 }
 
 
-void wattrset_color(bool use_color, WINDOW *active_window, short color_p)
+void wattrset_color(WINDOW *active_window, bool use_color, short color_p)
 {
     if(use_color)
         wattrset(active_window, COLOR_PAIR(color_p));    // wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
@@ -42,7 +43,7 @@ void wattrset_color(bool use_color, WINDOW *active_window, short color_p)
 }
 
 
-void show_buffer_1(std::string data_buf, WINDOW *active_window)
+void show_buffer_1(WINDOW *active_window, std::string data_buf)
 {
     int data_buf_len = data_buf.size();
 
@@ -54,7 +55,7 @@ void show_buffer_1(std::string data_buf, WINDOW *active_window)
 }
 
 
-void show_buffer_2(char *data_buf, WINDOW *active_window)
+void show_buffer_2(WINDOW *active_window, char *data_buf)
 {
     int data_buf_len = strlen(data_buf);
 
