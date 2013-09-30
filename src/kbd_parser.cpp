@@ -9,11 +9,13 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
 {
     int f_command_status;
     int http_status;
-    size_t arg_start = 0;   // pozycja początkowa kolejnego argumentu
-    std::string f_command;  // znalezione polecenie w buforze klawiatury
+    size_t arg_start = 1;   // pozycja początkowa kolejnego argumentu
+    std::string f_command;  // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
+    std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
     std::string f_arg;      // kolejne argumenty podane za poleceniem
     std::string captcha, err_code, uokey;
 
+    // zwykłe komunikaty wyślij do aktywnego pokoju (no i analogicznie do aktywnego okna)
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
         wattrset_color(active_window, use_colors, UCC_MAGENTA);
@@ -24,27 +26,25 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
         return;
     }
 
-    else
-    {
-        f_command_status = find_command(kbd_buf, f_command, arg_start);    // gdy pierwszym znakiem był / wykonaj obsługę polecenia
-    }
+    // gdy pierwszym znakiem był / wykonaj obsługę polecenia
+    f_command_status = find_command(kbd_buf, f_command, f_command_org, arg_start);      // pobierz polecenie z bufora klawiatury
 
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
-    {
-        wattrset_color(active_window, use_colors, UCC_RED);
-        wprintw(active_window, "* Polecenie błędne (po znaku / nie może być spacji)\n");
-        return;
-    }
-
-    else if(f_command_status == 2)
     {
         wattrset_color(active_window, use_colors, UCC_RED);
         wprintw(active_window, "* Polecenie błędne (sam znak / nie jest poleceniem)\n");
         return;
     }
 
-    // wykonaj polecenie (o ile istnieje), poniższe polecenia wpisane są w kolejności alfabetycznej
+    else if(f_command_status == 2)
+    {
+        wattrset_color(active_window, use_colors, UCC_RED);
+        wprintw(active_window, "* Polecenie błędne (po znaku / nie może być spacji)\n");
+        return;
+    }
+
+    // wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej
     if(f_command == "CAPTCHA")
     {
         if(! captcha_ok)
@@ -178,33 +178,42 @@ void kbd_parser(WINDOW *active_window, bool use_colors, std::string &kbd_buf, st
     else
     {
         wattrset_color(active_window, use_colors, UCC_RED);
-        wprintw(active_window, "/%s: nieznane polecenie\n", f_command.c_str());
+        wprintw(active_window, "/%s: nieznane polecenie\n", f_command_org.c_str());     // tutaj pokaż oryginalnie wpisane polecenie
     }
 
 }
 
 
-int find_command(std::string &kbd_buf, std::string &f_command, size_t &arg_start)
+int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_command_org, size_t &arg_start)
 {
-    // polecenie może się zakończyć spacją (polecenie z parametrem lub parametrami) lub kodem "\n" (polecenie bez parametru)
+    // polecenie może się zakończyć spacją (polecenie z parametrem ) lub końcem bufora (polecenie bez parametru)
+
+    int kbd_buf_length;
+
+    kbd_buf_length = kbd_buf.size();   // pobierz rozmiar bufora klawiatury
+
+    // sprawdź, czy za poleceniem są jakieś znaki (sam znak / nie jest poleceniem)
+    if(kbd_buf_length <= 1)
+        return 1;
 
     // sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
     if(kbd_buf[1] == ' ')
-        return 1;
-    // sprawdź, czy za / wpisaliśmy inne znaki (nie może być "\n", bo sam znak / nie jest poleceniem)
-    else if(kbd_buf[1] == '\n')
         return 2;
 
     size_t pos_command_end;     // pozycja, gdzie się kończy polecenie
-    int f_command_length;
+    int f_command_length;       // długość polecenia
 
     // wykryj pozycję końca polecenia
-    pos_command_end = kbd_buf.find(" ");
-    if(pos_command_end == std::string::npos)    // jeśli nie było spacji, znajdź kod "\n"
-        pos_command_end = kbd_buf.find("\n");
+    pos_command_end = kbd_buf.find(" ");        // wykryj, gdzie jest spacja za poleceniem
+    if(pos_command_end == std::string::npos)
+        pos_command_end = kbd_buf_length;       // jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
 
     f_command.clear();
-    f_command.insert(0, kbd_buf, 1, pos_command_end - 1);      // wstaw szukane polecenie (- 1, pomijamy znak / )
+    f_command.insert(0, kbd_buf, 1, pos_command_end - 1);      // wstaw szukane polecenie (- 1, bo pomijamy znak / )
+
+    // znalezione polecenie zapisz w drugim buforze, który użyty zostanie, jeśli wpiszemy nieistniejące polecenie (pokazane będzie dokładnie tak,
+    // jak je wpisaliśmy, bez konwersji małych liter na wielkie)
+    f_command_org = f_command;
 
     // zamień małe litery w poleceniu na wielkie (łatwiej będzie je sprawdzać)
     f_command_length = f_command.size();
@@ -233,39 +242,43 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
 
     kbd_buf_length = kbd_buf.size();
 
-    // gdyby pozycja w arg_start była większa od rozmiaru bufora klawiatury, zakończ
+    // jeśli pozycja w arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
     arg_start_tmp = arg_start;
-    if(arg_start_tmp > kbd_buf_length)
+    if(arg_start_tmp >= kbd_buf_length)
     {
-        arg_start = 0;      // 0 oznacza, że nie było argumentu, bo pozycja była za daleko względem bufora
+        arg_start = 0;      // 0 oznacza, że nie było argumentu
         return;
     }
 
-    // pomiń spacje między poleceniem a argumentem lub między kolejnymi argumentami
+    // pomiń spacje pomiędzy poleceniem a argumentem lub między kolejnymi argumentami
     for(int i = arg_start; i < kbd_buf_length; ++i)
     {
-        if(kbd_buf[arg_start] == '\n')  // kod "\n" przerywa (oznacza, że nie było argumentu)
-        {
-            arg_start = 0;  // wpisanie zera oznacza, że nie ma więcej argumentów lub szukanego argumentu nie było (były same spacje)
-            return;
-        }
         if(kbd_buf[arg_start] != ' ')   // gdy to wszystkie spacje, przejdź dalej
             break;
+
         ++arg_start;
     }
 
     // wykryj pozycję końca argumentu
-    arg_end = kbd_buf.find(" ", arg_start);
-    if(arg_end == std::string::npos)        // jeśli nie było spacji za argumentem, znajdź kod "\n"
-        arg_end = kbd_buf.find("\n", arg_start);
+    arg_end = kbd_buf.find(" ", arg_start);     // wykryj, gdzie jest spacja za poleceniem lub poprzednim argumentem
+    if(arg_end == std::string::npos)
+        arg_end = kbd_buf_length;               // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
 
     f_arg.clear();
     f_arg.insert(0, kbd_buf, arg_start, arg_end - arg_start);   // wstaw szukany argument
 
+    f_arg_length = f_arg.size();    // pobierz rozmiar argumentu
+
+    // zerowy rozmiar znalezionej pozycji oznacza, że wpisaliśmy same spacje (od miejsca szukania), więc zakończ
+    if(f_arg_length == 0)
+    {
+        arg_start = 0;      // 0 oznacza, że nie było argumentu
+        return;
+    }
+
     // jeśli trzeba, zamień małe litery w argumencie na wielkie
     if(lower2upper)
     {
-        f_arg_length = f_arg.size();
         for(int i = 0; i < f_arg_length; ++i)
         {
             if(islower(f_arg[i]))
