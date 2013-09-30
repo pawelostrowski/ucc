@@ -166,6 +166,18 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Nie podano nicka";
             return;
         }
+        if(nick.size() < 3)
+        {
+            msg = "* Nick jest za krótki (minimalnie 3 znaki)";
+            nick.clear();   // nick jest nieprawidłowy, więc go usuń
+            return;
+        }
+        if(nick.size() > 32)
+        {
+            msg = "* Nick jest za długi (maksymalnie 32 znaki)";
+            nick.clear();   // nick jest nieprawidłowy, więc go usuń
+            return;
+        }
         // gdy nick wpisano, wyświetl go
         msg_color = UCC_GREEN;
         msg = "* Nowy nick: " + nick;
