@@ -74,6 +74,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         if(err_code == "FALSE")
         {
             msg = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";
+            captcha_ok = false;     // nie da się w ten sposób wysłać ponownie captcha (serwer tego nie akceptuje)
             return;
         }
         else if(http_status != 0)

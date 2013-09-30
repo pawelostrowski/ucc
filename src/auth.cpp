@@ -257,13 +257,6 @@ int http_3(std::string &cookies, std::string &captcha, std::string &err_code)
     if(err_code != "TRUE")
         return 8;                   // kod błędu, gdy mimo poprawnie wpisanego kodu captcha serwer nie zwrócił TRUE
 
-    // oczekiwane wartości to TRUE lub FALSE, gdy nie ma żadnej z nich, zakończ z kodem błedu
-//    if(err_code != "TRUE")
-//        if(err_code != "FALSE")
-//            return 7;               // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
-
-// TUTAJ DODAĆ, BY FALSE GENEROWAŁO BŁĄD!!!
-
     return 0;
 }
 
