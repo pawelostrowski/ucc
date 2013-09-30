@@ -2,11 +2,10 @@
 #define KBD_PARSER_HPP
 #define KBD_PARSER_HPP_NAME "kbd_parser"
 
-#include <ncursesw/ncurses.h>
-#include <sys/select.h>
+#include "msg_window.hpp"
 
-void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set &readfds, std::string kbd_buf, std::string &cookies,
-                std::string &nick, std::string &zuousername, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit);
+void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std::string &cookies, std::string &nick, std::string &zuousername,
+                std::string room, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit);
 
 int find_command(std::string kbd_buf, std::string &f_command, size_t &arg_start);
 

@@ -216,7 +216,7 @@ int main_window(bool use_colors)
                     wmove(win_diag, cur_y, cur_x);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
                     wattrset(win_diag, A_NORMAL);
-                    kbd_parser(win_diag, use_colors, socketfd_irc, readfds, kbd_buf, cookies, nick, zuousername, room, captcha_ok, irc_ok, ucc_quit);
+                    kbd_parser(win_diag, use_colors, kbd_buf, cookies, nick, zuousername, room, captcha_ok, irc_ok, socketfd_irc, ucc_quit);
                     getyx(win_diag, cur_y, cur_x);
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
@@ -251,6 +251,7 @@ int main_window(bool use_colors)
 
             wrefresh(win_diag);
             wrefresh(stdscr);
+
                 ++iy;
         }
 

@@ -4,8 +4,8 @@
 #include "auth.hpp"
 
 
-void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set &readfds, std::string kbd_buf, std::string &cookies,
-                std::string &nick, std::string &zuousername, std::string room, bool &captcha_ok, bool &irc_ok, bool &ucc_quit)
+void kbd_parser(WINDOW *active_window, bool use_colors, std::string kbd_buf, std::string &cookies, std::string &nick, std::string &zuousername,
+                std::string room, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
 {
     int f_command_status;
     int http_status;
@@ -16,13 +16,13 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
 
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
-        wattrset(active_room, COLOR_PAIR(5));
-        wprintw(active_room, "%s: %s", zuousername.c_str(), kbd_buf.c_str());
+        wattrset_color(active_window, use_colors, UCC_MAGENTA);
+        wprintw(active_window, "%s: %s", zuousername.c_str(), kbd_buf.c_str());
 //        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
-//            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_room);
+//            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_window);
         // usuń kod "\n" z końca bufora (zostanie on zastąpiony "\r\n" w poniższej funkcji)
         kbd_buf.erase(kbd_buf.size(), 1);
-//        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_room);
+//        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_window);
         return;
     }
 
@@ -34,21 +34,15 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
     {
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(1));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "* Polecenie błędne (po znaku / nie może być spacji)\n");
+        wattrset_color(active_window, use_colors, UCC_RED);
+        wprintw(active_window, "* Polecenie błędne (po znaku / nie może być spacji)\n");
         return;
     }
 
     else if(f_command_status == 2)
     {
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(1));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "* Polecenie błędne (sam znak / nie jest poleceniem)\n");
+        wattrset_color(active_window, use_colors, UCC_RED);
+        wprintw(active_window, "* Polecenie błędne (sam znak / nie jest poleceniem)\n");
         return;
     }
 
@@ -57,30 +51,21 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
     {
         if(! captcha_ok)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Najpierw wpisz /connect\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Najpierw wpisz /connect\n");
             return;
         }
         find_arg(kbd_buf, captcha, arg_start, false);
         if(arg_start == 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Nie podano kodu, spróbuj jeszcze raz\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Nie podano kodu, spróbuj jeszcze raz\n");
             return;
         }
         if(captcha.size() != 6)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Kod musi mieć 6 znaków, spróbuj jeszcze raz\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Kod musi mieć 6 znaków, spróbuj jeszcze raz\n");
             return;
         }
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
@@ -88,52 +73,37 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
         http_status = http_3(cookies, captcha, err_code);
         if(http_status != 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd podczas wywoływania http_3(), kod błędu: %d\n", http_status);
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd podczas wywoływania http_3(), kod błędu: %d\n", http_status);
             return;
         }
         if(err_code == "FALSE")
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect\n");
             return;
         }
         // http_4()
         http_status = http_4(cookies, nick, zuousername, uokey, err_code);
         if(http_status != 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd podczas wywoływania http_4(), kod błędu: %d\n", http_status);
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd podczas wywoływania http_4(), kod błędu: %d\n", http_status);
             return;
         }
         if(err_code != "TRUE")
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd serwera (nieprawidłowy nick?): %s\n", err_code.c_str());
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd serwera (nieprawidłowy nick?): %s\n", err_code.c_str());
             return;
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
         // socket_irc()
-//        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_room);
+//        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_window);
         if(http_status != 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd podczas wywoływania socket_irc(), kod błędu: %d\n", http_status);
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd podczas wywoływania socket_irc(), kod błędu: %d\n", http_status);
             return;
         }
         return;
@@ -143,40 +113,28 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
     {
         if(nick.size() == 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect\n");
             return;
         }
         // http_1()
         http_status = http_1(cookies);
         if(http_status != 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd podczas wywoływania http_1(), kod błędu: %d\n", http_status);
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd podczas wywoływania http_1(), kod błędu: %d\n", http_status);
             return;
         }
         // http_2()
         http_status = http_2(cookies);
         if(http_status != 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Błąd podczas wywoływania http_2(), kod błędu: %d\n", http_status);
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Błąd podczas wywoływania http_2(), kod błędu: %d\n", http_status);
             return;
         }
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(2));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)\n");
+        wattrset_color(active_window, use_colors, UCC_GREEN);
+        wprintw(active_window, "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)\n");
 //        system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
         captcha_ok = true;
         return;
@@ -184,11 +142,8 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
 
     else if(f_command == "HELP")
     {
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(2));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "* Dostępne polecenia (w kolejności alfabetycznej):\n"
+        wattrset_color(active_window, use_colors, UCC_GREEN);
+        wprintw(active_window, "* Dostępne polecenia (w kolejności alfabetycznej):\n"
                              "/captcha\n/connect\n/help\n/join\n/nick\n/quit\n");
         // dopisać listę poleceń
         return;
@@ -197,7 +152,7 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
     else if(f_command == "JOIN")
     {
         // tymczasowo!!!
-//        asyn_socket_send("JOIN #Computers", socketfd_irc, active_room);
+//        asyn_socket_send("JOIN #Computers", socketfd_irc, active_window);
         return;
     }
 
@@ -206,19 +161,13 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
         find_arg(kbd_buf, nick, arg_start, false);
         if(arg_start == 0)
         {
-            if(use_colors)
-                wattrset(active_room, COLOR_PAIR(1));
-            else
-                wattrset(active_room, A_NORMAL);
-            wprintw(active_room, "* Nie podano nicka\n");
+            wattrset_color(active_window, use_colors, UCC_RED);
+            wprintw(active_window, "* Nie podano nicka\n");
             return;
         }
         // gdy nick wpisano, wyświetl go
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(2));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "* Nowy nick: %s\n", nick.c_str());
+        wattrset_color(active_window, use_colors, UCC_GREEN);
+        wprintw(active_window, "* Nowy nick: %s\n", nick.c_str());
         return;
     }
 
@@ -230,11 +179,8 @@ void kbd_parser(WINDOW *active_room, bool use_colors, int &socketfd_irc, fd_set 
 
     else
     {
-        if(use_colors)
-            wattrset(active_room, COLOR_PAIR(1));
-        else
-            wattrset(active_room, A_NORMAL);
-        wprintw(active_room, "/%s: nieznane polecenie\n", f_command.c_str());
+        wattrset_color(active_window, use_colors, UCC_RED);
+        wprintw(active_window, "/%s: nieznane polecenie\n", f_command.c_str());
     }
 
 }
