@@ -13,6 +13,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // domyślny kolor komunikatów czerwony (bo takich komunikatów jest więcej)
     msg_color = UCC_RED;
 
+    // zapobiega wykonywaniu się reszty kodu, gdy w buforze nic nie ma
+    if(kbd_buf.size() == 0)
+    {
+        msg = "Błąd bufora klawiatury (bufor jest pusty)!";
+        return;
+    }
+
     // zwykłe komunikaty wyślij do aktywnego pokoju (no i analogicznie do aktywnego okna)
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
