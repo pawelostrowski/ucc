@@ -272,13 +272,11 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &arg_start, bool 
         return;
     }
 
-    // pomiń spacje pomiędzy poleceniem a argumentem lub między kolejnymi argumentami
-    for(int i = arg_start; i < kbd_buf_length; ++i)
+    // pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza nim)
+    while(kbd_buf[arg_start] == ' ' && arg_start_tmp < kbd_buf_length)
     {
-        if(kbd_buf[arg_start] != ' ')   // gdy to wszystkie spacje, przejdź dalej
-            break;
-
-        ++arg_start;
+        ++arg_start;    // kolejny znak w buforze
+        arg_start_tmp = arg_start;  // size_t na int
     }
 
     // jeśli po pominięciu spacji pozycja w arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
