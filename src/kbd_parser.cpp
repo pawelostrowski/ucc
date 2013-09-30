@@ -120,7 +120,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         if(http_status != 0)
         {
             http_status_str << http_status;
-            "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status_str.str();
+            msg = "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status_str.str();
             return;
         }
         // http_2()
@@ -178,7 +178,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             nick.clear();   // nick jest nieprawidłowy, więc go usuń
             return;
         }
-        // gdy nick wpisano, wyświetl go
+        // gdy wpisano nick (od 3 do 32 znaków), wyświetl go
         msg_color = UCC_GREEN;
         msg = "* Nowy nick: " + nick;
         return;
