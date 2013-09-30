@@ -1,15 +1,13 @@
 #include <cstring>      // memset(), strlen(), strstr()
 #include <sstream>      // std::stringstream, std::string
 #include "sockets.hpp"
-#include "auth_http.hpp"
-#include "auth_code.hpp"
-#include "expression.hpp"
+#include "auth.hpp"
+//#include "auth_code.hpp"
+//#include "expression.hpp"
 #include "irc_parser.hpp"
 #include "kbd_parser.hpp"
 
 #define STDIN 0         // deskryptor pliku dla standardowego wejścia
-
-//#include <iostream>     // docelowo pozbyć się stąd tej biblioteki, komunikaty będą wywoływane w innym miejscu
 
 
 void show_buffer_send(std::string data_send, WINDOW *active_room)
@@ -40,45 +38,13 @@ void show_buffer_recv(char *buffer_recv, WINDOW *active_room)
 }
 
 
-int asyn_socket_send(std::string data_send, int socketfd_irc, WINDOW *active_room)
-{
-//	int bytes_sent;
-
-    data_send += "\r\n";    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
-
-//    std::cout << "> " + data_send;
-
-    /*bytes_sent =*/ send(socketfd_irc, data_send.c_str(), strlen(data_send.c_str()), 0);
-
-    return 0;
-}
-
-int asyn_socket_recv(char *buffer_recv, int bytes_recv, int socketfd_irc)
-{
-    bytes_recv = recv(socketfd_irc, buffer_recv, 1500 - 1, 0);
-    if(bytes_recv == -1)
-    {
-//        close(socketfd_irc);
-        return bytes_recv;
-    }
-    if(bytes_recv == 0)
-    {
-//        close(socketfd_irc);
-        return 1;
-    }
-
-    buffer_recv[bytes_recv] = '\0';
-
-    return 0;
-}
-
-
 int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, WINDOW *active_room)
 {
 //    size_t first_line_char;
 //    bool connect_status = true;
 //    int socketfd;       // deskryptor gniazda (socket)
-    int bytes_recv = 0, f_value_status;
+//    int bytes_recv = 0;
+    int f_value_status;
     char buffer_recv[1500];
     std::string data_send, authkey, f_value, kbd_buf;
 
@@ -111,25 +77,25 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 */
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
+//    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: NICK <~nick>
-    asyn_socket_send("NICK " + zuousername, socketfd_irc, active_room);
+//    asyn_socket_send("NICK " + zuousername, socketfd_irc, active_room);
         show_buffer_send("NICK " + zuousername + "\n", active_room);
 
     // pobierz odpowiedź z serwera
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
+//    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
     // wyślij: AUTHKEY
-    asyn_socket_send("AUTHKEY", socketfd_irc, active_room);
+//    asyn_socket_send("AUTHKEY", socketfd_irc, active_room);
         show_buffer_send("AUTHKEY\n", active_room);
 
     // pobierz odpowiedź z serwera (AUTHKEY)
-    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
+//    asyn_socket_recv(buffer_recv, bytes_recv, socketfd_irc);
 //    std::cout << buffer_recv;
         show_buffer_recv(buffer_recv, active_room);
 
@@ -150,7 +116,7 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 //    authkey[16] = '\0';
 
     // konwersja AUTHKEY
-    if(! auth(authkey))
+    if(! auth_code(authkey))
         return 104;
 
     // char na string
@@ -160,14 +126,14 @@ int socket_irc(std::string &zuousername, std::string &uokey, int &socketfd_irc, 
 
 
     // wyślij: AUTHKEY <AUTHKEY>
-    asyn_socket_send("AUTHKEY " + authkey, socketfd_irc, active_room);
+//    asyn_socket_send("AUTHKEY " + authkey, socketfd_irc, active_room);
         show_buffer_send("AUTHKEY " + authkey + "\n", active_room);
 
 
 
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd_irc, active_room);
+//    asyn_socket_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername, socketfd_irc, active_room);
         show_buffer_send("USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\n", active_room);
 
 /*

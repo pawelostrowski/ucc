@@ -4,6 +4,7 @@
 #include <cstdlib>          // system()
 #include "auth.hpp"
 #include "socket_http.hpp"
+#include "socket_irc.hpp"
 
 
 bool auth_code(std::string &authkey)
@@ -95,9 +96,10 @@ void header_post(std::string cookies, std::string api_function, std::string &dat
     std::stringstream content_length;
 
     content_length.clear();
-    data_send.clear();
 
     content_length << api_function.size();      // wczytaj długość zapytania
+
+    data_send.clear();
 
     data_send = "POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
                 "Host: czat.onet.pl\r\n"
@@ -118,21 +120,25 @@ int find_cookies(char *buffer_recv, std::string &cookies)
     std::string cookie_tmp;
 
     // std::string(buffer_recv) zamienia C string na std::string
-    pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING);   // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+    pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
     if(pos_cookie_start == std::string::npos)
         return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
 
     do
     {
-        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);     // szukaj ";" od pozycji początku cookie
+        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);      // szukaj ";" od pozycji początku cookie
         if(pos_cookie_end == std::string::npos)
             return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
 
     cookie_tmp.clear();     // wyczyść bufor pomocniczy
-    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + strlen(COOKIE_STRING), pos_cookie_end - pos_cookie_start - strlen(COOKIE_STRING) + 1);   // skopiuj cookie
-                                                                                                                                                               //  do bufora pomocniczego
+
+    // skopiuj cookie do bufora pomocniczego
+    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + strlen(COOKIE_STRING), pos_cookie_end - pos_cookie_start - strlen(COOKIE_STRING) + 1);
+
     cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
+
     pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING, pos_cookie_start + strlen(COOKIE_STRING));     // znajdź kolejny cookie
+
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
     return 0;
@@ -147,13 +153,15 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
     if(pos_expr_before == std::string::npos)
         return 3;           // kod błędu, gdy nie znaleziono początku szukanego wyrażenia
 
-    pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());   // znajdź pozycję końca szukanego wyrażenia,
-                                                                                                        //  zaczynając od znalezionego początku + jego jego długości
+   // znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
+    pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());
     if(pos_expr_after == std::string::npos)
         return 4;           // kod błędu, gdy nie znaleziono końca szukanego wyrażenia
 
     f_value.clear();        // wyczyść bufor szukanej wartości
-    f_value.insert(0, std::string(buffer_recv), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());   // wstaw szukaną wartość
+
+    // wstaw szukaną wartość
+    f_value.insert(0, std::string(buffer_recv), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
 
     return 0;
 }
@@ -206,11 +214,12 @@ int http_2(std::string &cookies)
     // zapisz obrazek z captcha na dysku
     std::ofstream file_gif(FILE_GIF, std::ios::binary);
     if(file_gif == NULL)
-        return 6;           // kod błędu, gdy nie udało się zapisać pliku z obrazkiem
+        return 6;           // kod błędu, gdy nie udało się zapisać pliku z obrazkiem (np. przez brak dostępu)
 
-    file_gif.write(buffer_gif, &buffer_recv[offset_recv] - buffer_gif);     // &buffer_recv[offset_recv] - buffer_gif
-                                                                            //  <--- adres końca bufora - adres początku obrazka = rozmiar obrazka
-    file_gif.close();
+    // &buffer_recv[offset_recv] - buffer_gif  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
+    file_gif.write(buffer_gif, &buffer_recv[offset_recv] - buffer_gif);
+
+    file_gif.close();       // zamknij plik po zapisaniu
 
     // wyświetl obrazek z kodem do przepisania
     system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
@@ -219,14 +228,14 @@ int http_2(std::string &cookies)
 }
 
 
-int http_3(std::string &cookies, std::string captcha_code, std::string &err_code)
+int http_3(std::string cookies, std::string captcha, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
     std::string api_function, data_send;
 
-    api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha_code + "\";}";
+    api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}";
 
     header_post(cookies, api_function, data_send);
 
@@ -234,21 +243,24 @@ int http_3(std::string &cookies, std::string captcha_code, std::string &err_code
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
-    // sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE)
-    f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);    // szukaj wartości między wyrażeniami:
-                                                                                //  err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
+    // sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE),
+    // czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
+    f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);
     if(f_value_status != 0)
         return f_value_status;      // kod błedu, gdy nie udało się pobrać err_code (3 lub 4)
 
+    // oczekiwane wartości to TRUE lub FALSE, gdy nie ma żadnej z nich, zakończ z kodem błedu
     if(err_code != "TRUE")
         if(err_code != "FALSE")
             return 7;               // kod błedu, gdy serwer nie zwrócił wartości TRUE lub FALSE
+
+// TUTAJ DODAĆ, BY FALSE GENEROWAŁO BŁĄD!!!
 
     return 0;
 }
 
 
-int http_4(std::string &cookies, std::string &nick, std::string &zuousername, std::string &uokey, std::string &err_code)
+int http_4(std::string cookies, std::string nick, std::string &zuousername, std::string &uokey, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
@@ -274,7 +286,7 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
 
     // sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
     if(err_code != "TRUE")
-        return 0;                   // 0, bo to nie jest błąd programu
+        return 8;                   // kod błedu, gdy nie udało się wysłać nicka (prawdopodobnie był błędny)
 
     // pobierz uoKey
     f_value_status = find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey);
@@ -285,6 +297,14 @@ int http_4(std::string &cookies, std::string &nick, std::string &zuousername, st
     f_value_status = find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername);
     if(f_value_status != 0)
         return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (23 lub 24)
+
+    return 0;
+}
+
+
+int irc_auth(int socketfd_irc)
+{
+
 
     return 0;
 }

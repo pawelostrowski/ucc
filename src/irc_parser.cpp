@@ -3,13 +3,14 @@
 #include <unistd.h>     // close()
 #include "irc_parser.hpp"
 #include "sockets.hpp"
-#include "expression.hpp"
+//#include "expression.hpp"
 
 
 int irc_parser(char *buffer_recv, int socketfd, WINDOW *active_room)
 {
 //            std::cout << "[-- Nowa ramka -->" << std::endl;
 
+/*
     int bytes_recv = 0;
     std::string f_value, user_msg;
 
@@ -40,6 +41,7 @@ int irc_parser(char *buffer_recv, int socketfd, WINDOW *active_room)
     // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
 //    if(find_value(buffer_recv, "ERROR :", "\r\n", f_value) == 0)
 //        connect_status = false;     // zakończ, gdy odebrano błąd połączenia
+*/
 
     return 0;
 }

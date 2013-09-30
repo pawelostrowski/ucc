@@ -1,47 +1,23 @@
-//#include <cstring>      // strlen()
-#include <string>       // std::string, setlocale()
-#include <sys/select.h> // select()
-#include "ncursesw/ncurses.h"   // wersja ncurses ze wsparciem dla UTF-8
+#include <cstring>          // memset()
+#include <string>           // std::string, setlocale()
+#include <cerrno>           // errno
+#include <sys/select.h>     // select()
+#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
+#include <unistd.h>         // close() - socket
 #include "main_window.hpp"
+#include "msg_window.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
-#include "sockets.hpp"
-
-
-bool check_colors()
-{
-    if(has_colors() == FALSE)       // gdy nie da się używać kolorów, nie kończ programu, po prostu używaj czarno-białego terminala
-        return false;
-
-    if(start_color() == ERR)
-        return false;
-
-    short font_color = COLOR_WHITE;
-    short background_color = COLOR_BLACK;
-
-    if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
-    {
-        font_color = -1;
-        background_color = -1;
-    }
-
-    init_pair(1, COLOR_RED, background_color);
-    init_pair(2, COLOR_GREEN, background_color);
-    init_pair(3, COLOR_YELLOW, background_color);
-    init_pair(4, COLOR_BLUE, background_color);
-    init_pair(5, COLOR_MAGENTA, background_color);
-    init_pair(6, COLOR_CYAN, background_color);
-    init_pair(7, font_color, background_color);
-
-    return true;
-}
+#include "socket_irc.hpp"
 
 
 int main_window()
 {
+    freopen("/dev/tty", "r", stdin);    // zapobiega wpisaniu w terminalu echo text | ucc
+
     setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
-    if(! initscr())         // inicjalizacja ncurses
+    if(! initscr())    // inicjalizacja ncurses
         return 1;
 
     bool use_colors;
@@ -53,17 +29,20 @@ int main_window()
     int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek oraz Home i End)
     int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;           // kod ostatnio wciśniętego klawisza
-    int socketfd_irc = 3;   // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
+    int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
     std::string cookies, nick, zuousername, room;
-    char buffer_recv[1500];
+//    char buffer_recv[1500];
+
+    socket_irc_init(socketfd_irc);   // inicjalizacja gniazda (socket) używanego w połączeniu IRC
 
     fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
     FD_ZERO(&readfds);
     FD_SET(0, &readfds);    // klawiatura
-    FD_SET(socketfd_irc, &readfds); // gniazdo (socket)
+//    FD_SET(socketfd_irc, &readfds); // gniazdo (socket)
+//        FD_CLR(socketfd_irc, &readfds);                     // PRZYJRZEĆ SIĘ TEMU ROZWIĄZANIU!!!
 
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
@@ -79,44 +58,47 @@ int main_window()
     scrollok(win_diag, TRUE);       // włącz przewijanie w tym oknie
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
-    if(use_colors)
-        wattrset(win_diag, COLOR_PAIR(2));    // attrset() nadpisuje atrybuty, attron() dodaje atrybuty do istniejących
-    else
-        wattrset(win_diag, A_NORMAL);
-    wprintw(win_diag, "Ucieszony Chat Client\n"
-                      "* Aby rozpocząć, wpisz:\n"
-                      "/nick nazwa_nicka\n"
-                      "/connect\n"
-                      "* Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
-                      "/captcha kod_z_obrazka\n"
-                      "* Aby zobaczyć dostępne polecenia, wpisz:\n"
-                      "/help\n"
-                      "* Aby zakończyć działanie programu, wpisz:\n"
-                      "/quit\n");
+    wattrset_color(use_colors, win_diag, 2);
+    mvwprintw(win_diag, 0, 0, "Ucieszony Chat Client\n"
+                              "* Aby rozpocząć, wpisz:\n"
+                              "/nick nazwa_nicka\n"
+                              "/connect\n"
+                              "* Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
+                              "/captcha kod_z_obrazka\n"
+                              "* Aby zobaczyć dostępne polecenia, wpisz:\n"
+                              "/help\n"
+                              "* Aby zakończyć działanie programu, wpisz:\n"
+                              "/quit\n");
 
     wrefresh(stdscr);
     wrefresh(win_diag);
 
+    // zapamiętaj aktualną pozycję kursora w oknie diagnostycznym
     getyx(win_diag, cur_y, cur_x);
 
-            int ix = 0;
-    do
+/*
+    Tymczasowe wskaźniki pomocnicze, usunąć po testach
+*/
+    int is = 0, ix = 0, iy = 0;
+/*
+    Koniec wskaźników pomocniczych
+*/
+
+    while(! ucc_quit)
     {
         readfds_tmp = readfds;
 
-        getmaxyx(stdscr, term_y, term_x); // pobierz wymiary terminala (okna głównego)
-        wresize(stdscr, term_y, term_x);     // zmień wymiary okna głównego, gdy terminal zmieni romiar
-        wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
-
-        // tymczasowo wykasuj 3 od końca wiersz
-//        wmove(stdscr, term_y - 3, 0);
-//        wclrtoeol(stdscr);
+        // wykryj zmianę rozmiaru okna terminala
+        if(is_term_resized(term_y, term_x))
+        {
+            getmaxyx(stdscr, term_y, term_x);       // pobierz nowe wymiary terminala (okna głównego) po jego zmianie
+            wresize(stdscr, term_y, term_x);        // zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
+            wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
+        }
 
         // paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-        if(use_colors)
-            wattrset(stdscr, COLOR_PAIR(4) | A_REVERSE);
-        else
-            wattrset(stdscr, A_REVERSE);
+        wattrset_color(use_colors, stdscr, 8);
+        wattron(stdscr, A_REVERSE);
         wmove(stdscr, 0, 0);
         for(int i = 0; i < term_x; i++)
             wprintw(stdscr, " ");
@@ -125,31 +107,51 @@ int main_window()
             wprintw(stdscr, " ");
 
 
-                wattron(stdscr, COLOR_PAIR(7));
-                wmove(stdscr, 0, 0);
-                wprintw(stdscr, "socketfd_irc: %d", socketfd_irc);
+/*
+    Tymczasowo pokazuj informacje pomocnicze, usunąć po testach
+*/
+        wmove(stdscr, 0, 0);
+        wprintw(stdscr, "socketfd_irc: %d", socketfd_irc);
 
-                wmove(stdscr, term_y - 2, 0);
-                wprintw(stdscr, "ix: %d", ix);
-
+        wmove(stdscr, term_y - 2, 0);
+        wprintw(stdscr, "is: %d, ix: %d, iy: %d", is, ix, iy);
+/*
+    Koniec informacji tymczasowych
+*/
 
         // wypisz bufor w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
-        wattrset(stdscr, A_NORMAL);      // tekst wypisywany z bufora ze zwykłymi atrybutami
-        wmove(stdscr, term_y - 1, 0);    // przenieś kursor do ostatniego wiersza
-        wprintw(stdscr, ">%s", kbd_buf.c_str());     // wypisz > oraz zawartość bufora
-        wclrtoeol(stdscr);             // pozostałe znaki w wierszu wykasuj
-        wmove(stdscr, term_y - 1, kbd_buf_pos + 1);      // + 1, bo na początku jest znak >
+        wattrset(stdscr, A_NORMAL);     // tekst wypisywany z bufora ze zwykłymi atrybutami
+        wmove(stdscr, term_y - 1, 0);   // przenieś kursor do początku ostatniego wiersza
+        wprintw(stdscr, ">%s", kbd_buf.c_str());    // wypisz > oraz zawartość bufora
+        wclrtoeol(stdscr);              // pozostałe znaki w wierszu wykasuj
+        wmove(stdscr, term_y - 1, kbd_buf_pos + 1); // ustaw kursor za wpisywanym tekstem (+ 1, bo na początku jest znak > )
 
         wrefresh(win_diag);
         wrefresh(stdscr);
 
-        select(socketfd_irc + 1, &readfds_tmp, NULL, NULL, NULL);   // czekaj na aktywność klawiatury lub gniazda (socket)
+        // czekaj na aktywność klawiatury lub gniazda (socket)
+        if(select(0 + socketfd_irc, &readfds_tmp, NULL, NULL, NULL) == -1)
+        {
+            // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
+            if(errno == EINTR)  // Interrupted system call (wywołany np. przez SIGWINCH)
+            {
+                wrefresh(win_diag);
+                wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
+                getch();        // ignoruj KEY_RESIZE
+                continue;       // wróć do początku pętli while()
+            }
+            // inny błąd select() powoduje zakończenie działania programu
+            else
+            {
+                delwin(win_diag);
+                endwin();       // zakończ tryb ncurses
+                return 2;
+            }
+        }
 
+        // klawiatura
         if(FD_ISSET(0, &readfds_tmp))
         {
-            wrefresh(win_diag);
-            wrefresh(stdscr);      // odświeżenie w tym miejscu jest wymagane, gdy zmieniamy wymiary terminala
-
             key_code = getch();
 
             if(key_code == KEY_LEFT)                // Left Arrow
@@ -233,23 +235,26 @@ int main_window()
                 }
             }
 
+                ++ix;
         }
 
+        // gniazdo (socket)
         if(FD_ISSET(socketfd_irc, &readfds_tmp))
         {
-                ++ix;
 
-            irc_parser(buffer_recv, socketfd_irc, win_diag);
+//            irc_parser(buffer_recv, socketfd_irc, win_diag);
             getyx(win_diag, cur_y, cur_x);
 
             wrefresh(win_diag);
             wrefresh(stdscr);
+                ++iy;
         }
 
-    } while(! ucc_quit);
+                ++is;
+    }
 
-    if(socketfd_irc)
-        close(socketfd_irc);
+//    if(socketfd_irc > 0)
+//        close(socketfd_irc);
 
     delwin(win_diag);
     endwin();       // zakończ tryb ncurses
