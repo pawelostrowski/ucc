@@ -2,13 +2,11 @@
 #include <string>           // std::string, setlocale()
 #include <cerrno>           // errno
 #include <sys/select.h>     // select()
-#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
-#include <unistd.h>         // close() - socket
 #include "main_window.hpp"
-#include "ucc_colors.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
 #include "socket_irc.hpp"
+#include "ucc_colors.hpp"
 
 
 int main_window(bool use_colors)
@@ -23,27 +21,36 @@ int main_window(bool use_colors)
 
     bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     bool captcha_ok = false;    // stan wczytania captcha (jego pobranie z serwera)
+    bool irc_ready = false;     // gotowość do połączenia z czatem, po połączeniu jest ustawiany na false
     bool irc_ok = false;    // stan połączenia z czatem
+    bool room_ok = false;   // stan wejścia do pokoju (kanału)
+    bool send_irc = false;  // jeśli true, wartość odebrana z irc_parser() przeznaczona jest do wysłania do sieci IRC, w przeciwnym razie ma być wyświetlona na terminalu
     int term_y, term_x;     // wymiary terminala
     int cur_y, cur_x;       // aktualna pozycja kursora
     int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
     int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;           // kod ostatnio wciśniętego klawisza
-    int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
-    std::string msg;        // komunikat do wyświetlenia z kbd_parser() (opcjonalny)
+    std::string msg;        // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
     short msg_color;        // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
-    std::string cookies, nick, zuousername, room;
-//    char buffer_recv[1500];
+    std::string cookies, nick, zuousername, uokey, authkey, room, data_sent;
+    int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
+    char buffer_irc_recv[1500];
 
     // inicjalizacja gniazda (socket) używanego w połączeniu IRC
-    socket_irc_init(socketfd_irc);
+    struct sockaddr_in www;
+    if(socket_irc_init(socketfd_irc, www) != 0)
+    {
+        endwin();
+        return 3;
+    }
 
     fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
     FD_ZERO(&readfds);
     FD_SET(0, &readfds);    // klawiatura (stdin)
+//    FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
 
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
@@ -89,6 +96,12 @@ int main_window(bool use_colors)
 
     while(! ucc_quit)
     {
+        if(irc_ready)
+        {
+            FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
+            irc_ready = false;
+        }
+
         readfds_tmp = readfds;
 
         // wykryj zmianę rozmiaru okna terminala
@@ -146,9 +159,9 @@ int main_window(bool use_colors)
             // inny błąd select() powoduje zakończenie działania programu
             else
             {
-                delwin(win_diag);
-                endwin();       // zakończ tryb ncurses
-                return 2;
+//                delwin(win_diag);
+//                endwin();       // zakończ tryb ncurses
+//                return 2;
             }
         }
 
@@ -217,12 +230,84 @@ int main_window(bool use_colors)
                     clrtoeol();
                     wrefresh(stdscr);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie lub wyślij tekst do aktywnego pokoju)
-                    kbd_parser(kbd_buf, msg, msg_color, cookies, nick, zuousername, captcha_ok, irc_ok, socketfd_irc, ucc_quit);
-                    // gdy kbd_parser() zwrócił jakąś wiadomość, pokaż ją
-                    if(msg.size() != 0)
+                    kbd_parser(kbd_buf, msg, msg_color, cookies, nick, zuousername, uokey, captcha_ok, irc_ready, irc_ok, room, room_ok, send_irc, ucc_quit);
+                    // gdy kbd_parser() zwrócił jakąś wiadomość, pokaż ją (jeśli nie jest to polecenie)
+                    if(msg.size() != 0 && ! send_irc)   // docelowo usunąć to po &&, trzeba to rozwiązać inaczej
                     {
                         wattrset_color(win_diag, use_colors, msg_color);
                         mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                    }
+                    // sprawdź gotowość do połączenia z IRC
+                    if(irc_ready)
+                    {
+//                        irc_ready = false;      // nie próbuj ponownie się łączyć do IRC od zera, bo na tym etapie to nie powinno mieć miejsca
+                        socket_irc_connect(socketfd_irc, www, msg, msg_color, buffer_irc_recv);     // połącz z IRC
+                        // gdy podczas łączenia otrzymano jakiś komunikat, pokaż go
+                        if(msg.size() != 0)
+                        {
+                            wattrset_color(win_diag, use_colors, msg_color);
+                            mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                        }
+                        // gdy msg jest zerowy, uznaje się, że trzeba odczytać socket IRC (nie ma błędu w połączeniu)
+                        else
+                        {
+                            // pobierz pierwszą odpowiedż serwera po połączeniu
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            show_buffer_2(win_diag, buffer_irc_recv, use_colors);
+                            // wyślij: NICK <~nick>
+                            socket_irc_send(socketfd_irc, irc_ok, "NICK " + zuousername, data_sent);
+                            show_buffer_1(win_diag, data_sent, use_colors);
+                            // pobierz odpowiedź z serwera
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            show_buffer_2(win_diag, buffer_irc_recv, use_colors);
+                            // wyślij: AUTHKEY
+                            socket_irc_send(socketfd_irc, irc_ok, "AUTHKEY", data_sent);
+                            show_buffer_1(win_diag, data_sent, use_colors);
+                            // pobierz odpowiedź z serwera (AUTHKEY)
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            show_buffer_2(win_diag, buffer_irc_recv, use_colors);
+                            // wyszukaj AUTHKEY
+                            find_value(buffer_irc_recv, "801 " + zuousername + " :", "\r\n", authkey);  // dodać if
+                            // konwersja AUTHKEY
+                            auth_code(authkey);     // dodać if
+                            // wyślij: AUTHKEY <AUTHKEY>
+                            socket_irc_send(socketfd_irc, irc_ok, "AUTHKEY " + authkey, data_sent);
+                            show_buffer_1(win_diag, data_sent, use_colors);
+                            // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
+                            socket_irc_send(socketfd_irc, irc_ok, "USER * " + uokey + " czat-app.onet.pl :" + zuousername, data_sent);
+                            show_buffer_1(win_diag, data_sent, use_colors);
+                            // od tej pory można dodać socketfd_irc do zestawu select()
+                            irc_ok = true;
+                        }
+                        // po połączeniu do IRC dodaj do zestawu select() wartość socketfd_irc
+//                        if(irc_ok)
+//                        {
+//                        }
+                    }
+                    // sprawdź, czy trzeba wysłać polecenie
+                    else if(send_irc)
+                    {
+                        // wyślij tylko, gdy jest połączenie z IRC
+                        if(! irc_ok)
+                        {
+                            wattrset_color(win_diag, use_colors, UCC_RED);
+                            wprintw(win_diag, "Nie można wysłać polecenia przeznaczonego dla IRC, bo nie jesteś połączony\n");
+                        }
+                        else
+                        {
+                            socket_irc_send(socketfd_irc, irc_ok, msg, data_sent);
+//                            show_buffer_1(win_diag, data_sent, use_colors);
+                        }
+                    }
+                    // jeśli to nie polecenie, wyślij tekst do aktywnego pokoju
+                    else if(kbd_buf[0] != '/')
+                    {
+                        // tylko przy połączeniu z IRC oraz przy aktywnym pokoju
+                        if(irc_ok && room_ok)
+                        {
+                            socket_irc_send(socketfd_irc, irc_ok, "PRIVMSG " + room + " :" + kbd_buf, data_sent);
+//                            show_buffer_1(win_diag, data_sent, use_colors);
+                        }
                     }
                     // zachowaj pozycję kursora dla kolejnego komunikatu
                     getyx(win_diag, cur_y, cur_x);
@@ -230,15 +315,13 @@ int main_window(bool use_colors)
                     kbd_buf.clear();
                     kbd_buf_pos = 0;
                     kbd_buf_max = 0;
-                    // po połączeniu do IRC dodaj do zestawu select() wartość socketfd_irc
-                    if(irc_ok)
-                        FD_SET(socketfd_irc, &readfds);     // gniazdo IRC (socket)
+
                 }
             }
 
-            else if(key_code >= 32 && key_code <= 255)   // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
+            else if(key_code >= 32 && key_code <= 255)  // do bufora odczytanych znaków wpisuj tylko te z zakresu 32...255
             {
-                if(key_code != '\r')        // ignoruj kod '\r'
+                if(key_code != '\r')            // ignoruj kod '\r'
                 {
                     if(kbd_buf_max < 256)       // ogranicz pojemność bufora wejściowego
                     {
@@ -256,20 +339,43 @@ int main_window(bool use_colors)
         // gniazdo (socket)
         if(FD_ISSET(socketfd_irc, &readfds_tmp))
         {
+            // pobierz odpowiedź z serwera
+            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
 
-//            irc_parser(buffer_recv, socketfd_irc, win_diag);
+            // zinterpretuj odpowiedź
+            irc_parser(buffer_irc_recv, msg, msg_color, room, send_irc, irc_ok);
+
+            if(send_irc)
+            {
+                socket_irc_send(socketfd_irc, irc_ok, msg, data_sent);  // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
+//                show_buffer_1(win_diag, data_sent, use_colors);
+            }
+
+            else
+            {
+                if(msg.size() != 0)
+                {
+                    wattrset_color(win_diag, use_colors, msg_color);
+                    mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                }
+                else
+                {
+                    show_buffer_2(win_diag, buffer_irc_recv, use_colors);
+                }
+            }
+
+            // zachowaj pozycję kursora dla kolejnego komunikatu
             getyx(win_diag, cur_y, cur_x);
 
-            wrefresh(win_diag);
-            wrefresh(stdscr);
+            // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select()
+            if(! irc_ok)
+                FD_CLR(socketfd_irc, &readfds);
 
                 ++iy;
         }
 
                 ++is;
     }
-
-//        FD_CLR(socketfd_irc, &readfds);                     // PRZYJRZEĆ SIĘ TEMU ROZWIĄZANIU!!!
 
 //    if(socketfd_irc > 0)
 //        close(socketfd_irc);
@@ -312,34 +418,42 @@ bool check_colors()
 }
 
 
-void wattrset_color(WINDOW *active_window, bool use_color, short color_p)
+void wattrset_color(WINDOW *active_window, bool use_colors, short color_p)
 {
-    if(use_color)
+    if(use_colors)
         wattrset(active_window, COLOR_PAIR(color_p));    // wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
     else
         wattrset(active_window, A_NORMAL);
 }
 
 
-void show_buffer_1(WINDOW *active_window, std::string &data_buf)
+void show_buffer_1(WINDOW *active_window, std::string &data_buf, bool use_colors)
 {
-    int data_buf_len = data_buf.size();
+    wattrset_color(active_window, use_colors, UCC_YELLOW);
+    wattron(active_window, A_BOLD);
 
-    for(int i = 0; i < data_buf_len; ++i)
+    // pokaż > na początku
+//    data_buf.insert(0, "> ");
+
+    for(int i = 0; i < (int)data_buf.size(); ++i)
     {
         if(data_buf[i] != '\r')
             wprintw(active_window, "%c", data_buf[i]);
     }
+
+    wrefresh(active_window);
 }
 
 
-void show_buffer_2(WINDOW *active_window, char *data_buf)
+void show_buffer_2(WINDOW *active_window, char *data_buf, bool use_colors)
 {
-    int data_buf_len = strlen(data_buf);
+    wattrset_color(active_window, use_colors, UCC_WHITE);
 
-    for(int i = 0; i < data_buf_len; ++i)
+    for(int i = 0; i < (int)strlen(data_buf); ++i)
     {
         if(data_buf[i] != '\r')
             wprintw(active_window, "%c", data_buf[i]);
     }
+
+    wrefresh(active_window);
 }

@@ -1,11 +1,10 @@
 #include <sstream>          // std::string, std::stringstream, find(), erase(), c_str(), size()
 #include "kbd_parser.hpp"
 #include "ucc_colors.hpp"
-#include "auth.hpp"
 
 
-void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &cookies,
-                std::string &nick, std::string &zuousername, bool &captcha_ok, bool &irc_ok, int socketfd_irc, bool &ucc_quit)
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &cookies, std::string &nick, std::string &zuousername,
+                std::string &uokey, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &send_irc, bool &ucc_quit)
 {
     // domyślnie nie zwracaj komunikatów (dodanie komunikatu następuje w obsłudze poleceń)
     msg.clear();
@@ -20,15 +19,30 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         return;
     }
 
+    // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC (chodzi o polecenia, a nie o zwykłe komunikaty)
+    send_irc = false;
+
     // zwykłe komunikaty wyślij do aktywnego pokoju (no i analogicznie do aktywnego okna)
     if(kbd_buf[0] != '/')   // sprawdź, czy pierwszy znak to / (jest to znak, który oznacza, że wpisujemy polecenie)
     {
-        msg_color = UCC_MAGENTA;
-        msg = zuousername + ": " + kbd_buf;
-//        asyn_socket_send("PRIVMSG #scc :" + kbd_buf, socketfd);
-//            show_buffer_send("PRIVMSG #scc :" + kbd_buf, active_window);
-//        asyn_socket_send("PRIVMSG #Computers :" + kbd_buf, socketfd_irc, active_window);
-        return;
+        // jeśli nie ma połączenia z IRC, pokaż ostrzeżenie
+        if(! irc_ok)
+        {
+            msg = "* Nie jesteś zalogowany";
+            return;
+        }
+        // j/w ale dotyczy pokoju
+        else if(! room_ok)
+        {
+            msg = "* Nie jesteś w żadnym aktywnym pokoju";
+            return;
+        }
+        else
+        {
+            msg_color = UCC_MAGENTA;
+            msg = zuousername + ": " + kbd_buf;
+            return;
+        }
     }
 
     int f_command_status;
@@ -37,7 +51,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
     std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
     std::string f_arg;          // kolejne argumenty podane za poleceniem
-    std::string captcha, err_code, uokey;
+    std::string captcha, err_code;
     std::stringstream http_status_str;  // użyty pośrednio do zamiany int na std::string
 
     // gdy pierwszym znakiem był / wykonaj obsługę polecenia
@@ -104,15 +118,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             return;
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
-        // socket_irc()
-//        http_status = socket_irc(zuousername, uokey, socketfd_irc, active_window);
-//        if(http_status != 0)
-//        {
-//            msg = "* Błąd podczas wywoływania socket_irc(), kod błędu: " + http_status;
-//            return;
-//        }
-                    msg_color = UCC_BLUE;
-                    msg = "* OK";
+        irc_ready = true;       // gotowość do połączenia z IRC
         return;
     }
 
@@ -161,8 +167,16 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else if(f_command == "JOIN")
     {
-        // tymczasowo!!!
-//        asyn_socket_send("JOIN #Computers", socketfd_irc, active_window);
+        find_arg(kbd_buf, room, pos_arg_start, false);
+        if(pos_arg_start == 0)
+        {
+            msg = "* Nie podano pokoju";
+            return;
+        }
+        // gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
+        send_irc = true;
+        room_ok = true;     // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
+        msg = "JOIN " + room;
         return;
     }
 
@@ -194,6 +208,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else if(f_command == "QUIT")
     {
+        send_irc = true;    // polecenie do IRC
+        msg = "QUIT";
         ucc_quit = true;
         return;
     }

@@ -1,47 +1,39 @@
-//#include <iostream>     // std::cerr, std::endl
 #include <string>       // std::string
 #include <unistd.h>     // close()
 #include "irc_parser.hpp"
-//#include "sockets.hpp"
-//#include "expression.hpp"
+#include "auth.hpp"
+#include "ucc_colors.hpp"
 
 
-int irc_parser(WINDOW *active_room, char *buffer_recv, int socketfd)
+void irc_parser(char *buffer_irc_recv, std::string &msg, short &msg_color, std::string &room, bool &send_irc, bool &irc_ok)
 {
-//            std::cout << "[-- Nowa ramka -->" << std::endl;
+    std::string f_value;
 
-/*
-    int bytes_recv = 0;
-    std::string f_value, user_msg;
+    // zacznij od wyzerowania bufora powrotnego
+    msg.clear();
 
-    // gdy gniazdo "zgłosi" dane do pobrania, pobierz te dane
-    if(asyn_socket_recv(buffer_recv, bytes_recv, socketfd) != 0)
-    {
-        close(socketfd);
-//        std::cerr << "Połączenie zerwane lub problem z siecią!" << std::endl;
-        return 1;
-    }
+    // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC
+    send_irc = false;
 
     // odpowiedz na PING
-    if(find_value(buffer_recv, "PING :", "\r\n", f_value) == 0)
-        asyn_socket_send("PONG :" + f_value, socketfd, active_room);
-
-    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać w komunikat usera
-    else if(find_value(buffer_recv, "PRIVMSG #Computers :", "\r\n", user_msg) == 0)
+    if(find_value(buffer_irc_recv, "PING :", "\r\n", f_value) == 0)
     {
-        find_value(buffer_recv, ":", "!", f_value);
-//        std::cout << "* " + f_value + ": " + user_msg << std::endl;
-            show_buffer_send(f_value + ": " + user_msg + "\n", active_room);
+        send_irc = true;    // wiadomość do odesłania na IRC
+        msg = "PONG :" + f_value;
+        return;
     }
 
-    else
-//        std::cout << buffer_recv;
-            show_buffer_recv(buffer_recv, active_room);
+    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać w komunikat usera
+    else if(find_value(buffer_irc_recv, "PRIVMSG " + room + " :", "\r\n", f_value) == 0)
+    {
+        std::string nick_on_irc;
+        find_value(buffer_irc_recv, ":", "!", nick_on_irc);
+        msg_color = UCC_YELLOW;
+        msg = nick_on_irc + ": " + f_value;
+        return;
+    }
 
-    // wykryj, gdy serwer odpowie ERROR, wtedy zakończ
-//    if(find_value(buffer_recv, "ERROR :", "\r\n", f_value) == 0)
-//        connect_status = false;     // zakończ, gdy odebrano błąd połączenia
-*/
-
-    return 0;
+    // wykryj, gdy serwer odpowie ERROR
+    if(find_value(buffer_irc_recv, "ERROR :", "\r\n", f_value) == 0)
+        irc_ok = false;
 }
