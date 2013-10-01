@@ -15,7 +15,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // zapobiega wykonywaniu się reszty kodu, gdy w buforze nic nie ma
     if(kbd_buf.size() == 0)
     {
-        msg = "Błąd bufora klawiatury (bufor jest pusty)!";
+        msg = "* Błąd bufora klawiatury (bufor jest pusty)!";
         return;
     }
 
@@ -28,7 +28,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // jeśli nie ma połączenia z IRC, pokaż ostrzeżenie
         if(! irc_ok)
         {
-            msg = "* Nie jesteś zalogowany";
+            msg = "* Aby wysłać wiadomość do IRC, musisz się zalogować";
             return;
         }
         // j/w ale dotyczy pokoju
@@ -160,7 +160,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
               "\n/help"
               "\n/join"
               "\n/nick"
-              "\n/quit";
+              "\n/quit"
+              "\n/raw";
         // dopisać resztę poleceń
         return;
     }
@@ -212,6 +213,17 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         msg = "QUIT";
         ucc_quit = true;
         return;
+    }
+
+    else if(f_command == "RAW")
+    {
+        if(! insert_rest(kbd_buf, pos_arg_start, msg))
+        {
+            msg = "* Nie podano parametrów";
+            return;
+        }
+        // gdy podano parametry dla /raw, ustaw wysłanie do IRC, a parametry będą w msg
+        send_irc = true;    // polecenie do IRC
     }
 
     else
@@ -306,4 +318,28 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
 
     // wpisz nową pozycję początkową dla ewentualnego kolejnego argumentu
     pos_arg_start = pos_arg_end;
+}
+
+
+bool insert_rest(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest)
+{
+    // pobierz resztę bufora od pozycji w pos_arg_start
+
+    // jeśli pozycja w pos_arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
+    if(pos_arg_start >= kbd_buf.size())
+        return false;
+
+    // znajdź miejsce, od którego zaczynają się znaki różne od spacji
+    while(kbd_buf[pos_arg_start] == ' ' && pos_arg_start < kbd_buf.size())
+        ++pos_arg_start;
+
+    // jeśli po pominięciu spacji pozycja w pos_arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
+    if(pos_arg_start == kbd_buf.size())
+        return false;
+
+    // wstaw pozostałą część bufora
+    f_rest.clear();
+    f_rest.insert(0, kbd_buf, pos_arg_start, kbd_buf.size() - pos_arg_start);
+
+    return true;
 }

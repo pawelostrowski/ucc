@@ -288,7 +288,7 @@ int main_window(bool use_colors)
                         if(! irc_ok)
                         {
                             wattrset_color(win_diag, use_colors, UCC_RED);
-                            wprintw(win_diag, "Nie można wysłać polecenia przeznaczonego dla IRC, bo nie jesteś połączony\n");
+                            wprintw(win_diag, "* Aby wysłać polecenie przeznaczone dla IRC, musisz się zalogować\n");
                         }
                         else
                         {
