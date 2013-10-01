@@ -31,12 +31,14 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Aby wysłać wiadomość do IRC, musisz się zalogować";
             return;
         }
+
         // j/w ale dotyczy pokoju
         else if(! room_ok)
         {
             msg = "* Nie jesteś w żadnym aktywnym pokoju";
             return;
         }
+
         else
         {
             msg_color = UCC_MAGENTA;
@@ -119,7 +121,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
         irc_ready = true;       // gotowość do połączenia z IRC
-        return;
     }
 
     else if(f_command == "CONNECT")
@@ -148,7 +149,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         msg_color = UCC_GREEN;
         msg = "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)";
         captcha_ok = true;      // kod wysłany
-        return;
     }
 
     else if(f_command == "HELP")
@@ -163,7 +163,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
               "\n/quit"
               "\n/raw";
         // dopisać resztę poleceń
-        return;
     }
 
     else if(f_command == "JOIN")
@@ -178,7 +177,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         send_irc = true;
         room_ok = true;     // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
         msg = "JOIN " + room;
-        return;
     }
 
     else if(f_command == "NICK")
@@ -204,15 +202,22 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // gdy wpisano nick (od 3 do 32 znaków), wyświetl go
         msg_color = UCC_GREEN;
         msg = "* Nowy nick: " + nick;
-        return;
     }
 
     else if(f_command == "QUIT")
     {
+        // jeśli podano argument (tekst pożegnalny), wstaw go
+        if(insert_rest(kbd_buf, pos_arg_start, msg))
+        {
+            msg.insert(0, "QUIT :");    // a przed nim dodaj polecenie
+        }
+        // jeśli nie podano argumentu, wyślij samo polecenie
+        else
+        {
+            msg = "QUIT";
+        }
         send_irc = true;    // polecenie do IRC
-        msg = "QUIT";
-        ucc_quit = true;
-        return;
+        ucc_quit = true;    // zamknięcie programu po wysłaniu polecenia do IRC
     }
 
     else if(f_command == "RAW")
@@ -222,8 +227,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Nie podano parametrów";
             return;
         }
-        // gdy podano parametry dla /raw, ustaw wysłanie do IRC, a parametry będą w msg
-        send_irc = true;    // polecenie do IRC
+        send_irc = true;    // polecenie do IRC (w msg)
     }
 
     else
