@@ -16,8 +16,6 @@ int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www)
     if(socketfd_irc == -1)
         return 42;
 
-//    fcntl(socketfd_irc, F_SETFL, O_ASYNC);      // asynchroniczne gniazdo (socket)
-
     www.sin_family = AF_INET;
     www.sin_port = htons(5015);
     www.sin_addr = *((struct in_addr *)he->h_addr);
@@ -48,7 +46,8 @@ int socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string data_send, std:
 {
 //	int bytes_sent;
 
-    data_send += "\r\n";    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+    data_send += "\r\n";
 
 //    std::cout << "> " + data_send;
 

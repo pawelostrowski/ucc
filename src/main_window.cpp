@@ -89,7 +89,7 @@ int main_window(bool use_colors)
 /*
     Tymczasowe wskaźniki pomocnicze, usunąć po testach
 */
-    int is = 0, ix = 0, iy = 0;
+    int ix = 0, iy = 0;
 /*
     Koniec wskaźników pomocniczych
 */
@@ -126,11 +126,8 @@ int main_window(bool use_colors)
 /*
     Tymczasowo pokazuj informacje pomocnicze, usunąć po testach
 */
-        wmove(stdscr, 0, 0);
-        wprintw(stdscr, "socketfd_irc: %d", socketfd_irc);
-
         wmove(stdscr, term_y - 2, 0);
-        wprintw(stdscr, "is: %d, ix: %d, iy: %d", is, ix, iy);
+        wprintw(stdscr, "sum: %d, kbd: %d, irc: %d", ix + iy, ix, iy);
 /*
     Koniec informacji tymczasowych
 */
@@ -159,9 +156,9 @@ int main_window(bool use_colors)
             // inny błąd select() powoduje zakończenie działania programu
             else
             {
-//                delwin(win_diag);
-//                endwin();       // zakończ tryb ncurses
-//                return 2;
+                delwin(win_diag);
+                endwin();       // zakończ tryb ncurses
+                return 2;
             }
         }
 
@@ -334,7 +331,8 @@ int main_window(bool use_colors)
             }
 
                 ++ix;
-        }
+
+        }   // if(FD_ISSET(0, &readfds_tmp))
 
         // gniazdo (socket)
         if(FD_ISSET(socketfd_irc, &readfds_tmp))
@@ -372,10 +370,10 @@ int main_window(bool use_colors)
                 FD_CLR(socketfd_irc, &readfds);
 
                 ++iy;
-        }
 
-                ++is;
-    }
+        }   // if(FD_ISSET(socketfd_irc, &readfds_tmp))
+
+    }   // while(! ucc_quit)
 
 //    if(socketfd_irc > 0)
 //        close(socketfd_irc);
