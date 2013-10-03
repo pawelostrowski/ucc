@@ -168,7 +168,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
               "\n/me"
               "\n/nick"
               "\n/quit"
-              "\n/raw";
+              "\n/raw"
+              "\n/whois";
         // dopisać resztę poleceń
     }
 
@@ -286,6 +287,27 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             }
             // polecenie do IRC
             msg_irc = r_args;
+        }
+        // jeśli nie połączono z IRC, pokaż ostrzeżenie
+        else
+        {
+            msg_connect_irc(msg);
+        }
+    }
+
+    else if(f_command == "WHOIS")
+    {
+        // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+        if(irc_ok)
+        {
+            find_arg(kbd_buf, f_arg, pos_arg_start, false);
+            if(pos_arg_start == 0)
+            {
+                msg = "* Nie podano nicka do sprawdzenia";
+                return;
+            }
+        // polecenie do IRC
+        msg_irc = "WHOIS " + f_arg + " " + f_arg;   // 2x nick, aby pokazało idle
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else
