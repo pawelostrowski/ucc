@@ -375,11 +375,12 @@ int main_window(bool use_colors)
             // zachowaj pozycję kursora dla kolejnego komunikatu
             getyx(win_diag, cur_y, cur_x);
 
-            // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select()
+            // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select() oraz ustaw z powrotem nick w pasku wpisywania na Niezalogowany
             if(! irc_ok)
             {
                 FD_CLR(socketfd_irc, &readfds);
                 close(socketfd_irc);
+                zuousername = "Niezalogowany";
             }
 
                 ++iy;
