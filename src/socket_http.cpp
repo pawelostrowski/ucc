@@ -17,7 +17,7 @@ int socket_http(std::string host, std::string &data_send, char *buffer_recv, lon
 
     memset(&host_info, 0, sizeof(host_info));
 
-    host_info.ai_family = AF_UNSPEC;        // wersja IP niesprecyzowana (można ją określić)
+    host_info.ai_family = AF_INET;          // wersja IP IPv4
     host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
 
     // zapis przykładowo host.c_str() oznacza, że string zostaje zamieniony na const char
