@@ -157,12 +157,37 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         captcha_ok = true;      // kod wysłany
     }
 
+    else if(f_command == "DISCONNECT")
+    {
+        // jeśli nie ma połączenia z IRC, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
+        if(! irc_ok)
+        {
+            msg = "* Nie jesteś zalogowany";
+            return;
+        }
+        // przygotuj polecenie do wysłania do IRC
+        else
+        {
+            // jeśli podano argument (tekst pożegnalny), wstaw go
+            if(rest_args(kbd_buf, pos_arg_start, r_args))
+            {
+                msg_irc = "QUIT :" + r_args;    // wstaw polecenie przed komunikatem pożegnalnym
+            }
+            // jeśli nie podano argumentu, wyślij samo polecenie
+            else
+            {
+                msg_irc = "QUIT";
+            }
+        }
+    }
+
     else if(f_command == "HELP")
     {
         msg_color = UCC_GREEN;
         msg = "* Dostępne polecenia (w kolejności alfabetycznej):"
               "\n/captcha"
               "\n/connect"
+              "\n/disconnect"
               "\n/help"
               "\n/join"
               "\n/me"

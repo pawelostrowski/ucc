@@ -24,7 +24,7 @@ void irc_parser(std::string buffer_irc, std::string &msg, short &msg_color, std:
         return;
     }
 
-    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać w komunikat usera
+    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
     else if(find_value(strdup(buffer_irc.c_str()), "PRIVMSG " + room + " :", "\r\n", f_value) == 0)
     {
         std::string nick_on_irc;

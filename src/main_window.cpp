@@ -40,18 +40,12 @@ int main_window(bool use_colors)
     std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
     std::string zuousername = "Niezalogowany";
     std::string cookies, nick, uokey, authkey, room, data_sent;
-    int socketfd_irc;           // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
+    int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
     char buffer_irc_recv[1500];
 
     std::string buffer_irc;
 
-    // inicjalizacja gniazda (socket) używanego w połączeniu IRC
     struct sockaddr_in www;
-    if(socket_irc_init(socketfd_irc, www) != 0)     // PRZENIEŚĆ W MIEJSCE URUCHAMIANIA POŁĄCZENIA Z IRC
-    {
-        endwin();
-        return 3;
-    }
 
     fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
@@ -100,13 +94,16 @@ int main_window(bool use_colors)
     Koniec wskaźników pomocniczych
 */
 
+    // pętla główna programu
     while(! ucc_quit)
     {
+/*
         if(irc_ready)
         {
             FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
             irc_ready = false;
         }
+*/
 
         readfds_tmp = readfds;
 
@@ -134,6 +131,9 @@ int main_window(bool use_colors)
 */
         wmove(stdscr, term_y - 2, 0);
         wprintw(stdscr, "sum: %d, kbd: %d, irc: %d", ix + iy, ix, iy);
+
+        wmove(stdscr, 0, 0);
+        wprintw(stdscr, "socketfd_irc: %d", socketfd_irc);
 /*
     Koniec informacji tymczasowych
 */
@@ -268,8 +268,16 @@ int main_window(bool use_colors)
                     // sprawdź gotowość do połączenia z IRC
                     if(irc_ready)
                     {
-//                        irc_ready = false;      // nie próbuj ponownie się łączyć do IRC od zera, bo na tym etapie to nie powinno mieć miejsca
-                        socket_irc_connect(socketfd_irc, www, msg, msg_color, buffer_irc_recv);     // połącz z IRC
+                        irc_ready = false;      // po połączeniu nie próbuj się znowu łączyć do IRC od zera
+                        // inicjalizacja gniazda (socket) używanego w połączeniu IRC
+                        if(socket_irc_init(socketfd_irc, www) != 0)
+                        {
+                            delwin(win_diag);
+                            endwin();
+                            return 3;
+                        }
+                        // połącz z IRC
+                        socket_irc_connect(socketfd_irc, www, msg, msg_color, buffer_irc_recv);
                         // gdy podczas łączenia otrzymano jakiś komunikat, pokaż go
                         if(msg.size() != 0)
                         {
@@ -306,11 +314,8 @@ int main_window(bool use_colors)
                             display_buffer(win_diag, use_colors, UCC_YELLOW, data_sent);
                             // od tej pory można dodać socketfd_irc do zestawu select()
                             irc_ok = true;
+                            FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
                         }
-                        // po połączeniu do IRC dodaj do zestawu select() wartość socketfd_irc
-//                        if(irc_ok)
-//                        {
-//                        }
                     }
 
                     // zachowaj pozycję kursora dla kolejnego komunikatu
@@ -345,7 +350,7 @@ int main_window(bool use_colors)
         }   // if(FD_ISSET(0, &readfds_tmp))
 
         // gniazdo (socket)
-        if(FD_ISSET(socketfd_irc, &readfds_tmp))
+        else if(FD_ISSET(socketfd_irc, &readfds_tmp))
         {
             // pobierz odpowiedź z serwera
             socket_irc_recv(socketfd_irc, irc_ok, buffer_irc);
@@ -374,22 +379,23 @@ int main_window(bool use_colors)
             // zachowaj pozycję kursora dla kolejnego komunikatu
             getyx(win_diag, cur_y, cur_x);
 
-            // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select() oraz ustaw z powrotem nick w pasku wpisywania na Niezalogowany
+            // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select(), wyzeruj socket oraz ustaw z powrotem nick w pasku wpisywania na Niezalogowany
             if(! irc_ok)
             {
                 FD_CLR(socketfd_irc, &readfds);
                 close(socketfd_irc);
+                socketfd_irc = 0;
                 zuousername = "Niezalogowany";
             }
 
                 ++iy;
 
-        }   // if(FD_ISSET(socketfd_irc, &readfds_tmp))
+        }   // else if(FD_ISSET(socketfd_irc, &readfds_tmp))
 
     }   // while(! ucc_quit)
 
-//    if(socketfd_irc > 0)
-//        close(socketfd_irc);
+    if(socketfd_irc > 0)
+        close(socketfd_irc);
 
     delwin(win_diag);
     endwin();           // zakończ tryb ncurses
