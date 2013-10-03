@@ -3,22 +3,23 @@
 #include "ucc_colors.hpp"
 
 
-void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &nick, std::string &zuousername, std::string &cookies,
-                std::string &uokey, bool &command_ok, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &send_irc, bool &ucc_quit)
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &msg_irc, std::string &nick, std::string &zuousername, std::string &cookies,
+                std::string &uokey, bool &command_ok, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
 
     // domyślnie nie zwracaj komunikatów (dodanie komunikatu następuje w obsłudze poleceń)
     msg.clear();
+    msg_irc.clear();
 
     // domyślny kolor komunikatów czerwony (bo takich komunikatów jest więcej)
     msg_color = UCC_RED;
 
-    // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC (chodzi o polecenia, a nie o zwykłe komunikaty)
-    send_irc = false;
-
     // domyślnie zakładamy, że wpisano polecenie
     command_ok = true;
+
+    // domyślnie zakładamy, że nie wpisaliśmy polecenia /me
+    command_me = false;
 
     // zapobiega wykonywaniu się reszty kodu, gdy w buforze nic nie ma
     if(kbd_buf.size() == 0)
@@ -33,17 +34,19 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // jeśli brak połączenia z IRC, wiadomości nie można wysłać, więc pokaż ostrzeżenie
         if(! irc_ok)
         {
-            msg = "Najpierw się zaloguj";
+            msg = "* Najpierw się zaloguj";
             return;
         }
         // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
         else if(! room_ok)
         {
-            msg = "Nie jesteś w aktywnym pokoju";
+            msg = "* Nie jesteś w aktywnym pokoju";
             return;
         }
-        // gdy połączono z IRC oraz jest się w aktywnym pokoju, wróć, a obsługa wiadomości nastąpi w main_window()
+        // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
         command_ok = false;     // wpisano tekst do wysłania do aktywnego pokoju
+        msg = zuousername + ": " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
+        msg_irc = "PRIVMSG " + room + " :" + kbd_buf;
         return;                 // gdy wpisano zwykły tekst, zakończ
     }
 
@@ -55,6 +58,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
     std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
     std::string f_arg;          // kolejne argumenty podane za poleceniem
+    std::string r_args;         // pozostałe argumentu lub argument od pozycji w pos_arg_start zwracane w rest_args()
     std::string captcha, err_code;
     std::stringstream http_status_str;  // użyty pośrednio do zamiany int na std::string
 
@@ -180,9 +184,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
                 return;
             }
             // gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
-            send_irc = true;
             room_ok = true;     // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
-            msg = "JOIN " + room;
+            msg_irc = "JOIN " + room;
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else
@@ -191,7 +194,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         }
     }
 
-    else if(f_command == "ME")      // DOPRACOWAĆ, ABY POKAZYWAŁO W KONSOLI TEN TEKST
+    else if(f_command == "ME")
     {
         // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
         if(irc_ok)
@@ -199,13 +202,15 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
             if(! room_ok)
             {
-                msg = "Nie jesteś w aktywnym pokoju";
+                msg = "* Nie jesteś w aktywnym pokoju";
                 return;
             }
-            // jeśli jest się w aktywnym pokoju, przygotuj polecenie dla IRC
-            insert_rest(kbd_buf, pos_arg_start, msg);   // pobierz wpisany komunikat dla /me (nie jest niezbędny)
-            msg = "PRIVMSG " + room + " :\1ACTION " + msg + "\1";
-            send_irc = true;
+            // jeśli jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w oknie terminala oraz polecenie dla IRC
+            command_me = true;      // polecenie to wymaga, aby komunikat wyświetlić zgodnie z kodowaniem bufora w ISO-8859-2
+            rest_args(kbd_buf, pos_arg_start, r_args);     // pobierz wpisany komunikat dla /me (nie jest niezbędny)
+            msg_color = UCC_CYAN;   // kolor komunikatu /me
+            msg = "* " + zuousername + " " + r_args;
+            msg_irc = "PRIVMSG " + room + " :\1ACTION " + r_args + "\1";
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else
@@ -244,7 +249,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // po połączeniu z IRC nie można zmienić nicka
         else
         {
-            msg = "Po połączeniu z IRC nie można zmienić nicka";
+            msg = "* Po połączeniu z IRC nie można zmienić nicka";
         }
     }
 
@@ -253,16 +258,15 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
         if(irc_ok)
         {
-            send_irc = true;    // polecenie do IRC
             // jeśli podano argument (tekst pożegnalny), wstaw go
-            if(insert_rest(kbd_buf, pos_arg_start, msg))
+            if(rest_args(kbd_buf, pos_arg_start, r_args))
             {
-                msg = "QUIT :" + msg;   // wstaw polecenie przed komunikatem pożegnalnym
+                msg_irc = "QUIT :" + r_args;    // wstaw polecenie przed komunikatem pożegnalnym
             }
             // jeśli nie podano argumentu, wyślij samo polecenie
             else
             {
-                msg = "QUIT";
+                msg_irc = "QUIT";
             }
         }
         // zamknięcie programu po ewentualnym wysłaniu polecenia do IRC
@@ -275,13 +279,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         if(irc_ok)
         {
             // jeśli nie podano parametrów, pokaż ostrzeżenie
-            if(! insert_rest(kbd_buf, pos_arg_start, msg))
+            if(! rest_args(kbd_buf, pos_arg_start, r_args))
             {
                 msg = "* Nie podano parametrów";
                 return;
             }
-            // polecenie do IRC (w msg)
-            send_irc = true;
+            // polecenie do IRC
+            msg_irc = r_args;
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else
@@ -392,9 +396,9 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
 }
 
 
-bool insert_rest(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest)
+bool rest_args(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest)
 {
-    // pobierz resztę bufora od pozycji w pos_arg_start
+    // pobierz resztę bufora od pozycji w pos_arg_start (czyli pozostałe argumenty lub argument)
 
     // jeśli pozycja w pos_arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
     if(pos_arg_start >= kbd_buf.size())
