@@ -4,8 +4,10 @@
 
 #include "auth.hpp"
 
-void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &cookies, std::string &nick, std::string &zuousername,
-                std::string &uokey, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &send_irc, bool &ucc_quit);
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &nick, std::string &zuousername, std::string &cookies,
+                std::string &uokey, bool &command_ok, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &send_irc, bool &ucc_quit);
+
+void msg_connect_irc(std::string &msg);
 
 int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_command_org, size_t &pos_arg_start);
 

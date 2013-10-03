@@ -1,7 +1,7 @@
 #include <iostream>         // std::cerr, std::endl
-#include <cerrno>
-//#include <iconv.h>          // konwersja kodowania znaków
+#include <cerrno>           // perror()
 #include "main_window.hpp"
+
 
 int main(int argc, char *argv[])
 {

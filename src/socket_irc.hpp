@@ -11,6 +11,6 @@ void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string 
 
 int socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string data_send, std::string &data_sent);
 
-int socket_irc_recv(int &socketfd_irc, bool &irc_ok, char *buffer_recv);
+int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv);
 
 #endif      // SOCKET_IRC_HPP
