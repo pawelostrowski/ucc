@@ -38,7 +38,8 @@ int main_window(bool use_colors)
     std::string msg;        // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
     short msg_color;        // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
     std::string msg_irc;    // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
-    std::string cookies, nick, zuousername, uokey, authkey, room, data_sent;
+    std::string zuousername = "Niezalogowany";
+    std::string cookies, nick, uokey, authkey, room, data_sent;
     int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     char buffer_irc_recv[1500];
 
@@ -138,9 +139,9 @@ int main_window(bool use_colors)
 */
 
         // wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
-        wprintw_iso2utf(stdscr, use_colors, UCC_TERM, term_y - 1, 0, ">" + kbd_buf);
+        wprintw_iso2utf(stdscr, use_colors, UCC_TERM, term_y - 1, 0, "[" + zuousername + "] " + kbd_buf);
         wclrtoeol(stdscr);              // pozostałe znaki w wierszu wykasuj
-        wmove(stdscr, term_y - 1, kbd_buf_pos + 1); // ustaw kursor w obecnie przetwarzany znak (+ 1, bo na początku jest znak > )
+        wmove(stdscr, term_y - 1, kbd_buf_pos + zuousername.size() + 3); // ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja)
 
         wrefresh(win_diag);
         wrefresh(stdscr);
@@ -226,7 +227,7 @@ int main_window(bool use_colors)
                 if(kbd_buf.size() != 0)     // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
                     // "wyczyść" pole wpisywanego tekstu (aby nie było widać zwłoki, np. podczas pobierania obrazka z kodem do przepisania)
-                    wmove(stdscr, term_y - 1, 1);   // ostatni parametr na 1, bo pomijamy znak >
+                    wmove(stdscr, term_y - 1, zuousername.size() + 3); // ustaw kursor za nickiem i spacją za nawiasem
                     clrtoeol();
                     wrefresh(stdscr);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie)
