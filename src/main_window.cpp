@@ -41,9 +41,8 @@ int main_window(bool use_colors)
     std::string zuousername = "Niezalogowany";
     std::string cookies, nick, uokey, authkey, room, data_sent;
     int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
-    char buffer_irc_recv[1500];
-
-    std::string buffer_irc;
+    std::string buffer_irc_recv;    // bufor odebranych danych z IRC
+    std::string buffer_irc_recv_tmp;    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
 
     struct sockaddr_in www;
 
@@ -97,14 +96,6 @@ int main_window(bool use_colors)
     // pętla główna programu
     while(! ucc_quit)
     {
-/*
-        if(irc_ready)
-        {
-            FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
-            irc_ready = false;
-        }
-*/
-
         readfds_tmp = readfds;
 
         // wykryj zmianę rozmiaru okna terminala
@@ -277,7 +268,7 @@ int main_window(bool use_colors)
                             return 3;
                         }
                         // połącz z IRC
-                        socket_irc_connect(socketfd_irc, www, msg, msg_color, buffer_irc_recv);
+                        socket_irc_connect(socketfd_irc, www, msg, msg_color);
                         // gdy podczas łączenia otrzymano jakiś komunikat, pokaż go
                         if(msg.size() != 0)
                         {
@@ -288,22 +279,22 @@ int main_window(bool use_colors)
                         else
                         {
                             // pobierz pierwszą odpowiedż serwera po połączeniu
-                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc);
-                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc);
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
                             // wyślij: NICK <~nick>
                             socket_irc_send(socketfd_irc, irc_ok, "NICK " + zuousername, data_sent);
                             display_buffer(win_diag, use_colors, UCC_YELLOW, data_sent);
                             // pobierz odpowiedź z serwera
-                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc);
-                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc);
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
                             // wyślij: AUTHKEY
                             socket_irc_send(socketfd_irc, irc_ok, "AUTHKEY", data_sent);
                             display_buffer(win_diag, use_colors, UCC_YELLOW, data_sent);
                             // pobierz odpowiedź z serwera (AUTHKEY)
-                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc);
-                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc);
+                            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
+                            display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
                             // wyszukaj AUTHKEY
-                            find_value(strdup(buffer_irc.c_str()), "801 " + zuousername + " :", "\r\n", authkey);  // dodać if
+                            find_value(strdup(buffer_irc_recv.c_str()), "801 " + zuousername + " :", "\r\n", authkey);  // dodać if
                             // konwersja AUTHKEY
                             auth_code(authkey);     // dodać if
                             // wyślij: AUTHKEY <AUTHKEY>
@@ -353,10 +344,10 @@ int main_window(bool use_colors)
         else if(FD_ISSET(socketfd_irc, &readfds_tmp))
         {
             // pobierz odpowiedź z serwera
-            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc);
+            socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
 
             // zinterpretuj odpowiedź
-            irc_parser(buffer_irc, msg, msg_color, room, send_irc, irc_ok);
+            irc_parser(buffer_irc_recv, buffer_irc_recv_tmp, msg, msg_color, room, send_irc, irc_ok);
 
             if(send_irc)
             {
@@ -372,7 +363,7 @@ int main_window(bool use_colors)
                 }
                 else
                 {
-                    display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc);
+                    display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
                 }
             }
 

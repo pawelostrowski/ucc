@@ -26,7 +26,7 @@ int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www)
 }
 
 
-void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string &msg, short &msg_color, char *buffer_irc_recv)
+void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string &msg, short &msg_color)
 {
     if(connect(socketfd_irc, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
     {
@@ -99,7 +99,7 @@ int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_rec
 
     // przekonwertowany bufor zwróć w buforze std::string
     buffer_irc_recv.clear();
-    buffer_irc_recv = std::string(buffer_tmp_out);
+    buffer_irc_recv += std::string(buffer_tmp_out);
 
     //usuń \2 z bufora
     while (buffer_irc_recv.find("\2") != std::string::npos)

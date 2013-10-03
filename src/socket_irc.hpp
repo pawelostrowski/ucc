@@ -7,7 +7,7 @@
 
 int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www);
 
-void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string &msg, short &msg_color, char *buffer_irc_recv);
+void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string &msg, short &msg_color);
 
 int socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string data_send, std::string &data_sent);
 
