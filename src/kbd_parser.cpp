@@ -68,12 +68,12 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
     {
-        msg = "* Polecenie błędne (sam znak / nie jest poleceniem)";
+        msg = "* Polecenie błędne, sam znak / nie jest poleceniem";
         return;
     }
     else if(f_command_status == 2)
     {
-        msg = "* Polecenie błędne (po znaku / nie może być spacji)";
+        msg = "* Polecenie błędne, po znaku / nie może być spacji";
         return;
     }
 
@@ -153,7 +153,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             return;
         }
         msg_color = UCC_GREEN;
-        msg = "* Przepisz kod z obrazka (wpisz /captcha kod_z_obrazka)";
+        msg = "* Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";
         captcha_ok = true;      // kod wysłany
     }
 
@@ -250,7 +250,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // po połączeniu z IRC nie można zmienić nicka
         else
         {
-            msg = "* Po połączeniu z IRC nie można zmienić nicka";
+            msg = "* Po zalogowaniu nie można zmienić nicka";
         }
     }
 

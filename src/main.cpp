@@ -6,7 +6,7 @@
 int main(int argc, char *argv[])
 {
     bool use_colors = true;     // domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)
-	int window_status;
+    int window_status;
 
     window_status = main_window(use_colors);
     if(window_status != 0)

@@ -20,27 +20,27 @@ int main_window(bool use_colors)
     if(! initscr())
         return 1;
 
-    bool ucc_quit = false;  // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
+    bool ucc_quit = false;      // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     bool command_ok = false;    // true, gdy wpisano polecenie
     bool captcha_ok = false;    // stan wczytania captcha (jego pobranie z serwera)
     bool irc_ready = false;     // gotowość do połączenia z czatem, po połączeniu jest ustawiany na false
-    bool irc_ok = false;    // stan połączenia z czatem
-    bool send_irc = false;  // true oznacza, że irc_parser() zwrócił PONG do wysłania do IRC
-    bool room_ok = false;   // stan wejścia do pokoju (kanału)
+    bool irc_ok = false;        // stan połączenia z czatem
+    bool send_irc = false;      // true oznacza, że irc_parser() zwrócił PONG do wysłania do IRC
+    bool room_ok = false;       // stan wejścia do pokoju (kanału)
     bool command_me = false;    // true oznacza, że wpisano polecenie /me, które trzeba wyświetlić z uwzględnieniem kodowania bufora w ISO-8859-2
-    int term_y, term_x;     // wymiary terminala
-    int cur_y, cur_x;       // aktualna pozycja kursora
-    int kbd_buf_pos = 0;    // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
-    int kbd_buf_max = 0;    // początkowy maksymalny rozmiar bufora klawiatury
-    int key_code;           // kod ostatnio wciśniętego klawisza
-    std::string kbd_buf;    // bufor odczytanych znaków z klawiatury
+    int term_y, term_x;         // wymiary terminala
+    int cur_y, cur_x;           // aktualna pozycja kursora
+    int kbd_buf_pos = 0;        // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
+    int kbd_buf_max = 0;        // początkowy maksymalny rozmiar bufora klawiatury
+    int key_code;               // kod ostatnio wciśniętego klawisza
+    std::string kbd_buf;        // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
-    std::string msg;        // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
-    short msg_color;        // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
-    std::string msg_irc;    // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
+    std::string msg;            // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
+    short msg_color;            // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
+    std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
     std::string zuousername = "Niezalogowany";
     std::string cookies, nick, uokey, authkey, room, data_sent;
-    int socketfd_irc;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
+    int socketfd_irc;           // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() )
     char buffer_irc_recv[1500];
 
     std::string buffer_irc;
@@ -63,7 +63,7 @@ int main_window(bool use_colors)
     noecho();               // nie pokazuj wprowadzanych danych (bo w tym celu będzie używany bufor)
 
     // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów,
-    // ale tylko, gdy uruchomiliśmy main_window() z use_colors = true, gdy terminal nie obsługuje kolorów, check_colors() zwróci false
+    // ale tylko wtedy, gdy uruchomiliśmy main_window() z use_colors = true, gdy terminal nie obsługuje kolorów, check_colors() zwróci false
     if(use_colors)
         use_colors = check_colors();
 
@@ -150,18 +150,18 @@ int main_window(bool use_colors)
         if(select(socketfd_irc + 1, &readfds_tmp, NULL, NULL, NULL) == -1)
         {
             // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
-            if(errno == EINTR)  // Interrupted system call (wywołany np. przez SIGWINCH)
+            if(errno == EINTR)      // Interrupted system call (wywołany np. przez SIGWINCH)
             {
                 wrefresh(win_diag);
                 wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
-                getch();        // ignoruj KEY_RESIZE
-                continue;       // wróć do początku pętli while()
+                getch();            // ignoruj KEY_RESIZE
+                continue;           // wróć do początku pętli while()
             }
             // inny błąd select() powoduje zakończenie działania programu
             else
             {
                 delwin(win_diag);
-                endwin();       // zakończ tryb ncurses
+                endwin();           // zakończ tryb ncurses
                 return 2;
             }
         }
@@ -356,7 +356,6 @@ int main_window(bool use_colors)
             if(send_irc)
             {
                 socket_irc_send(socketfd_irc, irc_ok, msg, data_sent);  // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
-//                show_buffer_1(win_diag, data_sent, use_colors);
             }
 
             else
@@ -393,7 +392,7 @@ int main_window(bool use_colors)
 //        close(socketfd_irc);
 
     delwin(win_diag);
-    endwin();       // zakończ tryb ncurses
+    endwin();           // zakończ tryb ncurses
 
     return 0;
 }
