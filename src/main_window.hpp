@@ -10,7 +10,7 @@ bool check_colors();
 
 void wattrset_color(WINDOW *active_window, bool use_colors, short color_p);
 
-void display_buffer(WINDOW *active_window, bool use_colors, short color_p, std::string &buffer_in_str);
+void display_buffer(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_out);
 
 void kbd_utf2iso(int &key_code);
 

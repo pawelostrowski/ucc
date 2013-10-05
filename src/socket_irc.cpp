@@ -56,6 +56,8 @@ int socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string data_send, std:
 
     data_sent = data_send;
 
+    data_sent.erase(data_sent.find("\r"), 1);   // tymczasowo
+
     return 0;
 }
 
@@ -99,11 +101,15 @@ int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_rec
 
     // przekonwertowany bufor zwróć w buforze std::string
     buffer_irc_recv.clear();
-    buffer_irc_recv += std::string(buffer_tmp_out);
+    buffer_irc_recv = std::string(buffer_tmp_out);
 
     //usuń \2 z bufora
     while (buffer_irc_recv.find("\2") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
+
+    //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+    while (buffer_irc_recv.find("\r") != std::string::npos)
+        buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
     return 0;
 }

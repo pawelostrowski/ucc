@@ -30,7 +30,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &buffer_irc_recv_tmp, 
     send_irc = false;
 
     // odpowiedz na PING
-    if(find_value(strdup(buffer_irc_recv.c_str()), "PING :", "\r\n", f_value) == 0)
+    if(find_value(strdup(buffer_irc_recv.c_str()), "PING :", "\n", f_value) == 0)
     {
         send_irc = true;    // wiadomość do odesłania na IRC
         msg = "PONG :" + f_value;
@@ -38,16 +38,16 @@ void irc_parser(std::string &buffer_irc_recv, std::string &buffer_irc_recv_tmp, 
     }
 
     // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
-    else if(find_value(strdup(buffer_irc_recv.c_str()), "PRIVMSG " + room + " :", "\r\n", f_value) == 0)
+    else if(find_value(strdup(buffer_irc_recv.c_str()), "PRIVMSG " + room + " :", "\n", f_value) == 0)
     {
         std::string nick_on_irc;
         find_value(strdup(buffer_irc_recv.c_str()), ":", "!", nick_on_irc);
         msg_color = UCC_YELLOW;
-        msg = nick_on_irc + ": " + f_value;
+        msg = "[" + nick_on_irc + "] " + f_value;
         return;
     }
 
     // wykryj, gdy serwer odpowie ERROR
-    if(find_value(strdup(buffer_irc_recv.c_str()), "ERROR :", "\r\n", f_value) == 0)
+    if(find_value(strdup(buffer_irc_recv.c_str()), "ERROR :", "\n", f_value) == 0)
         irc_ok = false;
 }

@@ -194,7 +194,7 @@ int http_2(std::string &cookies)
     int socket_status, cookies_status;
     long offset_recv;
     char buffer_recv[50000];
-    char *buffer_gif;
+    char *buffer_gif_ptr;
     std::string data_send;
 
     header_get("czat.onet.pl", "/myimg.gif", cookies, data_send, true);
@@ -207,8 +207,8 @@ int http_2(std::string &cookies)
     if(cookies_status != 0)
         return cookies_status;      // kod błędu, gdy napotkano problem z cookies (1 lub 2)
 
-    buffer_gif = strstr(buffer_recv, "GIF");        // daj wskaźnik na początek obrazka
-    if(buffer_gif == NULL)
+    buffer_gif_ptr = strstr(buffer_recv, "GIF");        // daj wskaźnik na początek obrazka
+    if(buffer_gif_ptr == NULL)
         return 5;           // kod błędu, gdy nie znaleziono obrazka w buforze
 
     // zapisz obrazek z captcha na dysku
@@ -216,8 +216,8 @@ int http_2(std::string &cookies)
     if(file_gif == NULL)
         return 6;           // kod błędu, gdy nie udało się zapisać pliku z obrazkiem (np. przez brak dostępu)
 
-    // &buffer_recv[offset_recv] - buffer_gif  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
-    file_gif.write(buffer_gif, &buffer_recv[offset_recv] - buffer_gif);
+    // &buffer_recv[offset_recv] - buffer_gif_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
+    file_gif.write(buffer_gif_ptr, &buffer_recv[offset_recv] - buffer_gif_ptr);
 
     file_gif.close();       // zamknij plik po zapisaniu
 

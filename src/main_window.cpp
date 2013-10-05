@@ -14,7 +14,7 @@ int main_window(bool use_colors)
 {
     freopen("/dev/tty", "r", stdin);    // zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
 
-    setlocale(LC_ALL, "");  // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
+    setlocale(LC_ALL, "");      // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
     // inicjalizacja ncurses
     if(! initscr())
@@ -68,16 +68,16 @@ int main_window(bool use_colors)
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
     wattrset_color(win_diag, use_colors, UCC_GREEN);
-    wprintw(win_diag, "Ucieszony Chat Client\n"
-                      "* Aby rozpocząć, wpisz:\n"
-                      "/nick nazwa_nicka\n"
-                      "/connect\n"
-                      "* Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
-                      "/captcha kod_z_obrazka\n"
-                      "* Aby zobaczyć dostępne polecenia, wpisz:\n"
-                      "/help\n"
-                      "* Aby zakończyć działanie programu, wpisz:\n"
-                      "/quit\n");
+    wprintw(win_diag, "Ucieszony Chat Client"
+                      "\n* Aby rozpocząć, wpisz:"
+                      "\n/nick nazwa_nicka"
+                      "\n/connect"
+                      "\n* Następnie przepisz kod z obrazka, w tym celu wpisz:"
+                      "\n/captcha kod_z_obrazka"
+                      "\n* Aby zobaczyć dostępne polecenia, wpisz:"
+                      "\n/help"
+                      "\n* Aby zakończyć działanie programu, wpisz:"
+                      "\n/quit");
 
     wrefresh(stdscr);
     wrefresh(win_diag);
@@ -104,6 +104,9 @@ int main_window(bool use_colors)
             getmaxyx(stdscr, term_y, term_x);       // pobierz nowe wymiary terminala (okna głównego) po jego zmianie
             wresize(stdscr, term_y, term_x);        // zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
             wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
+            // po zmianie rozmiaru terminala sprawdź, czy maksymalna pozycja kursora Y nie jest większa od wymiarów okna
+            if(cur_y >= term_y - 3)
+                cur_y = term_y - 4;     // - 4, bo piszemy do max granicy, nie wchodząc na nią
         }
 
         // paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -228,7 +231,7 @@ int main_window(bool use_colors)
                     if(! command_ok)
                     {
                         // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
-                        wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, cur_y, cur_x, msg + "\n");
+                        wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, cur_y, cur_x, "\n" + msg);
                         // wyślij wiadomość na serwer
                         socket_irc_send(socketfd_irc, irc_ok, msg_irc, data_sent);
                     }
@@ -239,12 +242,12 @@ int main_window(bool use_colors)
                         if(! command_me)
                         {
                             wattrset_color(win_diag, use_colors, msg_color);
-                            mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                            mvwprintw(win_diag, cur_y, cur_x, "\n%s", msg.c_str());
                         }
                         // komunikat związany z poleceniem /me trzeba wyświetlić z uwzględnieniem tego, że bufor kodowany jest w ISO-8859-2
                         else
                         {
-                            wprintw_iso2utf(win_diag, use_colors, msg_color, cur_y, cur_x, msg + "\n");
+                            wprintw_iso2utf(win_diag, use_colors, msg_color, cur_y, cur_x, "\n" + msg);
                         }
                     }
                     // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wysłania do IRC i nie jest to zwykły tekst wypisany w wprintw_iso2utf(), wyślij go do IRC
@@ -273,7 +276,7 @@ int main_window(bool use_colors)
                         if(msg.size() != 0)
                         {
                             wattrset_color(win_diag, use_colors, msg_color);
-                            mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                            mvwprintw(win_diag, cur_y, cur_x, "\n%s", msg.c_str());
                         }
                         // gdy msg jest zerowy, uznaje się, że trzeba odczytać socket IRC (nie ma błędu w połączeniu)
                         else
@@ -294,7 +297,7 @@ int main_window(bool use_colors)
                             socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv);
                             display_buffer(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
                             // wyszukaj AUTHKEY
-                            find_value(strdup(buffer_irc_recv.c_str()), "801 " + zuousername + " :", "\r\n", authkey);  // dodać if
+                            find_value(strdup(buffer_irc_recv.c_str()), "801 " + zuousername + " :", "\n", authkey);  // dodać if
                             // konwersja AUTHKEY
                             auth_code(authkey);     // dodać if
                             // wyślij: AUTHKEY <AUTHKEY>
@@ -359,7 +362,7 @@ int main_window(bool use_colors)
                 if(msg.size() != 0)
                 {
                     wattrset_color(win_diag, use_colors, msg_color);
-                    mvwprintw(win_diag, cur_y, cur_x, "%s\n", msg.c_str());
+                    mvwprintw(win_diag, cur_y, cur_x, "\n%s", msg.c_str());
                 }
                 else
                 {
@@ -435,15 +438,22 @@ void wattrset_color(WINDOW *active_window, bool use_colors, short color_p)
 }
 
 
-void display_buffer(WINDOW *active_window, bool use_colors, short color_p, std::string &buffer_out)
+void display_buffer(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_out)
 {
     wattrset_color(active_window, use_colors, color_p);
 
+/*
     for(int i = 0; i < (int)buffer_out.size(); ++i)
     {
         if(buffer_out[i] != '\r')
             wprintw(active_window, "%c", buffer_out[i]);
     }
+*/
+
+    // usuń \n z końca bufora (tekst jest dopisywany z \n na początku, aby scroll działał do ostatniej linii, bo bez tego jest pusta)
+    buffer_out.erase(buffer_out.size() - 1, 1);
+
+    wprintw(active_window, "\n%s", buffer_out.c_str());
 
     wrefresh(active_window);
 }

@@ -45,7 +45,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         }
         // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
         command_ok = false;     // wpisano tekst do wysłania do aktywnego pokoju
-        msg = zuousername + ": " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
+        msg = "[" + zuousername + "] " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
         msg_irc = "PRIVMSG " + room + " :" + kbd_buf;
         return;                 // gdy wpisano zwykły tekst, zakończ
     }
