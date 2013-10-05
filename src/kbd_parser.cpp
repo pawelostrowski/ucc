@@ -98,8 +98,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             return;
         }
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-        // http_3()
-        http_status = http_3(cookies, captcha, err_code);
+        http_status = http_auth_3(cookies, captcha, err_code);
         if(err_code == "FALSE")
         {
             msg = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";
@@ -112,8 +111,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status_str.str();
             return;
         }
-        // http_4()
-        http_status = http_4(cookies, nick, zuousername, uokey, err_code);
+        http_status = http_auth_4(cookies, nick, zuousername, uokey, err_code);
         if(err_code != "TRUE")
         {
             msg = "* Błąd serwera (nieprawidłowy nick?), kod błędu: " + err_code;
@@ -136,20 +134,19 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
         }
-        // http_1()
-        http_status = http_1(cookies);
+        // gdy wpisano nick, rozpocznij łączenie (pierwsze dwa połączenia służą do pobrania captcha)
+        http_status = http_auth_1(cookies);
         if(http_status != 0)
         {
             http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_1(), kod błędu: " + http_status_str.str();
+            msg = "* Błąd podczas wywoływania http_auth_1(), kod błędu: " + http_status_str.str();
             return;
         }
-        // http_2()
-        http_status = http_2(cookies);
+        http_status = http_auth_2(cookies);
         if(http_status != 0)
         {
             http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_2(), kod błędu: " + http_status_str.str();
+            msg = "* Błąd podczas wywoływania http_auth_2(), kod błędu: " + http_status_str.str();
             return;
         }
         msg_color = UCC_GREEN;

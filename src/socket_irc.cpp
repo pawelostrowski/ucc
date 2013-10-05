@@ -26,43 +26,52 @@ int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www)
 }
 
 
-void socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www, std::string &msg, short &msg_color)
+bool socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www)
 {
     if(connect(socketfd_irc, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
     {
         close(socketfd_irc);
-        msg_color = UCC_RED;
-        msg = "* Nie udało się połączyć z siecią IRC";
-        return;
+        return false;
     }
 
 /*
-    Od tego momentu zostaje nawiązane połączenie IRC
+    Od tego momentu zostaje nawiązane połączenie z IRC
 */
 
+    return true;
 }
 
 
-int socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string data_send, std::string &data_sent)
+bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std::string &buffer_irc_send)
 {
-//	int bytes_sent;
+	int bytes_sent;
 
     // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
-    data_send += "\r\n";
+    buffer_irc_send += "\r\n";
 
-//    std::cout << "> " + data_send;
+    bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
 
-    /*bytes_sent =*/ send(socketfd_irc, data_send.c_str(), data_send.size(), 0);
+    if(bytes_sent == -1)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_sock = "* Nie udało się wysłać danych do serwera";
+        return false;
+    }
 
-    data_sent = data_send;
+    if(bytes_sent != (int)buffer_irc_send.size())
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_sock = "* Nie udało się wysłać wszystkich danych do serwera";
+        return false;
+    }
 
-    data_sent.erase(data_sent.find("\r"), 1);   // tymczasowo
-
-    return 0;
+    return true;
 }
 
 
-int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv)
+bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std::string &buffer_irc_recv)
 {
     int bytes_recv;
 
@@ -77,14 +86,16 @@ int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_rec
     {
         close(socketfd_irc);
         irc_ok = false;
-        return 1;
+        msg_sock = "* Nie udało się pobrać danych z serwera";
+        return false;
     }
 
     if(bytes_recv == 0)
     {
         close(socketfd_irc);
         irc_ok = false;
-        return 2;
+        msg_sock = "* Serwer zakończył połączenie";
+        return false;
     }
 
     // zamień ISO-8859-2 na UTF-8
@@ -111,5 +122,5 @@ int socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_rec
     while (buffer_irc_recv.find("\r") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
-    return 0;
+    return true;
 }
