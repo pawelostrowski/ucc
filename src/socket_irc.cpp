@@ -5,7 +5,7 @@
 #include "ucc_colors.hpp"
 
 
-int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www)
+int socket_irc_init(int &socketfd_irc, struct sockaddr_in &irc_info)
 {
     struct hostent *he;
 
@@ -17,18 +17,18 @@ int socket_irc_init(int &socketfd_irc, struct sockaddr_in &www)
     if(socketfd_irc == -1)
         return 42;
 
-    www.sin_family = AF_INET;
-    www.sin_port = htons(5015);
-    www.sin_addr = *((struct in_addr *)he->h_addr);
-    memset(&(www.sin_zero), '\0', 8);
+    irc_info.sin_family = AF_INET;
+    irc_info.sin_port = htons(5015);
+    irc_info.sin_addr = *((struct in_addr *)he->h_addr);
+    memset(&(irc_info.sin_zero), '\0', 8);
 
     return 0;
 }
 
 
-bool socket_irc_connect(int &socketfd_irc, struct sockaddr_in &www)
+bool socket_irc_connect(int &socketfd_irc, struct sockaddr_in &irc_info)
 {
-    if(connect(socketfd_irc, (struct sockaddr *)&www, sizeof(struct sockaddr)) == -1)
+    if(connect(socketfd_irc, (struct sockaddr *)&irc_info, sizeof(struct sockaddr)) == -1)
     {
         close(socketfd_irc);
         return false;

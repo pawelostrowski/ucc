@@ -21,9 +21,9 @@ int http_auth_2(std::string &cookies);
 
 int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code);
 
-int http_auth_4(std::string &cookies, std::string &nick, std::string &zuousername, std::string &uokey, std::string &err_code);
+int http_auth_4(std::string &cookies, std::string &my_nick, std::string &zuousername, std::string &uokey, std::string &err_code);
 
-bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &www);
+bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info);
 
 bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, std::string &buffer_irc_sent, std::string &zuousername);
 

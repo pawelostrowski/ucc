@@ -261,18 +261,18 @@ int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_cod
 }
 
 
-int http_auth_4(std::string &cookies, std::string &nick, std::string &zuousername, std::string &uokey, std::string &err_code)
+int http_auth_4(std::string &cookies, std::string &my_nick, std::string &zuousername, std::string &uokey, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
     std::string api_function, data_send;
-    std::stringstream nick_length;
+    std::stringstream my_nick_length;
 
-    nick_length << nick.size();
+    my_nick_length << my_nick.size();
 
-    api_function =  "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + nick_length.str() + ":\""
-                    + nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
+    api_function =  "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
+                    + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
 
     header_post(cookies, api_function, data_send);
 
@@ -303,7 +303,7 @@ int http_auth_4(std::string &cookies, std::string &nick, std::string &zuousernam
 }
 
 
-bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &www)
+bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info)
 {
     std::string msg_pre = "* irc_auth_1() ";
     std::string msg_sock;
@@ -312,7 +312,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     irc_ok = true;
 
     // połącz z IRC
-    if(! socket_irc_connect(socketfd_irc, www))
+    if(! socket_irc_connect(socketfd_irc, irc_info))
     {
         irc_ok = false;
         msg = msg_pre + "* Nie udało się połączyć z IRC";     // bez podawania koloru, bo w domyśle komunikaty z irc_auth są komunikatami błędów (na czerwono)

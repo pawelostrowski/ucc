@@ -10,10 +10,10 @@ bool check_colors();
 
 void wattrset_color(WINDOW *active_window, bool use_colors, short color_p);
 
-void display_buffer(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_out);
+void get_time(char *time_hms);
 
 void kbd_utf2iso(int &key_code);
 
-void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, int cur_y, int cur_x, std::string buffer_str);
+void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool textbox = false);
 
 #endif      // MAIN_WINDOW_HPP

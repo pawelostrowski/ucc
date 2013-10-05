@@ -3,7 +3,7 @@
 #include "ucc_colors.hpp"
 
 
-void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &msg_irc, std::string &nick, std::string &zuousername, std::string &cookies,
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &msg_irc, std::string &my_nick, std::string &zuousername, std::string &cookies,
                 std::string &uokey, bool &command_ok, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
@@ -45,7 +45,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         }
         // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
         command_ok = false;     // wpisano tekst do wysłania do aktywnego pokoju
-        msg = "[" + zuousername + "] " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
+        msg = "<" + zuousername + "> " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
         msg_irc = "PRIVMSG " + room + " :" + kbd_buf;
         return;                 // gdy wpisano zwykły tekst, zakończ
     }
@@ -111,7 +111,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status_str.str();
             return;
         }
-        http_status = http_auth_4(cookies, nick, zuousername, uokey, err_code);
+        http_status = http_auth_4(cookies, my_nick, zuousername, uokey, err_code);
         if(err_code != "TRUE")
         {
             msg = "* Błąd serwera (nieprawidłowy nick?), kod błędu: " + err_code;
@@ -129,7 +129,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else if(f_command == "CONNECT")
     {
-        if(nick.size() == 0)
+        if(my_nick.size() == 0)
         {
             msg = "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
@@ -247,27 +247,27 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // nick można zmienić tylko, gdy nie jest się połączonym z IRC
         if(! irc_ok)
         {
-            find_arg(kbd_buf, nick, pos_arg_start, false);
+            find_arg(kbd_buf, my_nick, pos_arg_start, false);
             if(pos_arg_start == 0)
             {
                 msg = "* Nie podano nicka";
                 return;
             }
-            if(nick.size() < 3)
+            if(my_nick.size() < 3)
             {
                 msg = "* Nick jest za krótki (minimalnie 3 znaki)";
-                nick.clear();   // nick jest nieprawidłowy, więc go usuń
+                my_nick.clear();    // nick jest nieprawidłowy, więc go usuń
                 return;
             }
-            if(nick.size() > 32)
+            if(my_nick.size() > 32)
             {
                 msg = "* Nick jest za długi (maksymalnie 32 znaki)";
-                nick.clear();   // nick jest nieprawidłowy, więc go usuń
+                my_nick.clear();    // nick jest nieprawidłowy, więc go usuń
                 return;
             }
             // gdy wpisano nick (od 3 do 32 znaków), wyświetl go
             msg_color = UCC_GREEN;
-            msg = "* Nowy nick: " + nick;
+            msg = "* Nowy nick: " + my_nick;
         }
         // po połączeniu z IRC nie można zmienić nicka
         else
