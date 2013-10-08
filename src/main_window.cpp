@@ -2,6 +2,7 @@
 #include <string>           // std::string, setlocale()
 #include <ctime>            // czas
 #include <cerrno>           // errno
+#include <iconv.h>          // konwersja kodowania znaków
 #include <sys/select.h>     // select()
 #include <iconv.h>
 #include "main_window.hpp"
@@ -57,6 +58,7 @@ int main_window(bool use_colors)
     raw();                  // zablokuj Ctrl-C i Ctrl-Z
     keypad(stdscr, TRUE);   // klawisze funkcyjne będą obsługiwane
     noecho();               // nie pokazuj wprowadzanych danych (bo w tym celu będzie używany bufor)
+    nodelay(stdscr, TRUE);  // nie blokuj getch() (zwróć ERR, gdy nie ma żadnego znaku do odczytania)
 
     // sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów,
     // ale tylko wtedy, gdy uruchomiliśmy main_window() z use_colors = true, gdy terminal nie obsługuje kolorów, check_colors() zwróci false
@@ -135,10 +137,8 @@ int main_window(bool use_colors)
 */
 
         // wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
-        wmove(stdscr, term_y - 1, 0);       // ustaw kursor na początek ostatniego wiersza
-        wprintw_iso2utf(stdscr, use_colors, UCC_TERM, "<" + zuousername + "> " + kbd_buf, true);
-        wclrtoeol(stdscr);              // pozostałe znaki w wierszu wykasuj
-        wmove(stdscr, term_y - 1, kbd_buf_pos + zuousername.size() + 3);    // ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja)
+        //  oraz ustaw kursor w obecnie przetwarzany znak
+        kbd_buf_show(kbd_buf, zuousername, term_y, kbd_buf_pos);
 
         wrefresh(win_diag);
         wrefresh(stdscr);
@@ -463,106 +463,78 @@ void get_time(char *time_hms)
 
 void kbd_utf2iso(int &key_code)
 {
-    // zamień polski znak (jeden) w UTF-8 na ISO-8859-2, jest to wersja bardzo uproszczona i nie działa na innych znakach w UTF-8 poza polskimi znakami
+    // zamień znak (jeden) w UTF-8 na ISO-8859-2
+    // UWAGA - funkcja nie działa dla znaków więcej, niż 2-bajtowych oraz nie wykrywa nieprawidłowo wprowadzonych znaków!
 
-    if(key_code == 0xC3)
-    {
-        // pobierz resztę kodu znaku
-        key_code = getch();
+    int det_utf;
 
-        switch(key_code)
-        {
-        case 0x93:              // Ó (w kodzie UTF-8 zapisywana jako 0xC393)
-            key_code = 0xD3;    // zamień na ISO-8859-2
-            break;
+    det_utf = key_code & 0xE0;      // iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
 
-        case 0xB3:              // ó
-            key_code = 0xF3;
-            break;
-        }
-    }
+    if(det_utf != 0xC0)     // wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
+        return;             // jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
 
-    else if(key_code == 0xC4)
-    {
-        // pobierz resztę kodu znaku
-        key_code = getch();
+    char c_in[5];
+    char c_out[5];
 
-        switch(key_code)
-        {
-        case 0x84:              // Ą
-            key_code = 0xA1;
-            break;
+    // wpisz bajt wejściowy oraz drugi bajt znaku
+    c_in[0] = (char)key_code;
+    c_in[1] = (char)getch();
+    c_in[2] = '\0';     // NULL na końcu
 
-        case 0x86:              // Ć
-            key_code = 0xC6;
-            break;
+    // dokonaj konwersji znaku (dwubajtowego) z UTF-8 na ISO-8859-2
+    char *c_in_ptr = c_in;
+    size_t c_in_len = strlen(c_in) + 1;
+    char *c_out_ptr = c_out;
+    size_t c_out_len = sizeof(c_out);
 
-        case 0x98:              // Ę
-            key_code = 0xCA;
-            break;
+    iconv_t cd = iconv_open("ISO-8859-2", "UTF-8");
+    iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
+    iconv_close(cd);
 
-        case 0x85:              // ą
-            key_code = 0xB1;
-            break;
+    // po konwersji zakłada się, że znak w ISO-8859-2 ma jeden bajt (brak sprawdzania poprawności wprowadzanych znaków), zwróć ten znak
+    key_code = c_out[0];
+}
 
-        case 0x87:              // ć
-            key_code = 0xE6;
-            break;
 
-        case 0x99:              // ę
-            key_code = 0xEA;
-            break;
-        }
-    }
+void kbd_buf_show(std::string &kbd_buf, std::string &zuousername, int term_y, int kbd_buf_pos)
+{
+    // konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8
+    char c_in[kbd_buf.size() + zuousername.size() + 1 + 3];         // bufor + nick (+ 1 na NULL, + 3, bo nick objęty jest nawiasem oraz spacją za nawiasem)
+    char c_out[(kbd_buf.size() + zuousername.size()) * 6 + 1 + 3];  // przyjęto najgorszy możliwy przypadek, gdzie są same 6-bajtowe znaki
 
-    else if(key_code == 0xC5)
-    {
-        // pobierz resztę kodu znaku
-        key_code = getch();
+    c_in[0] = '<';      // początek nawiasu przed nickiem
+    memcpy(c_in + 1, zuousername.c_str(), zuousername.size());  // dopisz nick z czata
+    c_in[zuousername.size() + 1] = '>';     // koniec nawiasu
+    c_in[zuousername.size() + 2] = ' ';     // spacja za nawiasem
+    memcpy(c_in + zuousername.size() + 3, kbd_buf.c_str(), kbd_buf.size());     // dopisz bufor klawiatury
+    c_in[kbd_buf.size() + zuousername.size() + 3] = '\0';       // NULL na końcu
 
-        switch(key_code)
-        {
-        case 0x81:              // Ł
-            key_code = 0xA3;
-            break;
+    char *c_in_ptr = c_in;
+    size_t c_in_len = kbd_buf.size() + zuousername.size() + 1 + 3;
+    char *c_out_ptr = c_out;
+    size_t c_out_len = (kbd_buf.size() + zuousername.size()) * 6 + 1 + 3;
 
-        case 0x83:              // Ń
-            key_code = 0xD1;
-            break;
+    iconv_t cd = iconv_open("UTF-8", "ISO-8859-2");
+    iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
+    *c_out_ptr = '\0';
+    iconv_close(cd);
 
-        case 0x9A:              // Ś
-            key_code = 0xA6;
-            break;
+    // normalne atrybuty fontu
+    attrset(A_NORMAL);
 
-        case 0xB9:              // Ź
-            key_code = 0xAC;
-            break;
+    // ustaw kursor na początku ostatniego wiersza
+    move(term_y - 1, 0);
 
-        case 0xBB:              // Ż
-            key_code = 0xAF;
-            break;
+    // wyświetl nick (z czata, nie ustawiony przez /nick) oraz zawartość przekonwertowanego bufora
+    printw("%s", c_out);
 
-        case 0x82:              // ł
-            key_code = 0xB3;
-            break;
+    // pozostałe znaki w wierszu wykasuj
+    clrtoeol();
 
-        case 0x84:              // ń
-            key_code = 0xF1;
-            break;
+    // ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja)
+    move(term_y - 1, kbd_buf_pos + zuousername.size() + 3);
 
-        case 0x9B:              // ś
-            key_code = 0xB6;
-            break;
-
-        case 0xBA:              // ź
-            key_code = 0xBC;
-            break;
-
-        case 0xBC:              // ż
-            key_code = 0xBF;
-            break;
-        }
-    }
+    // odświeżenie ekranu nastąpi poza funkcją
 }
 
 
@@ -572,7 +544,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     //  jeśli textbox = true, nie będzie pokazywany czas oraz nie będzie przechodzenia do nowego wiersza przed pętlą,
     //  polskie znaki w kodowaniu UTF-8 wyświetla bez konwersji
 
-    unsigned int c;             // aktualnie przetwarzany znak z bufora
+    unsigned char c;            // aktualnie przetwarzany znak z bufora
     int pos_buffer_end;
     char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
 
@@ -675,9 +647,10 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
             break;
 
         default:
-            wprintw(active_window, "%c", c);   // gdy to nie był polski znak, wpisz odczytaną wartość bez modyfikacji
+            wprintw(active_window, "%c", c);   // gdy to nie był polski znak w kodowaniu ISO-8859-2, wpisz odczytaną wartość bez modyfikacji
             break;
         }
+
         // po każdym znaku \n pokaż czas (na początku nowego wiersza), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
         if(buffer_str[i] == '\n' && ! textbox)
         {

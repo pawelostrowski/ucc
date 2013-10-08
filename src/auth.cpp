@@ -73,7 +73,7 @@ bool auth_code(std::string &authkey)
 }
 
 
-void header_get(std::string host, std::string data_get, std::string &cookies, std::string &data_send, bool add_cookies)
+void header_get(std::string host, std::string data_get, std::string &data_send, std::string &cookies, bool add_cookies)
 {
     data_send.clear();
 
@@ -91,7 +91,7 @@ void header_get(std::string host, std::string data_get, std::string &cookies, st
 }
 
 
-void header_post(std::string &cookies, std::string &api_function, std::string &data_send)
+void header_post(std::string host, std::string data_post, std::string &data_send, std::string &cookies, std::string &api_function)
 {
     std::stringstream content_length;
 
@@ -101,8 +101,8 @@ void header_post(std::string &cookies, std::string &api_function, std::string &d
 
     data_send.clear();
 
-    data_send = "POST /include/ajaxapi.xml.php3 HTTP/1.1\r\n"
-                "Host: czat.onet.pl\r\n"
+    data_send = "POST " + data_post + " HTTP/1.1\r\n"
+                "Host: " + host + "\r\n"
                 "Connection: close\r\n"
                 "Content-Type: application/x-www-form-urlencoded\r\n"
                 "Content-Length: " + content_length.str() + "\r\n"      // content_length.str()  <--- zamienia liczbę na std::string
@@ -117,10 +117,12 @@ void header_post(std::string &cookies, std::string &api_function, std::string &d
 int find_cookies(char *buffer_recv, std::string &cookies)
 {
     size_t pos_cookie_start, pos_cookie_end;
-    std::string cookie_tmp;
+    std::string cookie_string, cookie_tmp;
+
+    cookie_string = "Set-Cookie:";
 
     // std::string(buffer_recv) zamienia C string na std::string
-    pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
     if(pos_cookie_start == std::string::npos)
         return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
 
@@ -133,11 +135,11 @@ int find_cookies(char *buffer_recv, std::string &cookies)
     cookie_tmp.clear();     // wyczyść bufor pomocniczy
 
     // skopiuj cookie do bufora pomocniczego
-    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + strlen(COOKIE_STRING), pos_cookie_end - pos_cookie_start - strlen(COOKIE_STRING) + 1);
+    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
     cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
 
-    pos_cookie_start = std::string(buffer_recv).find(COOKIE_STRING, pos_cookie_start + strlen(COOKIE_STRING));     // znajdź kolejny cookie
+    pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
@@ -174,7 +176,7 @@ int http_auth_1(std::string &cookies)
     char buffer_recv[50000];
     std::string data_send;
 
-    header_get("kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", cookies, data_send);   // utwórz zapytanie do wysłania
+    header_get("kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", data_send, cookies);   // utwórz zapytanie do wysłania
 
     socket_status = socket_http("kropka.onet.pl", data_send, buffer_recv, offset_recv);     // wyślij dane
     if(socket_status != 0)
@@ -197,7 +199,7 @@ int http_auth_2(std::string &cookies)
     char *buffer_gif_ptr;
     std::string data_send;
 
-    header_get("czat.onet.pl", "/myimg.gif", cookies, data_send, true);
+    header_get("czat.onet.pl", "/myimg.gif", data_send, cookies, true);
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)
@@ -237,7 +239,7 @@ int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_cod
 
     api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}";
 
-    header_post(cookies, api_function, data_send);
+    header_post("czat.onet.pl", "/include/ajaxapi.xml.php3", data_send, cookies, api_function);
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)
@@ -274,7 +276,7 @@ int http_auth_4(std::string &cookies, std::string &my_nick, std::string &zuouser
     api_function =  "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
                     + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
 
-    header_post(cookies, api_function, data_send);
+    header_post("czat.onet.pl", "/include/ajaxapi.xml.php3", data_send, cookies, api_function);
 
     socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
     if(socket_status != 0)

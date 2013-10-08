@@ -2,14 +2,13 @@
 #define AUTH_HPP
 #define AUTH_HPP_NAME "auth"
 
-#define COOKIE_STRING "Set-Cookie:"
 #define FILE_GIF "/tmp/onetcaptcha.gif"
 
 bool auth_code(std::string &authkey);
 
-void header_get(std::string host, std::string data_get, std::string &cookies, std::string &data_send, bool add_cookies = false);
+void header_get(std::string host, std::string data_get, std::string &data_send, std::string &cookies, bool add_cookies = false);
 
-void header_post(std::string &cookies, std::string &api_function, std::string &data_send);
+void header_post(std::string host, std::string data_post, std::string &data_send, std::string &cookies, std::string &api_function);
 
 int find_cookies(char *buffer_recv, std::string &cookies);
 

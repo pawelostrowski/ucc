@@ -74,13 +74,10 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
 bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std::string &buffer_irc_recv)
 {
     int bytes_recv;
+    char buffer_tmp[1500];
 
-    // bufory tymczasowe
-    char buffer_tmp_in[1500];   // tutaj pobierane są dane z serwera IRC
-    char buffer_tmp_out[6000];  // tutaj wpisywane są dane po konwersji z ISO-8859-2 na UTF-8 (przyjęto najgorszy przypadek, gdyby było dużo znaków wielobajtowych)
-
-    bytes_recv = recv(socketfd_irc, buffer_tmp_in, 1500 - 1, 0);
-    buffer_tmp_in[bytes_recv] = '\0';
+    bytes_recv = recv(socketfd_irc, buffer_tmp, 1500 - 1, 0);
+    buffer_tmp[bytes_recv] = '\0';
 
     if(bytes_recv == -1)
     {
@@ -98,21 +95,9 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
         return false;
     }
 
-    // zamień ISO-8859-2 na UTF-8
-    iconv_t cd = iconv_open("UTF-8", "ISO-8859-2");
-
-    char *buffer_tmp_in_ptr = buffer_tmp_in;
-    size_t buffer_tmp_in_len = strlen(buffer_tmp_in);
-    char *buffer_tmp_out_ptr = buffer_tmp_out;
-    size_t buffer_tmp_out_len = sizeof(buffer_tmp_out);
-
-    iconv(cd, &buffer_tmp_in_ptr, &buffer_tmp_in_len, &buffer_tmp_out_ptr, &buffer_tmp_out_len);
-    *buffer_tmp_out_ptr = '\0';
-    iconv_close(cd);
-
-    // przekonwertowany bufor zwróć w buforze std::string
+    // odebrane dane zwróć w buforze std::string
     buffer_irc_recv.clear();
-    buffer_irc_recv = std::string(buffer_tmp_out);
+    buffer_irc_recv = std::string(buffer_tmp);
 
     //usuń \2 z bufora
     while (buffer_irc_recv.find("\2") != std::string::npos)
