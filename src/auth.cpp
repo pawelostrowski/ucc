@@ -263,13 +263,16 @@ int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_cod
 }
 
 
-int http_auth_4(std::string &cookies, std::string &my_nick, std::string &zuousername, std::string &uokey, std::string &err_code)
+int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code)
 {
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
     std::string api_function, data_send;
     std::stringstream my_nick_length;
+
+    if(my_nick[0] == '~')
+        my_nick.erase(0, 1);
 
     my_nick_length << my_nick.size();
 

@@ -247,32 +247,40 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // nick można zmienić tylko, gdy nie jest się połączonym z IRC
         if(! irc_ok)
         {
-            find_arg(kbd_buf, my_nick, pos_arg_start, false);
+            find_arg(kbd_buf, f_arg, pos_arg_start, false);
             if(pos_arg_start == 0)
             {
-                msg = "* Nie podano nicka";
-                return;
+                if(my_nick.size() == 0)
+                {
+                    msg = "* Nie podano nicka";
+                    return;
+                }
+                else
+                {
+                    msg_color = UCC_GREEN;
+                    msg = "* Aktualny nick: " + my_nick;
+                    return;
+                }
             }
-            if(my_nick.size() < 3)
+            if(f_arg.size() < 3)
             {
                 msg = "* Nick jest za krótki (minimalnie 3 znaki)";
-                my_nick.clear();    // nick jest nieprawidłowy, więc go usuń
                 return;
             }
-            if(my_nick.size() > 32)
+            if(f_arg.size() > 32)
             {
                 msg = "* Nick jest za długi (maksymalnie 32 znaki)";
-                my_nick.clear();    // nick jest nieprawidłowy, więc go usuń
                 return;
             }
-            // gdy wpisano nick (od 3 do 32 znaków), wyświetl go
+            // gdy wpisano nick (od 3 do 32 znaków), przepisz go do zmiennej i wyświetl
             msg_color = UCC_GREEN;
+            my_nick = f_arg;
             msg = "* Nowy nick: " + my_nick;
         }
         // po połączeniu z IRC nie można zmienić nicka
         else
         {
-            msg = "* Po zalogowaniu nie można zmienić nicka";
+            msg = "* Po zalogowaniu się nie można zmienić nicka";
         }
     }
 
