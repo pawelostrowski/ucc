@@ -271,6 +271,7 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
     std::string api_function, data_send;
     std::stringstream my_nick_length;
 
+    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
     if(my_nick[0] == '~')
         my_nick.erase(0, 1);
 
