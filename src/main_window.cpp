@@ -538,7 +538,7 @@ void kbd_buf_show(std::string &kbd_buf, std::string &zuousername, int term_y, in
 }
 
 
-void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool textbox)
+void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str)
 {
     // funckja wypisuje zawartość bufora, dodaje do początku wiersza czas oraz wykrywa polskie znaki w kodowaniu ISO-8859-2 i konwertuje je na UTF-8,
     //  jeśli textbox = true, nie będzie pokazywany czas oraz nie będzie przechodzenia do nowego wiersza przed pętlą,
@@ -550,14 +550,11 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
 
     wattrset_color(active_window, use_colors, color_p);
 
-    if(! textbox)
-    {
-        // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie dotyczy paska wpisywania tekstu
-        wprintw(active_window, "\n");
-        // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
-        get_time(time_hms);
-        wprintw(active_window, "%s", time_hms);
-    }
+    // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie dotyczy paska wpisywania tekstu
+    wprintw(active_window, "\n");
+    // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
+    get_time(time_hms);
+    wprintw(active_window, "%s", time_hms);
 
     // wyświetl bufor bez ostatniego kodu \n (wykryj, czy ten kod tam jest)
     if(buffer_str[buffer_str.size() - 1] == '\n')
@@ -651,8 +648,8 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
             break;
         }
 
-        // po każdym znaku \n pokaż czas (na początku nowego wiersza), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
-        if(buffer_str[i] == '\n' && ! textbox)
+        // po każdym znaku \n pokaż czas (na początku nowego wiersza)
+        if(buffer_str[i] == '\n')
         {
             get_time(time_hms);
             wprintw(active_window, "%s", time_hms);

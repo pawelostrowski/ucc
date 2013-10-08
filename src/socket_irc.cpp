@@ -1,6 +1,5 @@
 #include <cstring>          // strlen()
 #include <string>           // std::string
-#include <iconv.h>          // konwersja kodowania znaków
 #include "socket_irc.hpp"
 #include "ucc_colors.hpp"
 
