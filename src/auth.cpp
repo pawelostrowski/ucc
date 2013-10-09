@@ -79,64 +79,67 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 
     pos_expr_before = std::string(buffer_recv).find(expr_before);      // znajdź pozycję początku szukanego wyrażenia
     if(pos_expr_before == std::string::npos)
-        return 3;           // kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+        return 1;           // kod błędu, gdy nie znaleziono początku szukanego wyrażenia
 
    // znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
     pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());
     if(pos_expr_after == std::string::npos)
-        return 4;           // kod błędu, gdy nie znaleziono końca szukanego wyrażenia
-
-    f_value.clear();        // wyczyść bufor szukanej wartości
+        return 2;           // kod błędu, gdy nie znaleziono końca szukanego wyrażenia
 
     // wstaw szukaną wartość
+    f_value.clear();        // wyczyść bufor szukanej wartości
     f_value.insert(0, std::string(buffer_recv), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
 
     return 0;
 }
 
 
-int http_auth_1(std::string &cookies)
+bool http_auth_1(std::string &cookies, std::string &msg_err)
 {
-    int socket_status, cookies_status;
     long offset_recv;
     char buffer_recv[50000];
+    std::string msg_err_pre = "* http_auth_1(): ";
 
-    socket_status = socket_http("GET", "kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, buffer_recv, offset_recv);
-    if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
+    // wyczyść bufor cookies przed zapoczątkowaniem połączenia
+    cookies.clear();
 
-    cookies.clear();        // wyczyść bufor cookies
-    cookies_status = find_cookies(buffer_recv, cookies);    // pobierz cookies z buffer_recv
-    if(cookies_status != 0)
-        return cookies_status;      // kod błędu, gdy napotkano problem z cookies (1 lub 2)
+    if(! socket_http("GET", "kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
 
-    return 0;
+    return true;
 }
 
 
-int http_auth_2(std::string &cookies)
+bool http_auth_2(std::string &cookies, std::string &msg_err)
 {
-    int socket_status, cookies_status;
     long offset_recv;
     char buffer_recv[50000];
     char *buffer_gif_ptr;
+    std::string msg_err_pre = "* http_auth_2(): ";
 
-    socket_status = socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, buffer_recv, offset_recv);
-    if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
-
-    cookies_status = find_cookies(buffer_recv, cookies);
-    if(cookies_status != 0)
-        return cookies_status;      // kod błędu, gdy napotkano problem z cookies (1 lub 2)
+    if(! socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
 
     buffer_gif_ptr = strstr(buffer_recv, "GIF");        // daj wskaźnik na początek obrazka
     if(buffer_gif_ptr == NULL)
-        return 5;           // kod błędu, gdy nie znaleziono obrazka w buforze
+    {
+        msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania z serwera";
+        return false;
+    }
 
     // zapisz obrazek z captcha na dysku
     std::ofstream file_gif(FILE_GIF, std::ios::binary);
     if(file_gif == NULL)
-        return 6;           // kod błędu, gdy nie udało się zapisać pliku z obrazkiem (np. przez brak dostępu)
+    {
+        msg_err = msg_err_pre + "Nie udało się zapisać obrazka z kodem do przepisania, sprawdź uprawnienia dla " + FILE_GIF;
+        return false;
+    }
 
     // &buffer_recv[offset_recv] - buffer_gif_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
     file_gif.write(buffer_gif_ptr, &buffer_recv[offset_recv] - buffer_gif_ptr);
@@ -146,47 +149,56 @@ int http_auth_2(std::string &cookies)
     // wyświetl obrazek z kodem do przepisania
     system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
 
-    return 0;
+    return true;
 }
 
 
-int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code)
+bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err)
 {
-    int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
+    std::string msg_err_pre = "* http_auth_3(): ";
 
-    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
-                                "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-                                 cookies, buffer_recv, offset_recv);
-
-    if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
+    if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
+                     "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+                      cookies, false, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
 
     // sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE),
     // czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
-    f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);
-    if(f_value_status != 0)
-        return f_value_status;      // kod błedu, gdy nie udało się pobrać err_code (3 lub 4)
+    if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
+    {
+        msg_err = msg_err_pre + "Serwer nie zwrócił err_code";
+        return false;
+    }
 
     // jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
     if(err_code == "FALSE")
-        return 7;                   // kod błędu, gdy wpisany kod captcha był błędny
+    {
+        msg_err = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
+        return false;
+    }
 
     // brak TRUE oznacza błąd w odpowiedzi serwera
     if(err_code != "TRUE")
-        return 8;                   // kod błędu, gdy mimo poprawnie wpisanego kodu captcha serwer nie zwrócił TRUE
+    {
+        msg_err = msg_err_pre + "Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code;
+        return false;
+    }
 
-    return 0;
+    return true;
 }
 
 
-int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code)
+bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err)
 {
-    int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
     std::stringstream my_nick_length;
+    std::string msg_err_pre = "* http_auth_4(): ";
 
     // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
     if(my_nick[0] == '~')
@@ -194,40 +206,57 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
 
     my_nick_length << my_nick.size();
 
-    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
-                                "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
-                                 + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
-                                 cookies, buffer_recv, offset_recv);
-
-    if(socket_status != 0)
-        return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
+    if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
+                     "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
+                      + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                      cookies, false, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
 
     // pobierz kod błędu
-    f_value_status = find_value(buffer_recv, "err_code=\"", "\"", err_code);
-    if(f_value_status != 0)
-        return f_value_status;      // kod błędu, gdy nie udało się pobrać err_code (3 lub 4)
+    if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
+    {
+        msg_err = msg_err_pre + "Serwer nie zwrócił err_code";
+        return false;
+    }
 
     // sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
     if(err_code != "TRUE")
-        return 9;                   // kod błedu, gdy nie udało się wysłać nicka (prawdopodobnie był błędny)
+    {
+        if(err_code == "-4")
+        {
+            msg_err = "* Błąd serwera, wpisany nick zawiera niedozwolone znaki";  // tutaj msg_err_pre nie jest wymagany
+        }
+        else
+        {
+            msg_err = msg_err_pre + "Błąd serwera, kod błędu: " + err_code;
+        }
+        return false;
+    }
 
     // pobierz uoKey
-    f_value_status = find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey);
-    if(f_value_status != 0)
-        return f_value_status + 10; // kod błedu, gdy nie udało się pobrać uoKey (13 lub 14)
+    if(find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey) != 0)
+    {
+        msg_err = msg_err_pre + "Serwer nie zwrócił uoKey";
+        return false;
+    }
 
     // pobierz zuoUsername (nick, który zwrócił serwer)
-    f_value_status = find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername);
-    if(f_value_status != 0)
-        return f_value_status + 20; // kod błędu, gdy serwer nie zwrócił nicka (23 lub 24)
+    if(find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername) != 0)
+    {
+        msg_err = msg_err_pre + "Serwer nie zwrócił zuoUsername";
+        return false;
+    }
 
-    return 0;
+    return true;
 }
 
 
 bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info)
 {
-    std::string msg_pre = "* irc_auth_1() ";
+    std::string msg_pre = "* irc_auth_1(): ";
     std::string msg_sock;
 
     // zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie, gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
@@ -258,7 +287,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_2() ";
+    std::string msg_pre = "* irc_auth_2(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
 
@@ -288,7 +317,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_3() ";
+    std::string msg_pre = "* irc_auth_3(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
 
@@ -318,7 +347,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_4() ";
+    std::string msg_pre = "* irc_auth_4(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
     size_t raw_801, pos_authkey_start, pos_authkey_end;
@@ -378,7 +407,7 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_5() ";
+    std::string msg_pre = "* irc_auth_5(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
 

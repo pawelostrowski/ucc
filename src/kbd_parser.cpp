@@ -53,7 +53,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // wpisano / na początku, więc zinterpretuj polecenie (o ile istnieje)
 
     int f_command_status;
-    int http_status;
     size_t pos_arg_start = 1;   // pozycja początkowa kolejnego argumentu
     std::string f_command;      // znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
     std::string f_command_org;  // j/w, ale małe litery nie są zamieniane na wielkie
@@ -80,6 +79,11 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej
     if(f_command == "CAPTCHA")
     {
+        if(irc_ok)
+        {
+            msg = "* Po połączeniu z IRC nie można wysłać kodu ponownie";
+            return;
+        }
         if(! captcha_ok)
         {
             msg = "* Najpierw wpisz /connect";
@@ -98,30 +102,15 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             return;
         }
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-        http_status = http_auth_3(cookies, captcha, err_code);
-        if(err_code == "FALSE")
+        if(! http_auth_3(cookies, captcha, err_code, msg))
         {
-            msg = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";
-            captcha_ok = false;     // nie da się w ten sposób wysłać ponownie captcha (serwer tego nie akceptuje)
-            return;
+            captcha_ok = false;
+            return;     // w przypadku błędu wróć z komunikatem w msg
         }
-        else if(http_status != 0)
+        if(! http_auth_4(cookies, my_nick, zuousername, uokey, err_code, msg))
         {
-            http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_3(), kod błędu: " + http_status_str.str();
-            return;
-        }
-        http_status = http_auth_4(cookies, my_nick, zuousername, uokey, err_code);
-        if(err_code != "TRUE")
-        {
-            msg = "* Błąd serwera (nieprawidłowy nick?), kod błędu: " + err_code;
-            return;
-        }
-        else if(http_status != 0)
-        {
-            http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_4(), kod błędu: " + http_status_str.str();
-            return;
+            captcha_ok = false;
+            return;     // w przypadku błędu wróć z komunikatem w msg
         }
         captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
         irc_ready = true;       // gotowość do połączenia z IRC
@@ -129,25 +118,24 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
     else if(f_command == "CONNECT")
     {
+        if(irc_ok)
+        {
+            msg = "* Już połączono się z IRC";
+            return;
+        }
         if(my_nick.size() == 0)
         {
             msg = "* Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
         }
         // gdy wpisano nick, rozpocznij łączenie (pierwsze dwa połączenia służą do pobrania captcha)
-        http_status = http_auth_1(cookies);
-        if(http_status != 0)
+        if(! http_auth_1(cookies, msg))
         {
-            http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_auth_1(), kod błędu: " + http_status_str.str();
-            return;
+            return;     // w przypadku błędu wróć z komunikatem w msg
         }
-        http_status = http_auth_2(cookies);
-        if(http_status != 0)
+        if(! http_auth_2(cookies, msg))
         {
-            http_status_str << http_status;
-            msg = "* Błąd podczas wywoływania http_auth_2(), kod błędu: " + http_status_str.str();
-            return;
+            return;     // w przypadku błędu wróć z komunikatem w msg
         }
         msg_color = UCC_GREEN;
         msg = "* Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";

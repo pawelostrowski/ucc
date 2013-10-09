@@ -5,8 +5,17 @@
 #include "socket_http.hpp"
 
 
-int socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, char *buffer_recv, long &offset_recv)
+bool socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, bool get_cookies,
+                 char *buffer_recv, long &offset_recv, std::string &msg_err)
 {
+    std::string msg_err_pre = "socket_http(): ";
+
+    if(method != "GET" && method != "POST")
+    {
+        msg_err = msg_err_pre + "Nieobsługiwana metoda " + method;
+        return false;
+    }
+
     int socketfd;               // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv;
     char buffer_tmp[1500];      // bufor tymczasowy pobranych danych
@@ -24,20 +33,25 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
 
     // zapis host.c_str() oznacza zamianę std::string na C string
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
-        return 31;          // kod błedu przy niepowodzeniu w pobraniu statusu adresu
+    {
+        msg_err = msg_err_pre + "Nie udało się pobrać informacji o hoście " + host;
+        return false;
+    }
 
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);     // utwórz deskryptor gniazda (socket)
     if(socketfd == -1)
     {
         freeaddrinfo(host_info_list);
-        return 32;          // kod błedu przy niepowodzeniu w tworzeniu deskryptora gniazda (socket)
+        msg_err = msg_err_pre + "Nie udało się utworzyć deskryptora gniazda";
+        return false;
     }
 
     if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)        // pobierz status połączenia do hosta
     {
         freeaddrinfo(host_info_list);
         close(socketfd);        // zamknij połączenie z hostem
-        return 33;          // kod błędu przy niepowodzeniu połączenia do hosta
+        msg_err = msg_err_pre + "Nie udało się połączyć z hostem " + host;
+        return false;
     }
 
     // utwórz dane do wysłania do hosta
@@ -69,7 +83,8 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
     {
         freeaddrinfo(host_info_list);
         close(socketfd);
-        return 34;      // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
+        msg_err = msg_err_pre + "Nie udało się wysłać danych do hosta " + host;
+        return false;
     }
 
     // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
@@ -77,7 +92,8 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
     {
         freeaddrinfo(host_info_list);
         close(socketfd);
-        return 35;      // kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
+        msg_err = msg_err_pre + "Nie udało się wysłać wszystkich danych do hosta " + host;
+        return false;
     }
 
     // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
@@ -89,7 +105,8 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
-            return 36;      // kod błędu przy niepowodzeniu w pobieraniu danych od hosta
+            msg_err = msg_err_pre + "Nie udało się pobrać danych z hosta " + host;
+            return false;
         }
         if(first_recv)      // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
         {
@@ -97,7 +114,8 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
             {
                 freeaddrinfo(host_info_list);
                 close(socketfd);
-                return 37;  // kod błędu przy pobraniu zerowej ilości bajtów (możliwy powód: host zakończył połączenie)
+                msg_err = msg_err_pre + "Host " + host + " zakończył połączenie";
+                return false;
             }
         }
         first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
@@ -110,27 +128,44 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
     freeaddrinfo(host_info_list);
     close(socketfd);        // zamknij połączenie z hostem
 
-    return 0;
+    // jeśli trzeba, wyciągnij cookies z bufora
+    if(get_cookies)
+    {
+        if(! find_cookies(buffer_recv, cookies, msg_err))
+        {
+            msg_err = msg_err_pre + msg_err;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 
-int find_cookies(char *buffer_recv, std::string &cookies)
+bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
     size_t pos_cookie_start, pos_cookie_end;
     std::string cookie_string, cookie_tmp;
+    std::string msg_err_pre = "find_cookies(): ";
 
     cookie_string = "Set-Cookie:";
 
     // std::string(buffer_recv) zamienia C string na std::string
     pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
     if(pos_cookie_start == std::string::npos)
-        return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
+    {
+        msg_err = msg_err_pre + "Nie znaleziono żadnego cookie";
+        return false;
+    }
 
     do
     {
         pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);      // szukaj ";" od pozycji początku cookie
         if(pos_cookie_end == std::string::npos)
-            return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
+        {
+            msg_err = msg_err_pre + "Problem z cookie, brak wymaganego średnika na końcu";
+            return false;
+        }
 
         // skopiuj cookie do bufora pomocniczego
         cookie_tmp.clear();     // wyczyść bufor pomocniczy
@@ -142,5 +177,5 @@ int find_cookies(char *buffer_recv, std::string &cookies)
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
-    return 0;
+    return true;
 }

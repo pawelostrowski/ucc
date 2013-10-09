@@ -8,13 +8,13 @@ bool auth_code(std::string &authkey);
 
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);     // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
 
-int http_auth_1(std::string &cookies);
+bool http_auth_1(std::string &cookies, std::string &msg_err);
 
-int http_auth_2(std::string &cookies);
+bool http_auth_2(std::string &cookies, std::string &msg_err);
 
-int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code);
+bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err);
 
-int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code);
+bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err);
 
 bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info);
 

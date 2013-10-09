@@ -16,6 +16,8 @@ int socket_irc_init(int &socketfd_irc, struct sockaddr_in &irc_info)
     if(socketfd_irc == -1)
         return 42;
 
+    fcntl(socketfd_irc, F_SETFL, O_ASYNC);      // asynchroniczne gniazdo (socket)
+
     irc_info.sin_family = AF_INET;
     irc_info.sin_port = htons(5015);
     irc_info.sin_addr = *((struct in_addr *)he->h_addr);
@@ -33,9 +35,7 @@ bool socket_irc_connect(int &socketfd_irc, struct sockaddr_in &irc_info)
         return false;
     }
 
-/*
-    Od tego momentu zostaje nawiązane połączenie z IRC
-*/
+    // od tego momentu zostaje nawiązane połączenie z IRC
 
     return true;
 }
