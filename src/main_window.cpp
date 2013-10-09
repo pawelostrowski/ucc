@@ -305,8 +305,9 @@ int main_window(bool use_colors)
                         {
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
                         }
-                        // od tej pory można dodać socketfd_irc do zestawu select()
-                        FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
+                        // od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
+                        if(irc_ok)
+                            FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
 
                     }   // if(irc_ready)
 
@@ -455,12 +456,6 @@ void get_time(char *time_hms)
 }
 
 
-/*
-    Celowo poniżej nie używam iconv() do konwersji, bo zamieniany jest tylko jeden znak, iconv() używany jest natomiast w socket_irc_recv(), bo konwertuje
-    cały pobrany bufor na raz. Konwersja w tym miejscu jest wymagana, bo upraszcza zliczanie wprowadzonych z klawiatury znaków (w UTF-8 polskie znaki zajmują 2 bajty).
-*/
-
-
 void kbd_utf2iso(int &key_code)
 {
     // zamień znak (jeden) w UTF-8 na ISO-8859-2
@@ -548,13 +543,13 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     int pos_buffer_end;
     char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
 
-    wattrset_color(active_window, use_colors, color_p);
-
     // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie dotyczy paska wpisywania tekstu
     wprintw(active_window, "\n");
     // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
+    wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
     get_time(time_hms);
     wprintw(active_window, "%s", time_hms);
+    wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
 
     // wyświetl bufor bez ostatniego kodu \n (wykryj, czy ten kod tam jest)
     if(buffer_str[buffer_str.size() - 1] == '\n')
@@ -651,8 +646,10 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
         // po każdym znaku \n pokaż czas (na początku nowego wiersza)
         if(buffer_str[i] == '\n')
         {
+            wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
             get_time(time_hms);
             wprintw(active_window, "%s", time_hms);
+            wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
         }
     }
 
