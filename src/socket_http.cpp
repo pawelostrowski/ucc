@@ -31,14 +31,15 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     host_info.ai_family = AF_INET;          // wersja IP IPv4
     host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
 
-    // zapis host.c_str() oznacza zamianę std::string na C string
-    if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
+    // pobierz status adresu
+    if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)       // zapis host.c_str() oznacza zamianę std::string na C string
     {
         msg_err = msg_err_pre + "Nie udało się pobrać informacji o hoście " + host;
         return false;
     }
 
-    socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);     // utwórz deskryptor gniazda (socket)
+    // utwórz deskryptor gniazda (socket)
+    socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
     if(socketfd == -1)
     {
         freeaddrinfo(host_info_list);
@@ -46,7 +47,8 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
         return false;
     }
 
-    if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)        // pobierz status połączenia do hosta
+    // pobierz status połączenia do hosta
+    if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)
     {
         freeaddrinfo(host_info_list);
         close(socketfd);        // zamknij połączenie z hostem
@@ -100,15 +102,18 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
     do
     {
-        bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);   // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-        if(bytes_recv == -1)        // sprawdź, czy pobieranie danych się powiodło
+        // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+        bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);
+        // sprawdź, czy pobieranie danych się powiodło
+        if(bytes_recv == -1)
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
             msg_err = msg_err_pre + "Nie udało się pobrać danych z hosta " + host;
             return false;
         }
-        if(first_recv)      // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
+        // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
+        if(first_recv)
         {
             if(bytes_recv == 0)
             {
