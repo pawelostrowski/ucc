@@ -6,12 +6,6 @@
 
 bool auth_code(std::string &authkey);
 
-void header_get(std::string host, std::string data_get, std::string &data_send, std::string &cookies, bool add_cookies = false);
-
-void header_post(std::string host, std::string data_post, std::string &data_send, std::string &cookies, std::string &api_function);
-
-int find_cookies(char *buffer_recv, std::string &cookies);
-
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);     // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
 
 int http_auth_1(std::string &cookies);

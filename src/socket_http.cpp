@@ -1,16 +1,18 @@
 #include <cstring>          // memset(), strlen(), memcpy()
-#include <string>           // std::string
+#include <sstream>          // std::string, std::stringstream
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>         // close() - socket
 #include "socket_http.hpp"
 
 
-int socket_http(std::string host, std::string &data_send, char *buffer_recv, long &offset_recv)
+int socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, char *buffer_recv, long &offset_recv)
 {
-    int socketfd;       // deskryptor gniazda (socket)
+    int socketfd;               // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv;
     char buffer_tmp[1500];      // bufor tymczasowy pobranych danych
     bool first_recv = true;     // czy to pierwsze pobranie w pętli
+    std::string data_send;      // dane do wysłania do hosta
+    std::stringstream content_length;
 
     struct addrinfo host_info;          // ta struktura wypełni się danymi w getaddrinfo()
     struct addrinfo *host_info_list;    // wskaźnik do połączonej listy host_info
@@ -20,7 +22,7 @@ int socket_http(std::string host, std::string &data_send, char *buffer_recv, lon
     host_info.ai_family = AF_INET;          // wersja IP IPv4
     host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
 
-    // zapis przykładowo host.c_str() oznacza, że string zostaje zamieniony na const char
+    // zapis host.c_str() oznacza zamianę std::string na C string
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)   // pobierz status adresu
         return 31;          // kod błedu przy niepowodzeniu w pobraniu statusu adresu
 
@@ -39,10 +41,33 @@ int socket_http(std::string host, std::string &data_send, char *buffer_recv, lon
         return 33;          // kod błędu przy niepowodzeniu połączenia do hosta
     }
 
-    // wyślij zapytanie do hosta
+    // utwórz dane do wysłania do hosta
+    data_send =  method + " " + stock + " HTTP/1.1\r\n"
+                "Host: " + host + "\r\n"
+                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
+                "Content-Type: application/x-www-form-urlencoded\r\n"
+                "Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2\r\n"
+                "Cache-Control: no-cache\r\n"
+                "Connection: close\r\n";
+
+    if(method == "POST")
+    {
+        content_length << content.size();       // wczytaj długość zapytania
+        data_send += "Content-Length: " + content_length.str() + "\r\n";    // content_length.str()  <--- zamienia liczbę na std::string
+    }
+
+    if(cookies.size() != 0)
+        data_send += "Cookie:" + cookies + "\r\n";
+
+    data_send += "\r\n";
+
+    if(content.size() != 0)
+        data_send += content;
+
+    // wyślij dane do hosta
     if(data_send.size() != 0)       // jeśli bufor pusty, nie próbuj nic wysyłać
     {
-        bytes_sent = send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);       // wysłanie zapytania (np. GET /<...>)
+        bytes_sent = send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
         if(bytes_sent == -1)
         {
             freeaddrinfo(host_info_list);
@@ -87,6 +112,39 @@ int socket_http(std::string host, std::string &data_send, char *buffer_recv, lon
 
     freeaddrinfo(host_info_list);
     close(socketfd);        // zamknij połączenie z hostem
+
+    return 0;
+}
+
+
+int find_cookies(char *buffer_recv, std::string &cookies)
+{
+    size_t pos_cookie_start, pos_cookie_end;
+    std::string cookie_string, cookie_tmp;
+
+    cookie_string = "Set-Cookie:";
+
+    // std::string(buffer_recv) zamienia C string na std::string
+    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+    if(pos_cookie_start == std::string::npos)
+        return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
+
+    do
+    {
+        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);      // szukaj ";" od pozycji początku cookie
+        if(pos_cookie_end == std::string::npos)
+            return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
+
+    cookie_tmp.clear();     // wyczyść bufor pomocniczy
+
+    // skopiuj cookie do bufora pomocniczego
+    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+
+    cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
+
+    pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
+
+    } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
     return 0;
 }

@@ -73,80 +73,6 @@ bool auth_code(std::string &authkey)
 }
 
 
-void header_get(std::string host, std::string data_get, std::string &data_send, std::string &cookies, bool add_cookies)
-{
-    data_send.clear();
-
-    data_send = "GET " + data_get + " HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
-                "Connection: close\r\n"
-                "Cache-Control: no-cache\r\n"
-                "Pragma: no-cache\r\n"
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n";
-
-    if(add_cookies)
-        data_send += "Cookie:" + cookies + "\r\n";
-
-    data_send += "\r\n";
-}
-
-
-void header_post(std::string host, std::string data_post, std::string &data_send, std::string &cookies, std::string &api_function)
-{
-    std::stringstream content_length;
-
-    content_length.clear();
-
-    content_length << api_function.size();      // wczytaj długość zapytania
-
-    data_send.clear();
-
-    data_send = "POST " + data_post + " HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
-                "Connection: close\r\n"
-                "Content-Type: application/x-www-form-urlencoded\r\n"
-                "Content-Length: " + content_length.str() + "\r\n"      // content_length.str()  <--- zamienia liczbę na std::string
-                "Cache-Control: no-cache\r\n"
-                "Pragma: no-cache\r\n"
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
-                "Cookie:" + cookies + "\r\n\r\n"
-                + api_function;
-}
-
-
-int find_cookies(char *buffer_recv, std::string &cookies)
-{
-    size_t pos_cookie_start, pos_cookie_end;
-    std::string cookie_string, cookie_tmp;
-
-    cookie_string = "Set-Cookie:";
-
-    // std::string(buffer_recv) zamienia C string na std::string
-    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
-    if(pos_cookie_start == std::string::npos)
-        return 1;           // kod błędu, gdy nie znaleziono cookie (pierwszego)
-
-    do
-    {
-        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);      // szukaj ";" od pozycji początku cookie
-        if(pos_cookie_end == std::string::npos)
-            return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
-
-    cookie_tmp.clear();     // wyczyść bufor pomocniczy
-
-    // skopiuj cookie do bufora pomocniczego
-    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
-
-    cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
-
-    pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
-
-    } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
-
-    return 0;
-}
-
-
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value)
 {
     size_t pos_expr_before, pos_expr_after;     // pozycja początkowa i końcowa szukanych wyrażeń
@@ -174,11 +100,8 @@ int http_auth_1(std::string &cookies)
     int socket_status, cookies_status;
     long offset_recv;
     char buffer_recv[50000];
-    std::string data_send;
 
-    header_get("kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", data_send, cookies);   // utwórz zapytanie do wysłania
-
-    socket_status = socket_http("kropka.onet.pl", data_send, buffer_recv, offset_recv);     // wyślij dane
+    socket_status = socket_http("GET", "kropka.onet.pl", "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
@@ -197,11 +120,8 @@ int http_auth_2(std::string &cookies)
     long offset_recv;
     char buffer_recv[50000];
     char *buffer_gif_ptr;
-    std::string data_send;
 
-    header_get("czat.onet.pl", "/myimg.gif", data_send, cookies, true);
-
-    socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
+    socket_status = socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
@@ -235,13 +155,11 @@ int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_cod
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
-    std::string api_function, data_send;
+    std::string api_function;
 
     api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}";
 
-    header_post("czat.onet.pl", "/include/ajaxapi.xml.php3", data_send, cookies, api_function);
-
-    socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
+    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3", api_function, cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
@@ -268,7 +186,7 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
-    std::string api_function, data_send;
+    std::string api_function;
     std::stringstream my_nick_length;
 
     // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
@@ -280,9 +198,7 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
     api_function =  "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
                     + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
 
-    header_post("czat.onet.pl", "/include/ajaxapi.xml.php3", data_send, cookies, api_function);
-
-    socket_status = socket_http("czat.onet.pl", data_send, buffer_recv, offset_recv);
+    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3", api_function, cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
