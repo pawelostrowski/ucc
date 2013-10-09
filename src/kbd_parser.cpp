@@ -186,7 +186,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
               "\n/connect"
               "\n/disconnect"
               "\n/help"
-              "\n/join"
+              "\n/join lub /j"
               "\n/me"
               "\n/nick"
               "\n/quit"
@@ -195,7 +195,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // dopisać resztę poleceń
     }
 
-    else if(f_command == "JOIN")
+    else if(f_command == "JOIN" || f_command == "J")
     {
         // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
         if(irc_ok)
@@ -208,6 +208,11 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             }
             // gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
             room_ok = true;     // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
+            // jeśli nie podano # przed nazwą pokoju, dodaj #
+            if(room[0] != '#')
+            {
+                room.insert(0, "#");
+            }
             msg_irc = "JOIN " + room;
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
