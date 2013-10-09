@@ -1,4 +1,4 @@
-#include <cstring>          // memset(), strlen(), memcpy()
+#include <cstring>          // memset(), memcpy()
 #include <sstream>          // std::string, std::stringstream
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>         // close() - socket
@@ -67,7 +67,7 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
     // wyślij dane do hosta
     if(data_send.size() != 0)       // jeśli bufor pusty, nie próbuj nic wysyłać
     {
-        bytes_sent = send(socketfd, data_send.c_str(), strlen(data_send.c_str()), 0);
+        bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
         if(bytes_sent == -1)
         {
             freeaddrinfo(host_info_list);
@@ -75,7 +75,7 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
             return 34;      // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
 		}
         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-        if(bytes_sent != (int)strlen(data_send.c_str()))    // (int) przed strlen() konwertuje zwracaną wartość na int
+        if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
