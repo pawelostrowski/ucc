@@ -27,7 +27,6 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
         return 31;          // kod błedu przy niepowodzeniu w pobraniu statusu adresu
 
     socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);     // utwórz deskryptor gniazda (socket)
-
     if(socketfd == -1)
     {
         freeaddrinfo(host_info_list);
@@ -65,22 +64,20 @@ int socket_http(std::string method, std::string host, std::string stock, std::st
         data_send += content;
 
     // wyślij dane do hosta
-    if(data_send.size() != 0)       // jeśli bufor pusty, nie próbuj nic wysyłać
+    bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
+    if(bytes_sent == -1)
     {
-        bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
-        if(bytes_sent == -1)
-        {
-            freeaddrinfo(host_info_list);
-            close(socketfd);
-            return 34;      // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
-		}
-        // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-        if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
-        {
-            freeaddrinfo(host_info_list);
-            close(socketfd);
-            return 35;      // kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
-        }
+        freeaddrinfo(host_info_list);
+        close(socketfd);
+        return 34;      // kod błędu przy niepowodzeniu w wysłaniu danych do hosta
+    }
+
+    // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
+    if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
+    {
+        freeaddrinfo(host_info_list);
+        close(socketfd);
+        return 35;      // kod błędu przy różnicy w wysłanych bajtach względem tych, które chcieliśmy wysłać
     }
 
     // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
