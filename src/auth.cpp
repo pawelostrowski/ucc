@@ -155,11 +155,11 @@ int http_auth_3(std::string &cookies, std::string &captcha, std::string &err_cod
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
-    std::string api_function;
 
-    api_function = "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}";
+    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
+                                "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+                                 cookies, buffer_recv, offset_recv);
 
-    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3", api_function, cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 
@@ -186,7 +186,6 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
     int socket_status, f_value_status;
     long offset_recv;
     char buffer_recv[50000];
-    std::string api_function;
     std::stringstream my_nick_length;
 
     // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
@@ -195,10 +194,11 @@ int http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousern
 
     my_nick_length << my_nick.size();
 
-    api_function =  "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
-                    + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}";
+    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
+                                "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
+                                 + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                                 cookies, buffer_recv, offset_recv);
 
-    socket_status = socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3", api_function, cookies, buffer_recv, offset_recv);
     if(socket_status != 0)
         return socket_status;       // kod błędu, gdy napotkano problem z socketem (31...37)
 

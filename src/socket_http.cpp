@@ -132,14 +132,13 @@ int find_cookies(char *buffer_recv, std::string &cookies)
         if(pos_cookie_end == std::string::npos)
             return 2;       // kod błędu, gdy nie znaleziono oczekiwanego ";" na końcu każdego cookie
 
-    cookie_tmp.clear();     // wyczyść bufor pomocniczy
+        // skopiuj cookie do bufora pomocniczego
+        cookie_tmp.clear();     // wyczyść bufor pomocniczy
+        cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
-    // skopiuj cookie do bufora pomocniczego
-    cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+        cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
 
-    cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
-
-    pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
+        pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
