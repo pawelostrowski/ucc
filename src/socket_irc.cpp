@@ -54,7 +54,7 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "* Nie udało się wysłać danych do serwera";
+        msg_sock = "# Nie udało się wysłać danych do serwera";
         return false;
     }
 
@@ -62,7 +62,7 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "* Nie udało się wysłać wszystkich danych do serwera";
+        msg_sock = "# Nie udało się wysłać wszystkich danych do serwera";
         return false;
     }
 
@@ -82,7 +82,7 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "* Nie udało się pobrać danych z serwera";
+        msg_sock = "# Nie udało się pobrać danych z serwera";
         return false;
     }
 
@@ -90,7 +90,7 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "* Serwer zakończył połączenie";
+        msg_sock = "# Serwer zakończył połączenie";
         return false;
     }
 

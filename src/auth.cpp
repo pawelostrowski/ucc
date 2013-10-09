@@ -98,7 +98,7 @@ bool http_auth_1(std::string &cookies, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "* http_auth_1(): ";
+    std::string msg_err_pre = "# http_auth_1(): ";
 
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
@@ -118,7 +118,7 @@ bool http_auth_2(std::string &cookies, std::string &msg_err)
     long offset_recv;
     char buffer_recv[50000];
     char *buffer_gif_ptr;
-    std::string msg_err_pre = "* http_auth_2(): ";
+    std::string msg_err_pre = "# http_auth_2(): ";
 
     if(! socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
@@ -126,10 +126,11 @@ bool http_auth_2(std::string &cookies, std::string &msg_err)
         return false;
     }
 
-    buffer_gif_ptr = strstr(buffer_recv, "GIF");        // daj wskaźnik na początek obrazka
+    // daj wskaźnik na początek obrazka
+    buffer_gif_ptr = strstr(buffer_recv, "GIF");
     if(buffer_gif_ptr == NULL)
     {
-        msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania z serwera";
+        msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania";
         return false;
     }
 
@@ -137,14 +138,15 @@ bool http_auth_2(std::string &cookies, std::string &msg_err)
     std::ofstream file_gif(FILE_GIF, std::ios::binary);
     if(file_gif == NULL)
     {
-        msg_err = msg_err_pre + "Nie udało się zapisać obrazka z kodem do przepisania, sprawdź uprawnienia dla " + FILE_GIF;
+        msg_err = msg_err_pre + "Nie udało się zapisać obrazka z kodem do przepisania, sprawdź uprawnienia do " + FILE_GIF;
         return false;
     }
 
     // &buffer_recv[offset_recv] - buffer_gif_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
     file_gif.write(buffer_gif_ptr, &buffer_recv[offset_recv] - buffer_gif_ptr);
 
-    file_gif.close();       // zamknij plik po zapisaniu
+    // zamknij plik po zapisaniu
+    file_gif.close();
 
     // wyświetl obrazek z kodem do przepisania
     system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
@@ -157,7 +159,7 @@ bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_co
 {
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "* http_auth_3(): ";
+    std::string msg_err_pre = "# http_auth_3(): ";
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
                      "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
@@ -178,7 +180,7 @@ bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_co
     // jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
     if(err_code == "FALSE")
     {
-        msg_err = "* Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
+        msg_err = "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
         return false;
     }
 
@@ -198,7 +200,7 @@ bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuouser
     long offset_recv;
     char buffer_recv[50000];
     std::stringstream my_nick_length;
-    std::string msg_err_pre = "* http_auth_4(): ";
+    std::string msg_err_pre = "# http_auth_4(): ";
 
     // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
     if(my_nick[0] == '~')
@@ -227,7 +229,7 @@ bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuouser
     {
         if(err_code == "-4")
         {
-            msg_err = "* Błąd serwera, wpisany nick zawiera niedozwolone znaki";  // tutaj msg_err_pre nie jest wymagany
+            msg_err = "# Błąd serwera (-4): wpisany nick zawiera niedozwolone znaki";   // tutaj msg_err_pre nie jest wymagany
         }
         else
         {
@@ -256,8 +258,8 @@ bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuouser
 
 bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info)
 {
-    std::string msg_pre = "* irc_auth_1(): ";
     std::string msg_sock;
+    std::string msg_pre = "# irc_auth_1(): ";
 
     // zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie, gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
     irc_ok = true;
@@ -266,7 +268,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! socket_irc_connect(socketfd_irc, irc_info))
     {
         irc_ok = false;
-        msg = msg_pre + "* Nie udało się połączyć z IRC";     // bez podawania koloru, bo w domyśle komunikaty z irc_auth są komunikatami błędów (na czerwono)
+        msg = msg_pre + "# Nie udało się połączyć z IRC";     // bez podawania koloru, bo w domyśle komunikaty z irc_auth są komunikatami błędów (na czerwono)
         return false;
     }
 
@@ -287,9 +289,9 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_2(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
+    std::string msg_pre = "# irc_auth_2(): ";
 
     // wyślij: NICK <~nick>
     buffer_irc_send = "NICK " + zuousername;
@@ -317,9 +319,9 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_3(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
+    std::string msg_pre = "# irc_auth_3(): ";
 
     // wyślij: AUTHKEY
     buffer_irc_send = "AUTHKEY";
@@ -347,11 +349,11 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_4(): ";
+    size_t raw_801, pos_authkey_start, pos_authkey_end;
     std::string msg_sock;
     std::string buffer_irc_send;
-    size_t raw_801, pos_authkey_start, pos_authkey_end;
     std::string authkey;
+    std::string msg_pre = "# irc_auth_4(): ";
 
     // wyszukaj AUTHKEY z odebranych danych w irc_auth_3(), przykładowa odpowiedź serwera:
     //  :cf1f1.onet 801 ~ucc :t9fSMnY5VQuwX1x9
@@ -359,21 +361,21 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(raw_801 == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "* Nie uzyskano AUTHKEY (brak odpowiedzi 801)";
+        msg = msg_pre + "# Nie uzyskano AUTHKEY (brak odpowiedzi 801)";
         return false;
     }
     pos_authkey_start = buffer_irc_recv.find(":", raw_801);     // szukaj drugiego dwukropka
     if(pos_authkey_start == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "* Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801)";
+        msg = msg_pre + "# Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801)";
         return false;
     }
     pos_authkey_end = buffer_irc_recv.find("\n", raw_801);      // szukaj końca wiersza
     if(pos_authkey_end == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "* Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801)";
+        msg = msg_pre + "# Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801)";
         return false;
     }
 
@@ -384,7 +386,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! auth_code(authkey))
     {
         irc_ok = false;
-        msg = msg_pre + "* AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?)";
+        msg = msg_pre + "# AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?)";
         return false;
     }
 
@@ -407,9 +409,9 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! irc_ok)
         return false;
 
-    std::string msg_pre = "* irc_auth_5(): ";
     std::string msg_sock;
     std::string buffer_irc_send;
+    std::string msg_pre = "# irc_auth_5(): ";
 
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
     buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername;

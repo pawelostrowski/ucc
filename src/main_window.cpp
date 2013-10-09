@@ -73,14 +73,14 @@ int main_window(bool use_colors)
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
     wprintw_iso2utf(win_diag, use_colors, UCC_GREEN, "Ucieszony Chat Client"
-                                                     "\n* Aby się zalogować, wpisz:"
+                                                     "\n# Aby się zalogować, wpisz:"
                                                      "\n/nick nazwa_nicka"
                                                      "\n/connect"
-                                                     "\n* Następnie przepisz kod z obrazka, w tym celu wpisz:"
+                                                     "\n# Następnie przepisz kod z obrazka, w tym celu wpisz:"
                                                      "\n/captcha kod_z_obrazka"
-                                                     "\n* Aby zobaczyć dostępne polecenia, wpisz:"
+                                                     "\n# Aby zobaczyć dostępne polecenia, wpisz:"
                                                      "\n/help"
-                                                     "\n* Aby zakończyć działanie programu, wpisz:"
+                                                     "\n# Aby zakończyć działanie programu, wpisz:"
                                                      "\n/quit");
 
     wrefresh(stdscr);

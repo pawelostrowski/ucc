@@ -155,8 +155,8 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 
     cookie_string = "Set-Cookie:";
 
-    // std::string(buffer_recv) zamienia C string na std::string
-    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // std::string(buffer_recv) zamienia C string na std::string
     if(pos_cookie_start == std::string::npos)
     {
         msg_err = msg_err_pre + "Nie znaleziono żadnego cookie";
@@ -165,7 +165,8 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 
     do
     {
-        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);      // szukaj ";" od pozycji początku cookie
+        // szukaj ";" od pozycji początku cookie
+        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
         if(pos_cookie_end == std::string::npos)
         {
             msg_err = msg_err_pre + "Problem z cookie, brak wymaganego średnika na końcu";
@@ -176,9 +177,11 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
         cookie_tmp.clear();     // wyczyść bufor pomocniczy
         cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
-        cookies += cookie_tmp;      // dopisz kolejny cookie do bufora
+        // dopisz kolejny cookie do bufora
+        cookies += cookie_tmp;
 
-        pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());   // znajdź kolejny cookie
+        // znajdź kolejny cookie
+        pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
