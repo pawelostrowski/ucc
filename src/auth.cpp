@@ -94,11 +94,18 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 }
 
 
-bool http_auth_1(std::string &cookies, std::string &msg_err)
+bool http_auth_init(std::string &cookies, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "# http_auth_1 -> ";
+    char *buffer_gif_ptr;
+    std::string msg_err_pre;
+
+/*
+    pobierz pierwsze 4 ciastka
+*/
+
+    msg_err_pre = "# http_auth_init_1 -> ";
 
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
@@ -109,16 +116,11 @@ bool http_auth_1(std::string &cookies, std::string &msg_err)
         return false;
     }
 
-    return true;
-}
+/*
+    pobierz captcha i kolejne, piąte ciastko, jednocześnie wysyłając pobrane poprzednio 4 ciastka
+*/
 
-
-bool http_auth_2(std::string &cookies, std::string &msg_err)
-{
-    long offset_recv;
-    char buffer_recv[50000];
-    char *buffer_gif_ptr;
-    std::string msg_err_pre = "# http_auth_2 -> ";
+    msg_err_pre = "# http_auth_init_2 -> ";
 
     if(! socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
@@ -155,11 +157,11 @@ bool http_auth_2(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err)
+bool http_auth_checkcaptcha(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "# http_auth_3 -> ";
+    std::string msg_err_pre = "# http_auth_chackcaptcha -> ";
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
                      "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
@@ -195,7 +197,7 @@ bool http_auth_3(std::string &cookies, std::string &captcha, std::string &err_co
 }
 
 
-bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err)
+bool http_auth_nick(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];

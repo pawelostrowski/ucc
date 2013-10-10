@@ -102,12 +102,12 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             return;
         }
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-        if(! http_auth_3(cookies, captcha, err_code, msg))
+        if(! http_auth_checkcaptcha(cookies, captcha, err_code, msg))
         {
             captcha_ok = false;
             return;     // w przypadku błędu wróć z komunikatem w msg
         }
-        if(! http_auth_4(cookies, my_nick, zuousername, uokey, err_code, msg))
+        if(! http_auth_nick(cookies, my_nick, zuousername, uokey, err_code, msg))
         {
             captcha_ok = false;
             return;     // w przypadku błędu wróć z komunikatem w msg
@@ -128,12 +128,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "# Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
         }
-        // gdy wpisano nick, rozpocznij łączenie (pierwsze dwa połączenia służą do pobrania captcha)
-        if(! http_auth_1(cookies, msg))
-        {
-            return;     // w przypadku błędu wróć z komunikatem w msg
-        }
-        if(! http_auth_2(cookies, msg))
+        // gdy wpisano nick, rozpocznij łączenie (cookies i pobranie captcha)
+        if(! http_auth_init(cookies, msg))
         {
             return;     // w przypadku błędu wróć z komunikatem w msg
         }
