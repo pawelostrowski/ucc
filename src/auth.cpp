@@ -202,7 +202,7 @@ bool http_auth_4(std::string &cookies, std::string my_nick, std::string &zuouser
     std::stringstream my_nick_length;
     std::string msg_err_pre = "# http_auth_4 -> ";
 
-    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicku nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
+    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
     if(my_nick[0] == '~')
         my_nick.erase(0, 1);
 
@@ -268,7 +268,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! socket_irc_connect(socketfd_irc, irc_info))
     {
         irc_ok = false;
-        msg = msg_pre + "# Nie udało się połączyć z IRC";     // bez podawania koloru, bo w domyśle komunikaty z irc_auth są komunikatami błędów (na czerwono)
+        msg = msg_pre + "Nie udało się połączyć z IRC";     // bez podawania koloru, bo w domyśle komunikaty z irc_auth są komunikatami błędów (na czerwono)
         return false;
     }
 
@@ -392,21 +392,21 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(raw_801 == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "# Nie uzyskano AUTHKEY (brak odpowiedzi 801)";
+        msg = msg_pre + "Nie uzyskano AUTHKEY (brak odpowiedzi 801)";
         return false;
     }
     pos_authkey_start = buffer_irc_recv.find(":", raw_801);     // szukaj drugiego dwukropka
     if(pos_authkey_start == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "# Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801)";
+        msg = msg_pre + "Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801)";
         return false;
     }
     pos_authkey_end = buffer_irc_recv.find("\n", raw_801);      // szukaj końca wiersza
     if(pos_authkey_end == std::string::npos)
     {
         irc_ok = false;
-        msg = msg_pre + "# Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801)";
+        msg = msg_pre + "Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801)";
         return false;
     }
 
@@ -417,7 +417,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &
     if(! auth_code(authkey))
     {
         irc_ok = false;
-        msg = msg_pre + "# AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?)";
+        msg = msg_pre + "AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?)";
         return false;
     }
 

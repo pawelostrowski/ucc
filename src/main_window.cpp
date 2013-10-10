@@ -310,7 +310,7 @@ int main_window(bool use_colors)
                         {
                             FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
                         }
-                        // gdy połączenie do IRC nie powiedzie się, wyzeruj socket i ustaw  z powrotem nick w pasku wpisywania na Niezalogowany
+                        // gdy połączenie do IRC nie powiedzie się, wyzeruj socket i ustaw z powrotem nick w pasku wpisywania na Niezalogowany
                         else
                         {
                             socketfd_irc = 0;
