@@ -41,7 +41,7 @@ bool socket_irc_connect(int &socketfd_irc, struct sockaddr_in &irc_info)
 }
 
 
-bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std::string &buffer_irc_send)
+bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
 {
 	int bytes_sent;
 
@@ -54,7 +54,7 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "# Nie udało się wysłać danych do serwera";
+        msg_err = "# Nie udało się wysłać danych do serwera";
         return false;
     }
 
@@ -62,7 +62,7 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "# Nie udało się wysłać wszystkich danych do serwera";
+        msg_err = "# Nie udało się wysłać wszystkich danych do serwera";
         return false;
     }
 
@@ -70,7 +70,7 @@ bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
 }
 
 
-bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std::string &buffer_irc_recv)
+bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
 {
     int bytes_recv;
     char buffer_tmp[1500];
@@ -82,7 +82,7 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "# Nie udało się pobrać danych z serwera";
+        msg_err = "# Nie udało się pobrać danych z serwera";
         return false;
     }
 
@@ -90,7 +90,7 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     {
         close(socketfd_irc);
         irc_ok = false;
-        msg_sock = "# Serwer zakończył połączenie";
+        msg_err = "# Serwer zakończył połączenie";
         return false;
     }
 
@@ -98,7 +98,7 @@ bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &msg_sock, std
     buffer_irc_recv.clear();
     buffer_irc_recv = std::string(buffer_tmp);
 
-    //usuń \2 z bufora
+    //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
     while (buffer_irc_recv.find("\2") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
 

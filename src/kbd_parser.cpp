@@ -177,7 +177,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
               "\n/join lub /j"
               "\n/me"
               "\n/nick"
-              "\n/quit"
+              "\n/quit lub /q"
               "\n/raw"
               "\n/whois";
         // dopisać resztę poleceń
@@ -277,7 +277,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         }
     }
 
-    else if(f_command == "QUIT")
+    else if(f_command == "QUIT" || f_command == "Q")
     {
         // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
         if(irc_ok)

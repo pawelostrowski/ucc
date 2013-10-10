@@ -8,7 +8,7 @@
 bool socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, bool get_cookies,
                  char *buffer_recv, long &offset_recv, std::string &msg_err)
 {
-    std::string msg_err_pre = "socket_http(): ";
+    std::string msg_err_pre = "socket_http -> ";
 
     if(method != "GET" && method != "POST")
     {
@@ -151,7 +151,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
     size_t pos_cookie_start, pos_cookie_end;
     std::string cookie_string, cookie_tmp;
-    std::string msg_err_pre = "find_cookies(): ";
+    std::string msg_err_pre = "find_cookies -> ";
 
     cookie_string = "Set-Cookie:";
 
