@@ -277,7 +277,14 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
                 else
                 {
                     msg_color = UCC_GREEN;
-                    msg = "# Aktualny nick: " + my_nick;
+                    if(my_password.size() == 0)
+                    {
+                        msg = "# Aktualny nick tymczasowy: " + my_nick;
+                    }
+                    else
+                    {
+                        msg = "# Aktualny nick stały: " + my_nick;
+                    }
                     return;
                 }
             }
@@ -291,12 +298,19 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
                 msg = "# Nick jest za długi (maksymalnie 32 znaki)";
                 return;
             }
-            // gdy wpisano nick (od 3 do 32 znaków), przepisz go do zmiennej i wyświetl
-            msg_color = UCC_GREEN;
-            my_nick = f_arg;
-            msg = "# Nowy nick: " + my_nick;
             // jeśli za nickiem wpisano hasło, pobierz je do bufora
             find_arg(kbd_buf, my_password, pos_arg_start, false);
+            // przepisz nick do zmiennej
+            msg_color = UCC_GREEN;
+            my_nick = f_arg;
+            if(my_password.size() == 0)
+            {
+                msg = "# Nowy nick tymczasowy: " + my_nick;
+            }
+            else
+            {
+                msg = "# Nowy nick stały: " + my_nick;
+            }
         }
         // po połączeniu z IRC nie można zmienić nicka
         else

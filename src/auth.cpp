@@ -250,7 +250,7 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     std::string err_code;
     std::string msg_err_pre = "# http_auth_getuo -> ";
 
-    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
+    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się (jeśli to nick tymczasowy)
     if(my_nick[0] == '~')
         my_nick.erase(0, 1);
 
