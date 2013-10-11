@@ -24,7 +24,7 @@ int main_window(bool use_colors)
 
     bool ucc_quit = false;      // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     bool command_ok = false;    // true, gdy wpisano polecenie
-    bool captcha_ok = false;    // stan wczytania captcha (jego pobranie z serwera)
+    bool captcha_ready = false; // stan wczytania captcha (jego pobranie z serwera)
     bool irc_ready = false;     // gotowość do połączenia z czatem, po połączeniu jest ustawiany na false
     bool irc_auth_status;       // status wykonania którejś z funkcji irc_auth_x()
     bool irc_ok = false;        // stan połączenia z czatem
@@ -42,7 +42,7 @@ int main_window(bool use_colors)
     short msg_color;            // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
     std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
     std::string zuousername = "Niezalogowany";
-    std::string cookies, my_nick, uokey, room, msg_sock;
+    std::string cookies, my_nick, my_password, uokey, room, msg_sock;
     int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
     std::string buffer_irc_recv;    // bufor odebranych danych z IRC
     std::string buffer_irc_recv_tmp;    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
@@ -228,8 +228,8 @@ int main_window(bool use_colors)
                     clrtoeol();
                     wrefresh(stdscr);
                     // wykonaj obsługę bufora (zidentyfikuj polecenie)
-                    kbd_parser(kbd_buf, msg, msg_color, msg_irc, my_nick, zuousername, cookies,
-                               uokey, command_ok, captcha_ok, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit);
+                    kbd_parser(kbd_buf, msg, msg_color, msg_irc, my_nick, my_password, zuousername, cookies,
+                               uokey, command_ok, captcha_ready, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit);
                     // jeśli wpisano zwykły tekst (nie polecenie), pokaż go wraz z nickiem i wyślij polecenie do IRC (wykrycie, czy połączono się z IRC oraz czy otwarty
                     //  jest aktywny pokój jest wykonywane w kbd_parser(), przy błędzie nie jest ustawiany command_ok, aby pokazać komunikat poniżej)
                     if(! command_ok)

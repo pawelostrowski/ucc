@@ -96,16 +96,13 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 
 bool http_auth_init(std::string &cookies, std::string &msg_err)
 {
-    long offset_recv;
-    char buffer_recv[50000];
-    char *buffer_gif_ptr;
-    std::string msg_err_pre;
-
 /*
     pobierz pierwsze 4 ciastka
 */
 
-    msg_err_pre = "# http_auth_init_1 -> ";
+    long offset_recv;
+    char buffer_recv[50000];
+    std::string msg_err_pre = "# http_auth_init -> ";
 
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
@@ -116,11 +113,19 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
         return false;
     }
 
+    return true;
+}
+
+bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
+{
 /*
     pobierz captcha i kolejne, piąte ciastko, jednocześnie wysyłając pobrane poprzednio 4 ciastka
 */
 
-    msg_err_pre = "# http_auth_init_2 -> ";
+    long offset_recv;
+    char buffer_recv[50000];
+    char *buffer_gif_ptr;
+    std::string msg_err_pre = "# http_auth_getcaptcha -> ";
 
     if(! socket_http("GET", "czat.onet.pl", "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
@@ -157,11 +162,32 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_checkcaptcha(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err)
+bool http_auth_getsk(std::string &cookies, std::string &msg_err)
+{
+/*
+    w przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko, a można je pobrać np. pobierając z serwera mały obrazek
+*/
+
+    long offset_recv;
+    char buffer_recv[50000];
+    std::string msg_err_pre = "# http_auth_getsk -> ";
+
+    if(! socket_http("GET", "czat.onet.pl", "/sk.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
+
+    return true;
+}
+
+
+bool http_auth_sendcaptcha(std::string &cookies, std::string &captcha, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "# http_auth_chackcaptcha -> ";
+    std::string err_code;
+    std::string msg_err_pre = "# http_auth_sendcaptcha -> ";
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
                      "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
@@ -197,22 +223,48 @@ bool http_auth_checkcaptcha(std::string &cookies, std::string &captcha, std::str
 }
 
 
-bool http_auth_nick(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err)
+bool http_auth_sendnickpasswd(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
+{
+    long offset_recv;
+    char buffer_recv[50000];
+    std::string msg_err_pre = "# http_auth_sendnickpasswd -> ";
+
+    if(! socket_http("POST", "secure.onet.pl", "/mlogin.html",
+                     "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=0&ok=1",
+                      cookies, false, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
+
+    return true;
+}
+
+
+bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
     std::stringstream my_nick_length;
-    std::string msg_err_pre = "# http_auth_4 -> ";
+    std::string nick_temp;
+    std::string err_code;
+    std::string msg_err_pre = "# http_auth_getuo -> ";
 
     // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
     if(my_nick[0] == '~')
         my_nick.erase(0, 1);
 
+    // wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła)
+    if(my_password.size() == 0)
+        nick_temp = "1";        // tymczasowy
+    else
+        nick_temp = "0";        // stały
+
     my_nick_length << my_nick.size();
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
                      "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
-                      + my_nick + "\";s:8:\"tempNick\";i:1;s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                      + my_nick + "\";s:8:\"tempNick\";i:" + nick_temp + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
                       cookies, false, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;

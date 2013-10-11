@@ -3,8 +3,8 @@
 #include "ucc_colors.hpp"
 
 
-void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &msg_irc, std::string &my_nick, std::string &zuousername, std::string &cookies,
-                std::string &uokey, bool &command_ok, bool &captcha_ok, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &command_me, bool &ucc_quit)
+void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &zuousername, std::string &cookies,
+                std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
 
@@ -50,7 +50,9 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         return;                 // gdy wpisano zwykły tekst, zakończ
     }
 
-    // wpisano / na początku, więc zinterpretuj polecenie (o ile istnieje)
+/*
+    wpisano / na początku, więc zinterpretuj polecenie (o ile istnieje)
+*/
 
     int f_command_status;
     size_t pos_arg_start = 1;   // pozycja początkowa kolejnego argumentu
@@ -70,25 +72,31 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         msg = "# Polecenie błędne, sam znak / nie jest poleceniem";
         return;
     }
+
     else if(f_command_status == 2)
     {
         msg = "# Polecenie błędne, po znaku / nie może być spacji";
         return;
     }
 
-    // wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej
+/*
+    wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej
+*/
+
     if(f_command == "CAPTCHA")
     {
         if(irc_ok)
         {
-            msg = "# Po zalogowaniu się nie można ponownie wysłać kodu";
+            msg = "# Już zalogowano się";
             return;
         }
-        if(! captcha_ok)
+
+        if(! captcha_ready)
         {
             msg = "# Najpierw wpisz /connect";
             return;
         }
+
         // pobierz wpisany kod captcha
         find_arg(kbd_buf, captcha, pos_arg_start, false);
         if(pos_arg_start == 0)
@@ -96,23 +104,22 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "# Nie podano kodu, spróbuj jeszcze raz";
             return;
         }
+
         if(captcha.size() != 6)
         {
             msg = "# Kod musi mieć 6 znaków, spróbuj jeszcze raz";
             return;
         }
+
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-        if(! http_auth_checkcaptcha(cookies, captcha, err_code, msg))
-        {
-            captcha_ok = false;
+        captcha_ready = false;  // zapobiega ponownemu wysłaniu kodu na serwer
+
+        if(! http_auth_sendcaptcha(cookies, captcha, msg))
             return;     // w przypadku błędu wróć z komunikatem w msg
-        }
-        if(! http_auth_nick(cookies, my_nick, zuousername, uokey, err_code, msg))
-        {
-            captcha_ok = false;
+
+        if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
             return;     // w przypadku błędu wróć z komunikatem w msg
-        }
-        captcha_ok = false;     // zapobiega ponownemu wysłaniu kodu na serwer (jeśli chcemy inny kod, trzeba wpisać /connect)
+
         irc_ready = true;       // gotowość do połączenia z IRC
     }
 
@@ -123,19 +130,42 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "# Już zalogowano się";
             return;
         }
+
         if(my_nick.size() == 0)
         {
             msg = "# Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
             return;
         }
-        // gdy wpisano nick, rozpocznij łączenie (cookies i pobranie captcha)
+
+        // gdy wpisano nick, rozpocznij łączenie
         if(! http_auth_init(cookies, msg))
-        {
             return;     // w przypadku błędu wróć z komunikatem w msg
+
+        // gdy wpisano hasło, wykonaj część dla nicka stałego
+        if(my_password.size() != 0)
+        {
+            if(! http_auth_getsk(cookies, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
+
+            if(! http_auth_sendnickpasswd(cookies, my_nick, my_password, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
+
+            if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
+
+            irc_ready = true;       // gotowość do połączenia z IRC
         }
-        msg_color = UCC_GREEN;
-        msg = "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";
-        captcha_ok = true;      // kod wysłany
+        // gdy nie wpisano hasła, wykonaj część dla nicka tymczasowego
+        else
+        {
+            // pobierz captcha
+            if(! http_auth_getcaptcha(cookies, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
+
+            msg_color = UCC_GREEN;
+            msg = "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";
+            captcha_ready = true;       // można przepisać kod i wysłać na serwer
+        }
     }
 
     else if(f_command == "DISCONNECT")
@@ -265,6 +295,9 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg_color = UCC_GREEN;
             my_nick = f_arg;
             msg = "# Nowy nick: " + my_nick;
+            // jeśli za nickiem wpisano hasło, pobierz je do bufora
+            find_arg(kbd_buf, my_password, pos_arg_start, false);
+                msg += ", hasło: " + my_password;
         }
         // po połączeniu z IRC nie można zmienić nicka
         else
@@ -394,6 +427,9 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
 {
     // pobierz argument z bufora klawiatury od pozycji w pos_arg_start, jeśli go nie ma, w pos_arg_start będzie 0
 
+    // wstępnie usuń ewentualną poprzednią zawartość po użyciu tej funkcji
+    f_arg.clear();
+
     // jeśli pozycja w pos_arg_start jest równa wielkości bufora klawiatury, oznacza to, że nie ma argumentu (tym bardziej, gdy jest większa), więc zakończ
     if(pos_arg_start >= kbd_buf.size())
     {
@@ -419,7 +455,6 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
     if(pos_arg_end == std::string::npos)
         pos_arg_end = kbd_buf.size();           // jeśli nie było spacji, koniec argumentu uznaje się za koniec bufora, czyli jego rozmiar
 
-    f_arg.clear();
     f_arg.insert(0, kbd_buf, pos_arg_start, pos_arg_end - pos_arg_start);       // wstaw szukany argument
 
     // jeśli trzeba, zamień małe litery w argumencie na wielkie

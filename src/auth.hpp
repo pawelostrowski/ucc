@@ -10,9 +10,15 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 
 bool http_auth_init(std::string &cookies, std::string &msg_err);
 
-bool http_auth_checkcaptcha(std::string &cookies, std::string &captcha, std::string &err_code, std::string &msg_err);
+bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err);
 
-bool http_auth_nick(std::string &cookies, std::string my_nick, std::string &zuousername, std::string &uokey, std::string &err_code, std::string &msg_err);
+bool http_auth_getsk(std::string &cookies, std::string &msg_err);
+
+bool http_auth_sendcaptcha(std::string &cookies, std::string &captcha, std::string &msg_err);
+
+bool http_auth_sendnickpasswd(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err);
+
+bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err);
 
 bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &msg, std::string &buffer_irc_recv, struct sockaddr_in &irc_info);
 
