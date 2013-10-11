@@ -272,14 +272,14 @@ int main_window(bool use_colors)
                             return 3;
                         }
                         // połącz z serwerem IRC
-                        irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, msg, buffer_irc_recv, irc_info);
+                        irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, irc_info, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: NICK <~nick>
-                        irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, msg, buffer_irc_recv, buffer_irc_sent, zuousername);
+                        irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, zuousername, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
@@ -287,7 +287,7 @@ int main_window(bool use_colors)
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY
-                        irc_auth_status = irc_auth_3(socketfd_irc, irc_ok, msg, buffer_irc_recv, buffer_irc_sent);
+                        irc_auth_status = irc_auth_3(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
@@ -295,14 +295,14 @@ int main_window(bool use_colors)
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY <AUTHKEY>
-                        irc_auth_status = irc_auth_4(socketfd_irc, irc_ok, msg, buffer_irc_recv, buffer_irc_sent);
+                        irc_auth_status = irc_auth_4(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-                        irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, msg, buffer_irc_sent, zuousername, uokey);
+                        irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, buffer_irc_sent, zuousername, uokey, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
