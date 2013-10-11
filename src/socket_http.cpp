@@ -24,7 +24,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     struct addrinfo host_info;          // ta struktura wypełni się danymi w getaddrinfo()
     struct addrinfo *host_info_list;    // wskaźnik do połączonej listy host_info
 
-//    memset(&host_info, 0, sizeof(host_info));
+    memset(&host_info, 0, sizeof(host_info));
 
     host_info.ai_family = AF_INET;          // wersja IP IPv4
     host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
