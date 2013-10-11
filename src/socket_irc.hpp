@@ -1,6 +1,5 @@
 #ifndef SOCKET_IRC_HPP
 #define SOCKET_IRC_HPP
-#define SOCKET_IRC_HPP_NAME "socket_irc"
 
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <fcntl.h>          // fnctl()

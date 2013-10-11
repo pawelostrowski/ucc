@@ -1,6 +1,5 @@
 #ifndef AUTH_HPP
 #define AUTH_HPP
-#define AUTH_HPP_NAME "auth"
 
 #define FILE_GIF "/tmp/onetcaptcha.gif"
 

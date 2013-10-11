@@ -1,5 +1,6 @@
 #include <sstream>          // std::string, std::stringstream, find(), erase(), c_str(), size()
 #include "kbd_parser.hpp"
+#include "auth.hpp"
 #include "ucc_colors.hpp"
 
 
@@ -150,10 +151,10 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             if(! http_auth_mlogin(cookies, my_nick, my_password, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
-            if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
+            if(! http_auth_useroverride(cookies, my_nick, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
-            if(! http_auth_useroverride(cookies, my_nick, msg))
+            if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
             irc_ready = true;       // gotowość do połączenia z IRC

@@ -32,7 +32,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     // pobierz status adresu
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)       // zapis host.c_str() oznacza zamianę std::string na C string
     {
-        msg_err = "Nie udało się pobrać informacji o hoście " + host;
+        msg_err = "Nie udało się pobrać informacji o hoście " + host + " (sprawdź swoje połączenie internetowe)";
         return false;
     }
 

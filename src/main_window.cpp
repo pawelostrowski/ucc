@@ -8,6 +8,7 @@
 #include "main_window.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
+#include "auth.hpp"
 #include "socket_irc.hpp"
 #include "ucc_colors.hpp"
 

@@ -97,7 +97,7 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 bool http_auth_init(std::string &cookies, std::string &msg_err)
 {
 /*
-    pobierz pierwsze 4 ciastka
+    pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn)
 */
 
     long offset_recv;
@@ -119,7 +119,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 {
 /*
-    pobierz captcha i kolejne, piąte ciastko, jednocześnie wysyłając pobrane poprzednio 4 ciastka
+    pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka
 */
 
     long offset_recv;
@@ -165,7 +165,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 {
 /*
-    w przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko, a można je uzyskać, pobierając z serwera mały obrazek
+    w przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać, pobierając z serwera mały obrazek
 */
 
     long offset_recv;
@@ -187,7 +187,7 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
     long offset_recv;
     char buffer_recv[50000];
     std::string err_code;
-    std::string msg_err_pre = "# http_auth_sendcaptcha: ";
+    std::string msg_err_pre = "# http_auth_checkcode: ";
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
                      "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
@@ -225,13 +225,17 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 
 bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
 {
+/*
+    w tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid)
+*/
+
     long offset_recv;
     char buffer_recv[50000];
-    std::string msg_err_pre = "# http_auth_sendnickpasswd: ";
+    std::string msg_err_pre = "# http_auth_mlogin: ";
 
     if(! socket_http("POST", "secure.onet.pl", "/mlogin.html",
                      "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=0&ok=1",
-                      cookies, false, buffer_recv, offset_recv, msg_err))
+                      cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;

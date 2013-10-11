@@ -1,6 +1,5 @@
 #ifndef MAIN_WINDOW_HPP
 #define MAIN_WINDOW_HPP
-#define MAIN_WINDOW_HPP_NAME "main_window"
 
 #include <ncursesw/ncurses.h>   // wersja ncurses ze wsparciem dla UTF-8
 
