@@ -8,11 +8,9 @@
 bool socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, bool get_cookies,
                  char *buffer_recv, long &offset_recv, std::string &msg_err)
 {
-    std::string msg_err_pre = "socket_http -> ";
-
     if(method != "GET" && method != "POST")
     {
-        msg_err = msg_err_pre + "Nieobsługiwana metoda " + method;
+        msg_err = "Nieobsługiwana metoda " + method;
         return false;
     }
 
@@ -26,7 +24,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     struct addrinfo host_info;          // ta struktura wypełni się danymi w getaddrinfo()
     struct addrinfo *host_info_list;    // wskaźnik do połączonej listy host_info
 
-    memset(&host_info, 0, sizeof(host_info));
+//    memset(&host_info, 0, sizeof(host_info));
 
     host_info.ai_family = AF_INET;          // wersja IP IPv4
     host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
@@ -34,7 +32,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     // pobierz status adresu
     if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)       // zapis host.c_str() oznacza zamianę std::string na C string
     {
-        msg_err = msg_err_pre + "Nie udało się pobrać informacji o hoście " + host;
+        msg_err = "Nie udało się pobrać informacji o hoście " + host;
         return false;
     }
 
@@ -43,7 +41,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     if(socketfd == -1)
     {
         freeaddrinfo(host_info_list);
-        msg_err = msg_err_pre + "Nie udało się utworzyć deskryptora gniazda";
+        msg_err = "Nie udało się utworzyć deskryptora gniazda";
         return false;
     }
 
@@ -52,7 +50,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     {
         freeaddrinfo(host_info_list);
         close(socketfd);        // zamknij połączenie z hostem
-        msg_err = msg_err_pre + "Nie udało się połączyć z hostem " + host;
+        msg_err = "Nie udało się połączyć z hostem " + host;
         return false;
     }
 
@@ -85,7 +83,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     {
         freeaddrinfo(host_info_list);
         close(socketfd);
-        msg_err = msg_err_pre + "Nie udało się wysłać danych do hosta " + host;
+        msg_err = "Nie udało się wysłać danych do hosta " + host;
         return false;
     }
 
@@ -94,7 +92,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     {
         freeaddrinfo(host_info_list);
         close(socketfd);
-        msg_err = msg_err_pre + "Nie udało się wysłać wszystkich danych do hosta " + host;
+        msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host;
         return false;
     }
 
@@ -109,7 +107,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
         {
             freeaddrinfo(host_info_list);
             close(socketfd);
-            msg_err = msg_err_pre + "Nie udało się pobrać danych z hosta " + host;
+            msg_err = "Nie udało się pobrać danych z hosta " + host;
             return false;
         }
         // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
@@ -119,7 +117,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
             {
                 freeaddrinfo(host_info_list);
                 close(socketfd);
-                msg_err = msg_err_pre + "Host " + host + " zakończył połączenie";
+                msg_err = "Host " + host + " zakończył połączenie";
                 return false;
             }
         }
@@ -138,8 +136,7 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     {
         if(! find_cookies(buffer_recv, cookies, msg_err))
         {
-            msg_err = msg_err_pre + msg_err;
-            return false;
+            return false;       // zwróć komunikat błędu w msg_err
         }
     }
 
@@ -151,7 +148,6 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
     size_t pos_cookie_start, pos_cookie_end;
     std::string cookie_string, cookie_tmp;
-    std::string msg_err_pre = "find_cookies -> ";
 
     cookie_string = "Set-Cookie:";
 
@@ -159,7 +155,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
     pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // std::string(buffer_recv) zamienia C string na std::string
     if(pos_cookie_start == std::string::npos)
     {
-        msg_err = msg_err_pre + "Nie znaleziono żadnego cookie";
+        msg_err = "Nie znaleziono żadnego cookie";
         return false;
     }
 
@@ -169,7 +165,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
         pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
         if(pos_cookie_end == std::string::npos)
         {
-            msg_err = msg_err_pre + "Problem z cookie, brak wymaganego średnika na końcu";
+            msg_err = "Problem z cookie, brak wymaganego średnika na końcu";
             return false;
         }
 
