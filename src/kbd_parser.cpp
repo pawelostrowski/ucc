@@ -114,7 +114,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // gdy kod wpisano i ma 6 znaków, wyślij go na serwer
         captcha_ready = false;  // zapobiega ponownemu wysłaniu kodu na serwer
 
-        if(! http_auth_sendcaptcha(cookies, captcha, msg))
+        if(! http_auth_checkcode(cookies, captcha, msg))
             return;     // w przypadku błędu wróć z komunikatem w msg
 
         if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
@@ -147,10 +147,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             if(! http_auth_getsk(cookies, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
-            if(! http_auth_sendnickpasswd(cookies, my_nick, my_password, msg))
+            if(! http_auth_mlogin(cookies, my_nick, my_password, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
             if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
+
+            if(! http_auth_useroverride(cookies, my_nick, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
             irc_ready = true;       // gotowość do połączenia z IRC

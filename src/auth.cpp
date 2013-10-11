@@ -182,7 +182,7 @@ bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_sendcaptcha(std::string &cookies, std::string &captcha, std::string &msg_err)
+bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
@@ -223,7 +223,7 @@ bool http_auth_sendcaptcha(std::string &cookies, std::string &captcha, std::stri
 }
 
 
-bool http_auth_sendnickpasswd(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
+bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
@@ -241,12 +241,37 @@ bool http_auth_sendnickpasswd(std::string &cookies, std::string my_nick, std::st
 }
 
 
+bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::string &msg_err)
+{
+/*
+    funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku), dotyczy nicka stałego
+*/
+
+    long offset_recv;
+    char buffer_recv[50000];
+    std::stringstream my_nick_length;
+    std::string msg_err_pre = "# http_auth_useroverride: ";
+
+    my_nick_length << my_nick.size();
+
+    if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
+                     "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
+                      cookies, false, buffer_recv, offset_recv, msg_err))
+    {
+        msg_err = msg_err_pre + msg_err;
+        return false;
+    }
+
+    return true;
+}
+
+
 bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err)
 {
     long offset_recv;
     char buffer_recv[50000];
     std::stringstream my_nick_length;
-    std::string nick_temp;
+    std::string temp_nick;
     std::string err_code;
     std::string msg_err_pre = "# http_auth_getuo: ";
 
@@ -256,15 +281,15 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 
     // wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła)
     if(my_password.size() == 0)
-        nick_temp = "1";        // tymczasowy
+        temp_nick = "1";        // tymczasowy
     else
-        nick_temp = "0";        // stały
+        temp_nick = "0";        // stały
 
     my_nick_length << my_nick.size();
 
     if(! socket_http("POST", "czat.onet.pl", "/include/ajaxapi.xml.php3",
-                     "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\""
-                      + my_nick + "\";s:8:\"tempNick\";i:" + nick_temp + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                     "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
+                      + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
                       cookies, false, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;

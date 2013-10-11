@@ -14,9 +14,11 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err);
 
 bool http_auth_getsk(std::string &cookies, std::string &msg_err);
 
-bool http_auth_sendcaptcha(std::string &cookies, std::string &captcha, std::string &msg_err);
+bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string &msg_err);
 
-bool http_auth_sendnickpasswd(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err);
+bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err);
+
+bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::string &msg_err);
 
 bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err);
 
