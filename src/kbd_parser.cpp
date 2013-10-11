@@ -297,7 +297,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             msg = "# Nowy nick: " + my_nick;
             // jeśli za nickiem wpisano hasło, pobierz je do bufora
             find_arg(kbd_buf, my_password, pos_arg_start, false);
-                msg += ", hasło: " + my_password;
         }
         // po połączeniu z IRC nie można zmienić nicka
         else

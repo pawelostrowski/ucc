@@ -281,14 +281,15 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     // sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
     if(err_code != "TRUE")
     {
-        if(err_code == "-4")
-        {
-            msg_err = "# Błąd serwera (-4): wpisany nick zawiera niedozwolone znaki";   // tutaj msg_err_pre nie jest wymagany
-        }
+        if(err_code == "-2")    // -2 oznacza nieprawidłowy nick (stały) lub hasło
+            msg_err = "# Błąd serwera (-2): nieprawidłowy nick lub hasło";      // tutaj msg_err_pre nie jest wymagany
+
+        else if(err_code == "-4")   // -4 oznacza nieprawidłowe znaki w nicku tymczasowym
+             msg_err = "# Błąd serwera (-4): nick zawiera niedozwolone znaki";   // tutaj msg_err_pre nie jest wymagany
+
         else
-        {
             msg_err = msg_err_pre + "Błąd serwera, kod błędu: " + err_code;
-        }
+
         return false;
     }
 
