@@ -297,15 +297,20 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     std::string err_code;
     std::string msg_err_pre = "# http_auth_getuo: ";
 
-    // jeśli podano nick z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się (jeśli to nick tymczasowy)
-    if(my_nick[0] == '~')
-        my_nick.erase(0, 1);
-
     // wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła)
     if(my_password.size() == 0)
+    {
         temp_nick = "1";        // tymczasowy
+        // jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
+        if(my_nick[0] == '~')
+        {
+            my_nick.erase(0, 1);
+        }
+    }
     else
+    {
         temp_nick = "0";        // stały
+    }
 
     my_nick_length << my_nick.size();
 

@@ -3,6 +3,8 @@
 #include <openssl/ssl.h>    // poza SSL zawiera include do stdlib.h, który zawiera m.in. bzero(), malloc(), realloc(), memcpy()
 #include "sockets.hpp"
 
+#define BUF_SIZE 1500
+
 
 bool socket_init(int &socketfd, std::string host, short port, std::string &msg_err)
 {
@@ -57,7 +59,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
     int socketfd;               // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv;
     char *buffer_recv = NULL;
-    char buffer_tmp[1500];      // bufor tymczasowy pobranych danych
+    char buffer_tmp[BUF_SIZE];  // bufor tymczasowy pobranych danych
     bool first_recv = true;     // czy to pierwsze pobranie w pętli
     std::string data_send;      // dane do wysłania do hosta
     std::stringstream content_length;
@@ -120,10 +122,10 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
         // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
         do
         {
-            // wstępnie zaalokuj 1500 bajtów na bufor
-            if(! buffer_recv)
+            // wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
+            if(buffer_recv == NULL)
             {
-                buffer_recv = (char*)malloc(1500);
+                buffer_recv = (char*)malloc(BUF_SIZE);
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas alokacji pamięci przez malloc()";
@@ -133,15 +135,16 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             // gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
             else
             {
-                buffer_recv = (char*)realloc(buffer_recv, offset_recv + 1500);
+                buffer_recv = (char*)realloc(buffer_recv, offset_recv + BUF_SIZE);
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas realokacji pamięci przez realloc()";
                     return NULL;
                 }
             }
+
             // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-            bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);
+            bytes_recv = recv(socketfd, buffer_tmp, BUF_SIZE, 0);
             // sprawdź, czy pobieranie danych się powiodło
             if(bytes_recv == -1)
             {
@@ -161,6 +164,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
                     return NULL;
                 }
             }
+
             first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
             memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
             offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
@@ -234,9 +238,9 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
         // pobierz odpowiedź
         do
         {
-            if(! buffer_recv)
+            if(buffer_recv == NULL)
             {
-                buffer_recv = (char*)malloc(1500);
+                buffer_recv = (char*)malloc(BUF_SIZE);
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
@@ -245,14 +249,15 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             }
             else
             {
-                buffer_recv = (char*)realloc(buffer_recv, offset_recv + 1500);
+                buffer_recv = (char*)realloc(buffer_recv, offset_recv + BUF_SIZE);
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
                     return NULL;
                 }
             }
-            bytes_recv = SSL_read(ssl_handle, buffer_tmp, 1500);
+
+            bytes_recv = SSL_read(ssl_handle, buffer_tmp, BUF_SIZE);
             if(bytes_recv <= -1)
             {
                 close(socketfd);
@@ -270,9 +275,11 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
                     return NULL;
                 }
             }
+
             first_recv = false;
             memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);
             offset_recv += bytes_recv;
+
         } while(bytes_recv != 0);
 
         buffer_recv[offset_recv] = '\0';
@@ -381,9 +388,9 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
 bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
 {
     int bytes_recv;
-    char buffer_tmp[1500];
+    char buffer_tmp[BUF_SIZE];
 
-    bytes_recv = recv(socketfd_irc, buffer_tmp, 1500 - 1, 0);
+    bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
     buffer_tmp[bytes_recv] = '\0';
 
     if(bytes_recv == -1)
