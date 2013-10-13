@@ -1,7 +1,6 @@
-#include <cstring>          // memset(), memcpy()
 #include <sstream>          // std::string, std::stringstream
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
-#include <openssl/ssl.h>
+#include <openssl/ssl.h>    // poza SSL zawiera include do stdlib.h, który zawiera m.in. bzero(), malloc(), realloc(), memcpy()
 #include "sockets.hpp"
 
 
@@ -47,17 +46,17 @@ bool socket_init(int &socketfd, std::string host, short port, std::string &msg_e
 }
 
 
-bool http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                   char *buffer_recv, long &offset_recv, std::string &msg_err)
+char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies, long &offset_recv, std::string &msg_err)
 {
     if(method != "GET" && method != "POST")
     {
         msg_err = "Nieobsługiwana metoda " + method;
-        return false;
+        return NULL;
     }
 
     int socketfd;               // deskryptor gniazda (socket)
     int bytes_sent, bytes_recv;
+    char *buffer_recv = NULL;
     char buffer_tmp[1500];      // bufor tymczasowy pobranych danych
     bool first_recv = true;     // czy to pierwsze pobranie w pętli
     std::string data_send;      // dane do wysłania do hosta
@@ -65,7 +64,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
 
     // utwórz gniazdo (socket) oraz połącz się z hostem
     if(! socket_init(socketfd, host, port, msg_err))
-        return false;       // zwróć komunikat błędu w msg_err
+        return NULL;        // zwróć komunikat błędu w msg_err
 
     // utwórz dane do wysłania do hosta
     data_send =  method + " " + stock + " HTTP/1.1\r\n"
@@ -102,33 +101,54 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać danych do hosta " + host;
-            return false;
+            return NULL;
         }
         if(bytes_sent == 0)
         {
             close(socketfd);
             msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie";
-            return false;
+            return NULL;
         }
         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
         if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host;
-            return false;
+            return NULL;
         }
 
         // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
         do
         {
+            // wstępnie zaalokuj 1500 bajtów na bufor
+            if(! buffer_recv)
+            {
+                buffer_recv = (char*)malloc(1500);
+                if(buffer_recv == NULL)
+                {
+                    msg_err = "Błąd podczas alokacji pamięci przez malloc()";
+                    return NULL;
+                }
+            }
+            // gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
+            else
+            {
+                buffer_recv = (char*)realloc(buffer_recv, offset_recv + 1500);
+                if(buffer_recv == NULL)
+                {
+                    msg_err = "Błąd podczas realokacji pamięci przez realloc()";
+                    return NULL;
+                }
+            }
             // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
             bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);
             // sprawdź, czy pobieranie danych się powiodło
             if(bytes_recv == -1)
             {
                 close(socketfd);
+                free(buffer_recv);      // w przypadku błędu zwolnij pamięć zajmowaną przez bufor
                 msg_err = "Nie udało się pobrać danych z hosta " + host;
-                return false;
+                return NULL;
             }
             // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
             if(first_recv)
@@ -136,13 +156,15 @@ bool http_get_data(std::string method, std::string host, short port, std::string
                 if(bytes_recv == 0)
                 {
                     close(socketfd);
+                    free(buffer_recv);
                     msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie";
-                    return false;
+                    return NULL;
                 }
             }
             first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
             memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
             offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
+
         } while(bytes_recv != 0);
 
         buffer_recv[offset_recv] = '\0';
@@ -155,8 +177,8 @@ bool http_get_data(std::string method, std::string host, short port, std::string
     // połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
     else if(port == 443)
     {
-        SSL *ssl_handle;
         SSL_CTX *ssl_context;
+        SSL *ssl_handle;
 
         SSL_load_error_strings();
         SSL_library_init();
@@ -166,26 +188,26 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         if(ssl_context == NULL)
         {
             msg_err = "Błąd podczas tworzenia obiektu SSL_CTX";
-            return false;
+            return NULL;
         }
 
         ssl_handle = SSL_new(ssl_context);
         if(ssl_handle == NULL)
         {
             msg_err = "Błąd podczas tworzenia struktury SSL";
-            return false;
+            return NULL;
         }
 
         if(! SSL_set_fd(ssl_handle, socketfd))
         {
             msg_err = "Błąd podczas łączenia desktyptora SSL";
-            return false;
+            return NULL;
         }
 
         if(SSL_connect(ssl_handle) != 1)
         {
             msg_err = "Błąd podczas łączenia się z " + host + " przez SSL";
-            return false;
+            return NULL;
         }
 
         // wyślij dane do hosta
@@ -194,38 +216,58 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać danych do hosta " + host + " [SSL]";
-            return false;
+            return NULL;
         }
         if(bytes_sent == 0)
         {
             close(socketfd);
             msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie [SSL]";
-            return false;
+            return NULL;
         }
         if(bytes_sent != (int)data_send.size())
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host + " [SSL]";
-            return false;
+            return NULL;
         }
 
         // pobierz odpowiedź
         do
         {
+            if(! buffer_recv)
+            {
+                buffer_recv = (char*)malloc(1500);
+                if(buffer_recv == NULL)
+                {
+                    msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
+                    return NULL;
+                }
+            }
+            else
+            {
+                buffer_recv = (char*)realloc(buffer_recv, offset_recv + 1500);
+                if(buffer_recv == NULL)
+                {
+                    msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
+                    return NULL;
+                }
+            }
             bytes_recv = SSL_read(ssl_handle, buffer_tmp, 1500);
             if(bytes_recv <= -1)
             {
                 close(socketfd);
+                free(buffer_recv);
                 msg_err = "Nie udało się pobrać danych z hosta " + host + " [SSL]";
-                return false;
+                return NULL;
             }
             if(first_recv)
             {
                 if(bytes_recv == 0)
                 {
                     close(socketfd);
+                    free(buffer_recv);
                     msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL]";
-                    return false;
+                    return NULL;
                 }
             }
             first_recv = false;
@@ -249,11 +291,12 @@ bool http_get_data(std::string method, std::string host, short port, std::string
     {
         if(! find_cookies(buffer_recv, cookies, msg_err))
         {
-            return false;       // zwróć komunikat błędu w msg_err
+            free(buffer_recv);
+            return NULL;        // zwróć komunikat błędu w msg_err
         }
     }
 
-    return true;
+    return buffer_recv;         // zwróć wskaźnik do bufora pobranych danych
 }
 
 

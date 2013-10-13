@@ -100,17 +100,21 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 */
 
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::string msg_err_pre = "# http_auth_init: ";
 
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
 
-    if(! http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, true, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
     }
+
+    // nie wolno zapomnieć o zwolnieniu pamięci! (w przypadku błedu w http_get_data() nie trzeba zwalniać pamięci, bo funkcja zrobiła to sama)
+    free(buffer_recv);
 
     return true;
 }
@@ -122,11 +126,12 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 */
 
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     char *buffer_gif_ptr;
     std::string msg_err_pre = "# http_auth_getcaptcha: ";
 
-    if(! http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -157,6 +162,8 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     // wyświetl obrazek z kodem do przepisania
     system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
 
+    free(buffer_recv);
+
     return true;
 }
 
@@ -168,14 +175,17 @@ bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 */
 
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::string msg_err_pre = "# http_auth_getsk: ";
 
-    if(! http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", cookies, true, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
     }
+
+    free(buffer_recv);
 
     return true;
 }
@@ -184,13 +194,14 @@ bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string &msg_err)
 {
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::string err_code;
     std::string msg_err_pre = "# http_auth_checkcode: ";
 
-    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                       "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-                        cookies, false, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                                "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+                                 cookies, false, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -218,6 +229,8 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
         return false;
     }
 
+    free(buffer_recv);
+
     return true;
 }
 
@@ -229,16 +242,19 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
 */
 
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::string msg_err_pre = "# http_auth_mlogin: ";
 
-    if(! http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
-                       "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
-                        cookies, true, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
+                                "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
+                                 cookies, true, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
     }
+
+    free(buffer_recv);
 
     return true;
 }
@@ -251,19 +267,22 @@ bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::stri
 */
 
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::stringstream my_nick_length;
     std::string msg_err_pre = "# http_auth_useroverride: ";
 
     my_nick_length << my_nick.size();
 
-    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                       "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
-                        cookies, false, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                                "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
+                                 cookies, false, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
     }
+
+    free(buffer_recv);
 
     return true;
 }
@@ -272,7 +291,7 @@ bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::stri
 bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err)
 {
     long offset_recv;
-    char buffer_recv[50000];
+    char *buffer_recv;
     std::stringstream my_nick_length;
     std::string temp_nick;
     std::string err_code;
@@ -290,10 +309,11 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 
     my_nick_length << my_nick.size();
 
-    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                       "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
-                        + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
-                        cookies, false, buffer_recv, offset_recv, msg_err))
+    buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                                "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
+                                 + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                                 cookies, false, offset_recv, msg_err);
+    if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -334,6 +354,8 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
         msg_err = msg_err_pre + "Serwer nie zwrócił zuoUsername";
         return false;
     }
+
+    free(buffer_recv);
 
     return true;
 }
