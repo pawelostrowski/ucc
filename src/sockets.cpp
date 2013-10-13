@@ -107,7 +107,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         if(bytes_sent == 0)
         {
             close(socketfd);
-            msg_err = "Podczas wysyłania danych host " + host + " zakończył połączenie";
+            msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie";
             return false;
         }
         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
@@ -136,7 +136,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
                 if(bytes_recv == 0)
                 {
                     close(socketfd);
-                    msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie";
+                    msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie";
                     return false;
                 }
             }
@@ -199,7 +199,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         if(bytes_sent == 0)
         {
             close(socketfd);
-            msg_err = "Podczas wysyłania danych host " + host + " zakończył połączenie [SSL]";
+            msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie [SSL]";
             return false;
         }
         if(bytes_sent != (int)data_send.size())
@@ -224,7 +224,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
                 if(bytes_recv == 0)
                 {
                     close(socketfd);
-                    msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie [SSL]";
+                    msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL]";
                     return false;
                 }
             }
