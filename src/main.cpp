@@ -2,8 +2,6 @@
 #include <cerrno>           // perror()
 #include "main_window.hpp"
 
-#include "sockets.hpp"
-
 int main(int argc, char *argv[])
 {
     bool use_colors = true;     // domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)

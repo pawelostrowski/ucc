@@ -90,6 +90,9 @@ bool http_get_data(std::string method, std::string host, short port, std::string
     if(content.size() != 0)
         data_send += content;
 
+    // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
+    offset_recv = 0;
+
     // połączenie na porcie różnym od 443 uruchomi transmisję nieszyfrowaną
     if(port != 443)
     {
@@ -116,7 +119,6 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         }
 
         // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
-        offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
         do
         {
             // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
@@ -208,7 +210,6 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         }
 
         // pobierz odpowiedź
-        offset_recv = 0;
         do
         {
             bytes_recv = SSL_read(ssl_handle, buffer_tmp, 1500);
