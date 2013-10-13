@@ -1,8 +1,7 @@
 #include <cstring>          // memset(), memcpy()
 #include <sstream>          // std::string, std::stringstream
-#include <openssl/rand.h>
+#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <openssl/ssl.h>
-#include <openssl/err.h>
 #include "sockets.hpp"
 
 
@@ -24,14 +23,14 @@ bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_e
     }
 
     // utwórz deskryptor gniazda (socket)
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+    socketfd = socket(PF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
     if(socketfd == -1)
     {
         msg_err = "Nie udało się utworzyć deskryptora gniazda";
         return false;
     }
 
-    serv_info.sin_family = AF_INET;
+    serv_info.sin_family = PF_INET;
     serv_info.sin_port = htons(port);
     serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
     bzero(&(serv_info.sin_zero), 8);
@@ -39,7 +38,7 @@ bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_e
     // połącz z hostem
     if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
     {
-        close(socketfd);        // zamknij połączenie z hostem
+        close(socketfd);
         msg_err = "Nie udało się połączyć z hostem " + host;
         return false;
     }
@@ -91,55 +90,109 @@ bool socket_http(std::string method, std::string host, short port, std::string s
     if(content.size() != 0)
         data_send += content;
 
-    // wyślij dane do hosta
-    bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
-    if(bytes_sent == -1)
+    // połączenie na porcie różnym od 443 uruchomi transmisję nieszyfrowaną
+    if(port != 443)
     {
-        close(socketfd);
-        msg_err = "Nie udało się wysłać danych do hosta " + host;
-        return false;
-    }
-
-    // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-    if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
-    {
-        close(socketfd);
-        msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host;
-        return false;
-    }
-
-    // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
-    offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
-    do
-    {
-        // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-        bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);
-        // sprawdź, czy pobieranie danych się powiodło
-        if(bytes_recv == -1)
+        // wyślij dane do hosta
+        bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
+        if(bytes_sent == -1)
         {
             close(socketfd);
-            msg_err = "Nie udało się pobrać danych z hosta " + host;
+            msg_err = "Nie udało się wysłać danych do hosta " + host;
             return false;
         }
-        // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
-        if(first_recv)
+
+        // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
+        if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
         {
-            if(bytes_recv == 0)
+            close(socketfd);
+            msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host;
+            return false;
+        }
+
+        // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
+        offset_recv = 0;        // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
+        do
+        {
+            // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+            bytes_recv = recv(socketfd, buffer_tmp, 1500, 0);
+            // sprawdź, czy pobieranie danych się powiodło
+            if(bytes_recv == -1)
             {
                 close(socketfd);
-                msg_err = "Host " + host + " zakończył połączenie";
+                msg_err = "Nie udało się pobrać danych z hosta " + host;
                 return false;
             }
+            // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
+            if(first_recv)
+            {
+                if(bytes_recv == 0)
+                {
+                    close(socketfd);
+                    msg_err = "Host " + host + " zakończył połączenie";
+                    return false;
+                }
+            }
+            first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
+            memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
+            offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
+        } while(bytes_recv != 0);
+
+        buffer_recv[offset_recv] = '\0';
+
+        // zamknij połączenie z hostem
+        close(socketfd);
+    }
+
+    // połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
+    else if(port == 443)
+    {
+        SSL *ssl_handle;
+        SSL_CTX *ssl_context;
+
+        SSL_load_error_strings();
+        SSL_library_init();
+        OpenSSL_add_all_algorithms();
+
+        ssl_context = SSL_CTX_new(SSLv23_client_method());
+        if(ssl_context == NULL)
+        {
+            msg_err = "error: SSL_CTX_new";
+            return false;
         }
-        first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
-        memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
-        offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
-    } while(bytes_recv != 0);
 
-    buffer_recv[offset_recv] = '\0';
+        ssl_handle = SSL_new(ssl_context);
+        if(ssl_handle == NULL)
+        {
+            msg_err = "error: SSL_new";
+            return false;
+        }
 
-    // zamknij połączenie z hostem
-    close(socketfd);
+        if(! SSL_set_fd(ssl_handle, socketfd))
+        {
+            msg_err = "error: SSL_set_fd";
+            return false;
+        }
+
+        if(SSL_connect(ssl_handle) != 1)
+        {
+            msg_err = "error: SSL_connect";
+            return false;
+        }
+
+        // wyślij dane do hosta
+        SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+
+        // pobierz odpowiedź
+        bytes_recv = SSL_read(ssl_handle, buffer_recv, 1500 - 1);
+        buffer_recv[bytes_recv] = '\0';
+
+        close(socketfd);
+
+        SSL_shutdown(ssl_handle);
+        SSL_free(ssl_handle);
+        SSL_CTX_free(ssl_context);
+    }
 
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)

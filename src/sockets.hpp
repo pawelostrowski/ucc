@@ -1,7 +1,6 @@
 #ifndef SOCKETS_HPP
 #define SOCKETS_HPP
 
-#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <unistd.h>         // close() - socket
 
 bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_err);

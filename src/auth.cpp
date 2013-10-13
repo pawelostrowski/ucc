@@ -232,8 +232,8 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
     char buffer_recv[50000];
     std::string msg_err_pre = "# http_auth_mlogin: ";
 
-    if(! socket_http("POST", "secure.onet.pl", 80, "/mlogin.html",
-                     "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=0&ok=1",
+    if(! socket_http("POST", "secure.onet.pl", 443, "/mlogin.html",
+                     "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
                       cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;

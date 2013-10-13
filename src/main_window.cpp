@@ -49,8 +49,6 @@ int main_window(bool use_colors)
     std::string buffer_irc_recv_tmp;    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
     std::string buffer_irc_sent;    // dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
 
-//    struct sockaddr_in irc_info;
-
     fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
     FD_ZERO(&readfds);
@@ -265,15 +263,6 @@ int main_window(bool use_colors)
                     if(irc_ready)
                     {
                         irc_ready = false;      // po połączeniu nie próbuj się znowu łączyć do IRC od zera
-/*
-                        // inicjalizacja gniazda (socket) używanego w połączeniu IRC
-                        if(socket_irc_init(socketfd_irc, irc_info) != 0)
-                        {
-                            delwin(win_diag);
-                            endwin();
-                            return 3;
-                        }
-*/
                         // połącz z serwerem IRC
                         irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
@@ -650,6 +639,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
 
         case 0xAF:          // Ż
             wprintw(active_window, "%c%c", 0xC5, 0xBB);
+            break;
+
+        case '\r':
             break;
 
         default:
