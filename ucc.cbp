@@ -43,10 +43,8 @@
 		<Unit filename="src/main.cpp" />
 		<Unit filename="src/main_window.cpp" />
 		<Unit filename="src/main_window.hpp" />
-		<Unit filename="src/socket_http.cpp" />
-		<Unit filename="src/socket_http.hpp" />
-		<Unit filename="src/socket_irc.cpp" />
-		<Unit filename="src/socket_irc.hpp" />
+		<Unit filename="src/sockets.cpp" />
+		<Unit filename="src/sockets.hpp" />
 		<Unit filename="src/ucc_colors.hpp" />
 		<Extensions>
 			<code_completion />

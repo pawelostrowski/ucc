@@ -1,11 +1,54 @@
 #include <cstring>          // memset(), memcpy()
 #include <sstream>          // std::string, std::stringstream
-#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
-#include <unistd.h>         // close() - socket
-#include "socket_http.hpp"
+#include <openssl/rand.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include "sockets.hpp"
 
 
-bool socket_http(std::string method, std::string host, std::string stock, std::string content, std::string &cookies, bool get_cookies,
+bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_err)
+{
+/*
+    utwórz gniazdo (socket) oraz połącz się z hostem
+*/
+
+    struct hostent *host_info;
+    struct sockaddr_in serv_info;
+
+    // pobierz adres IP hosta
+    host_info = gethostbyname(host.c_str());
+    if(host_info == NULL)
+    {
+        msg_err = "Nie udało się pobrać informacji o hoście " + host + " (sprawdź swoje połączenie internetowe)";
+        return false;
+    }
+
+    // utwórz deskryptor gniazda (socket)
+    socketfd = socket(AF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+    if(socketfd == -1)
+    {
+        msg_err = "Nie udało się utworzyć deskryptora gniazda";
+        return false;
+    }
+
+    serv_info.sin_family = AF_INET;
+    serv_info.sin_port = htons(port);
+    serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
+    bzero(&(serv_info.sin_zero), 8);
+
+    // połącz z hostem
+    if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
+    {
+        close(socketfd);        // zamknij połączenie z hostem
+        msg_err = "Nie udało się połączyć z hostem " + host;
+        return false;
+    }
+
+    return true;
+}
+
+
+bool socket_http(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
                  char *buffer_recv, long &offset_recv, std::string &msg_err)
 {
     if(method != "GET" && method != "POST")
@@ -21,38 +64,9 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     std::string data_send;      // dane do wysłania do hosta
     std::stringstream content_length;
 
-    struct addrinfo host_info;          // ta struktura wypełni się danymi w getaddrinfo()
-    struct addrinfo *host_info_list;    // wskaźnik do połączonej listy host_info
-
-    memset(&host_info, 0, sizeof(host_info));
-
-    host_info.ai_family = AF_INET;          // wersja IP IPv4
-    host_info.ai_socktype = SOCK_STREAM;    // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
-
-    // pobierz status adresu
-    if(getaddrinfo(host.c_str(), "80", &host_info, &host_info_list) != 0)       // zapis host.c_str() oznacza zamianę std::string na C string
-    {
-        msg_err = "Nie udało się pobrać informacji o hoście " + host + " (sprawdź swoje połączenie internetowe)";
-        return false;
-    }
-
-    // utwórz deskryptor gniazda (socket)
-    socketfd = socket(host_info_list->ai_family, host_info_list->ai_socktype, host_info_list->ai_protocol);
-    if(socketfd == -1)
-    {
-        freeaddrinfo(host_info_list);
-        msg_err = "Nie udało się utworzyć deskryptora gniazda";
-        return false;
-    }
-
-    // pobierz status połączenia do hosta
-    if(connect(socketfd, host_info_list->ai_addr, host_info_list->ai_addrlen) == -1)
-    {
-        freeaddrinfo(host_info_list);
-        close(socketfd);        // zamknij połączenie z hostem
-        msg_err = "Nie udało się połączyć z hostem " + host;
-        return false;
-    }
+    // utwórz gniazdo (socket) oraz połącz się z hostem
+    if(! tcp_connect(socketfd, host, port, msg_err))
+        return false;       // zwróć komunikat błędu w msg_err
 
     // utwórz dane do wysłania do hosta
     data_send =  method + " " + stock + " HTTP/1.1\r\n"
@@ -81,7 +95,6 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
     if(bytes_sent == -1)
     {
-        freeaddrinfo(host_info_list);
         close(socketfd);
         msg_err = "Nie udało się wysłać danych do hosta " + host;
         return false;
@@ -90,7 +103,6 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
     // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
     if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
     {
-        freeaddrinfo(host_info_list);
         close(socketfd);
         msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host;
         return false;
@@ -105,7 +117,6 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
         // sprawdź, czy pobieranie danych się powiodło
         if(bytes_recv == -1)
         {
-            freeaddrinfo(host_info_list);
             close(socketfd);
             msg_err = "Nie udało się pobrać danych z hosta " + host;
             return false;
@@ -115,7 +126,6 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
         {
             if(bytes_recv == 0)
             {
-                freeaddrinfo(host_info_list);
                 close(socketfd);
                 msg_err = "Host " + host + " zakończył połączenie";
                 return false;
@@ -128,8 +138,8 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
 
     buffer_recv[offset_recv] = '\0';
 
-    freeaddrinfo(host_info_list);
-    close(socketfd);        // zamknij połączenie z hostem
+    // zamknij połączenie z hostem
+    close(socketfd);
 
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)
@@ -144,12 +154,89 @@ bool socket_http(std::string method, std::string host, std::string stock, std::s
 }
 
 
+bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
+{
+	int bytes_sent;
+
+    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+    buffer_irc_send += "\r\n";
+
+    bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
+
+    if(bytes_sent == -1)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się wysłać danych do serwera, rozłączono";
+        return false;
+    }
+
+    if(bytes_sent == 0)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie";
+        return false;
+    }
+
+    if(bytes_sent != (int)buffer_irc_send.size())
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono";
+        return false;
+    }
+
+    return true;
+}
+
+
+bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
+{
+    int bytes_recv;
+    char buffer_tmp[1500];
+
+    bytes_recv = recv(socketfd_irc, buffer_tmp, 1500 - 1, 0);
+    buffer_tmp[bytes_recv] = '\0';
+
+    if(bytes_recv == -1)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się pobrać danych z serwera, rozłączono";
+        return false;
+    }
+
+    if(bytes_recv == 0)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie";
+        return false;
+    }
+
+    // odebrane dane zwróć w buforze std::string
+    buffer_irc_recv.clear();
+    buffer_irc_recv = std::string(buffer_tmp);
+
+    //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
+    while (buffer_irc_recv.find("\2") != std::string::npos)
+        buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
+
+    //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+    while (buffer_irc_recv.find("\r") != std::string::npos)
+        buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
+
+    return true;
+}
+
+
 bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
     size_t pos_cookie_start, pos_cookie_end;
     std::string cookie_string, cookie_tmp;
 
-    cookie_string = "Set-Cookie:";
+    cookie_string = "Set-Cookie:";      // celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
 
     // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
     pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // std::string(buffer_recv) zamienia C string na std::string
@@ -173,10 +260,10 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
         cookie_tmp.clear();     // wyczyść bufor pomocniczy
         cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
-        // dopisz kolejny cookie do bufora
+        // dopisz kolejne cookie do bufora
         cookies += cookie_tmp;
 
-        // znajdź kolejny cookie
+        // znajdź kolejne cookie
         pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie

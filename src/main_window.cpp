@@ -9,7 +9,7 @@
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
 #include "auth.hpp"
-#include "socket_irc.hpp"
+#include "sockets.hpp"
 #include "ucc_colors.hpp"
 
 
@@ -49,7 +49,7 @@ int main_window(bool use_colors)
     std::string buffer_irc_recv_tmp;    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
     std::string buffer_irc_sent;    // dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
 
-    struct sockaddr_in irc_info;
+//    struct sockaddr_in irc_info;
 
     fd_set readfds;         // deskryptor dla select()
     fd_set readfds_tmp;
@@ -265,6 +265,7 @@ int main_window(bool use_colors)
                     if(irc_ready)
                     {
                         irc_ready = false;      // po połączeniu nie próbuj się znowu łączyć do IRC od zera
+/*
                         // inicjalizacja gniazda (socket) używanego w połączeniu IRC
                         if(socket_irc_init(socketfd_irc, irc_info) != 0)
                         {
@@ -272,8 +273,9 @@ int main_window(bool use_colors)
                             endwin();
                             return 3;
                         }
+*/
                         // połącz z serwerem IRC
-                        irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, irc_info, msg);
+                        irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
