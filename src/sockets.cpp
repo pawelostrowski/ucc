@@ -101,7 +101,12 @@ bool http_get_data(std::string method, std::string host, short port, std::string
             msg_err = "Nie udało się wysłać danych do hosta " + host;
             return false;
         }
-
+        if(bytes_sent == 0)
+        {
+            close(socketfd);
+            msg_err = "Podczas wysyłania danych host " + host + " zakończył połączenie";
+            return false;
+        }
         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
         if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
         {
@@ -129,7 +134,7 @@ bool http_get_data(std::string method, std::string host, short port, std::string
                 if(bytes_recv == 0)
                 {
                     close(socketfd);
-                    msg_err = "Host " + host + " zakończył połączenie";
+                    msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie";
                     return false;
                 }
             }
@@ -158,34 +163,65 @@ bool http_get_data(std::string method, std::string host, short port, std::string
         ssl_context = SSL_CTX_new(SSLv23_client_method());
         if(ssl_context == NULL)
         {
-            msg_err = "error: SSL_CTX_new";
+            msg_err = "Błąd podczas tworzenia obiektu SSL_CTX";
             return false;
         }
 
         ssl_handle = SSL_new(ssl_context);
         if(ssl_handle == NULL)
         {
-            msg_err = "error: SSL_new";
+            msg_err = "Błąd podczas tworzenia struktury SSL";
             return false;
         }
 
         if(! SSL_set_fd(ssl_handle, socketfd))
         {
-            msg_err = "error: SSL_set_fd";
+            msg_err = "Błąd podczas łączenia desktyptora SSL";
             return false;
         }
 
         if(SSL_connect(ssl_handle) != 1)
         {
-            msg_err = "error: SSL_connect";
+            msg_err = "Błąd podczas łączenia się z " + host + " przez SSL";
             return false;
         }
 
         // wyślij dane do hosta
-        SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+        bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+        if(bytes_sent <= -1)
+        {
+            close(socketfd);
+            msg_err = "Nie udało się wysłać danych do hosta " + host + " [SSL]";
+            return false;
+        }
+        if(bytes_sent == 0)
+        {
+            close(socketfd);
+            msg_err = "Podczas wysyłania danych host " + host + " zakończył połączenie [SSL]";
+            return false;
+        }
+        if(bytes_sent != (int)data_send.size())
+        {
+            close(socketfd);
+            msg_err = "Nie udało się wysłać wszystkich danych do hosta " + host + " [SSL]";
+            return false;
+        }
 
-        // pobierz odpowiedź
+        // pobierz odpowiedź (bez sprawdzania, czy to cała odpowiedź, bo z założenia w tym przypadku pobierana ilość danych jest niewielka)
         bytes_recv = SSL_read(ssl_handle, buffer_recv, 1500 - 1);
+        if(bytes_recv <= -1)
+        {
+            close(socketfd);
+            msg_err = "Nie udało się pobrać danych z hosta " + host + " [SSL]";
+            return false;
+        }
+        if(bytes_recv == 0)
+        {
+            close(socketfd);
+            msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie [SSL]";
+            return false;
+        }
+
         buffer_recv[bytes_recv] = '\0';
 
         // zamknij połączenie z hostem
