@@ -106,7 +106,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
 
-    if(! socket_http("GET", "kropka.onet.pl", 80, "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/1?DV=czat/applet/FULL", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -126,7 +126,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     char *buffer_gif_ptr;
     std::string msg_err_pre = "# http_auth_getcaptcha: ";
 
-    if(! socket_http("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -171,7 +171,7 @@ bool http_auth_getsk(std::string &cookies, std::string &msg_err)
     char buffer_recv[50000];
     std::string msg_err_pre = "# http_auth_getsk: ";
 
-    if(! socket_http("GET", "czat.onet.pl", 80, "/sk.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -188,9 +188,9 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
     std::string err_code;
     std::string msg_err_pre = "# http_auth_checkcode: ";
 
-    if(! socket_http("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                     "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-                      cookies, false, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                       "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+                        cookies, false, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -232,9 +232,9 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
     char buffer_recv[50000];
     std::string msg_err_pre = "# http_auth_mlogin: ";
 
-    if(! socket_http("POST", "secure.onet.pl", 443, "/mlogin.html",
-                     "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
-                      cookies, true, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
+                       "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
+                        cookies, true, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -257,9 +257,9 @@ bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::stri
 
     my_nick_length << my_nick.size();
 
-    if(! socket_http("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                     "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
-                      cookies, false, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                       "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
+                        cookies, false, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -290,10 +290,10 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 
     my_nick_length << my_nick.size();
 
-    if(! socket_http("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-                     "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
-                      + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
-                      cookies, false, buffer_recv, offset_recv, msg_err))
+    if(! http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+                       "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
+                        + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+                        cookies, false, buffer_recv, offset_recv, msg_err))
     {
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -347,7 +347,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     irc_ok = true;
 
     // zainicjalizuj gniazdo oraz połącz z IRC
-    if(! tcp_connect(socketfd_irc, "czat-app.onet.pl", 5015, msg_err))
+    if(! socket_init(socketfd_irc, "czat-app.onet.pl", 5015, msg_err))
     {
         irc_ok = false;
         msg_err = msg_err_pre + msg_err;
@@ -355,7 +355,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     }
 
     // pobierz pierwszą odpowiedż serwera po połączeniu
-    if(! socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+    if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -381,7 +381,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // wyślij: NICK <~nick>
     buffer_irc_send = "NICK " + zuousername;
     buffer_irc_sent = buffer_irc_send;      // rozdzielono to w sten sposób, aby można było podejrzeć, co zostało wysłane do serwera (inf. do debugowania)
-    if(! socket_irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+    if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -390,7 +390,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     }
 
     // pobierz odpowiedź z serwera
-    if(! socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+    if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -416,7 +416,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // wyślij: AUTHKEY
     buffer_irc_send = "AUTHKEY";
     buffer_irc_sent = buffer_irc_send;
-    if(! socket_irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+    if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -425,7 +425,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     }
 
     // pobierz odpowiedź z serwera (AUTHKEY)
-    if(! socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+    if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -488,7 +488,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // wyślij: AUTHKEY <AUTHKEY>
     buffer_irc_send = "AUTHKEY " + authkey;
     buffer_irc_sent = buffer_irc_send;
-    if(! socket_irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+    if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
@@ -514,7 +514,7 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, s
     // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
     buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername;
     buffer_irc_sent = buffer_irc_send;
-    if(! socket_irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+    if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
         // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);

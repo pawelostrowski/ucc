@@ -5,7 +5,7 @@
 #include "sockets.hpp"
 
 
-bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_err)
+bool socket_init(int &socketfd, std::string host, short port, std::string &msg_err)
 {
 /*
     utwórz gniazdo (socket) oraz połącz się z hostem
@@ -47,8 +47,8 @@ bool tcp_connect(int &socketfd, std::string host, short port, std::string &msg_e
 }
 
 
-bool socket_http(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                 char *buffer_recv, long &offset_recv, std::string &msg_err)
+bool http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
+                   char *buffer_recv, long &offset_recv, std::string &msg_err)
 {
     if(method != "GET" && method != "POST")
     {
@@ -64,7 +64,7 @@ bool socket_http(std::string method, std::string host, short port, std::string s
     std::stringstream content_length;
 
     // utwórz gniazdo (socket) oraz połącz się z hostem
-    if(! tcp_connect(socketfd, host, port, msg_err))
+    if(! socket_init(socketfd, host, port, msg_err))
         return false;       // zwróć komunikat błędu w msg_err
 
     // utwórz dane do wysłania do hosta
@@ -142,7 +142,8 @@ bool socket_http(std::string method, std::string host, short port, std::string s
 
         // zamknij połączenie z hostem
         close(socketfd);
-    }
+
+    }   // if(port != 443)
 
     // połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
     else if(port == 443)
@@ -187,12 +188,14 @@ bool socket_http(std::string method, std::string host, short port, std::string s
         bytes_recv = SSL_read(ssl_handle, buffer_recv, 1500 - 1);
         buffer_recv[bytes_recv] = '\0';
 
+        // zamknij połączenie z hostem
         close(socketfd);
 
         SSL_shutdown(ssl_handle);
         SSL_free(ssl_handle);
         SSL_CTX_free(ssl_context);
-    }
+
+    }   // else if(port == 443)
 
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)
@@ -202,83 +205,6 @@ bool socket_http(std::string method, std::string host, short port, std::string s
             return false;       // zwróć komunikat błędu w msg_err
         }
     }
-
-    return true;
-}
-
-
-bool socket_irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
-{
-	int bytes_sent;
-
-    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
-    buffer_irc_send += "\r\n";
-
-    bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
-
-    if(bytes_sent == -1)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się wysłać danych do serwera, rozłączono";
-        return false;
-    }
-
-    if(bytes_sent == 0)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie";
-        return false;
-    }
-
-    if(bytes_sent != (int)buffer_irc_send.size())
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono";
-        return false;
-    }
-
-    return true;
-}
-
-
-bool socket_irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
-{
-    int bytes_recv;
-    char buffer_tmp[1500];
-
-    bytes_recv = recv(socketfd_irc, buffer_tmp, 1500 - 1, 0);
-    buffer_tmp[bytes_recv] = '\0';
-
-    if(bytes_recv == -1)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się pobrać danych z serwera, rozłączono";
-        return false;
-    }
-
-    if(bytes_recv == 0)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie";
-        return false;
-    }
-
-    // odebrane dane zwróć w buforze std::string
-    buffer_irc_recv.clear();
-    buffer_irc_recv = std::string(buffer_tmp);
-
-    //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-    while (buffer_irc_recv.find("\2") != std::string::npos)
-        buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
-
-    //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
-    while (buffer_irc_recv.find("\r") != std::string::npos)
-        buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
     return true;
 }
@@ -320,6 +246,83 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
         pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
 
     } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
+
+    return true;
+}
+
+
+bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
+{
+	int bytes_sent;
+
+    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+    buffer_irc_send += "\r\n";
+
+    bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
+
+    if(bytes_sent == -1)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się wysłać danych do serwera, rozłączono";
+        return false;
+    }
+
+    if(bytes_sent == 0)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie";
+        return false;
+    }
+
+    if(bytes_sent != (int)buffer_irc_send.size())
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono";
+        return false;
+    }
+
+    return true;
+}
+
+
+bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
+{
+    int bytes_recv;
+    char buffer_tmp[1500];
+
+    bytes_recv = recv(socketfd_irc, buffer_tmp, 1500 - 1, 0);
+    buffer_tmp[bytes_recv] = '\0';
+
+    if(bytes_recv == -1)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Nie udało się pobrać danych z serwera, rozłączono";
+        return false;
+    }
+
+    if(bytes_recv == 0)
+    {
+        close(socketfd_irc);
+        irc_ok = false;
+        msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie";
+        return false;
+    }
+
+    // odebrane dane zwróć w buforze std::string
+    buffer_irc_recv.clear();
+    buffer_irc_recv = std::string(buffer_tmp);
+
+    //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
+    while (buffer_irc_recv.find("\2") != std::string::npos)
+        buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
+
+    //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+    while (buffer_irc_recv.find("\r") != std::string::npos)
+        buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
     return true;
 }

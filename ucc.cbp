@@ -33,6 +33,8 @@
 		</Compiler>
 		<Linker>
 			<Add option="-lncursesw" />
+			<Add option="-lssl" />
+			<Add option="-lcrypto" />
 		</Linker>
 		<Unit filename="src/auth.cpp" />
 		<Unit filename="src/auth.hpp" />

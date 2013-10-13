@@ -239,7 +239,7 @@ int main_window(bool use_colors)
                         // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
                         wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, msg);
                         // wyślij wiadomość na serwer
-                        if(! socket_irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
+                        if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                         {
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
                         }
@@ -254,7 +254,7 @@ int main_window(bool use_colors)
                     if(msg_irc.size() != 0 && command_ok)
                     {
                         wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);           // tymczasowo pokaż, co program wysyła na serwer
-                        if(! socket_irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
+                        if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                         {
                             wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
                         }
@@ -349,7 +349,7 @@ int main_window(bool use_colors)
         else if(FD_ISSET(socketfd_irc, &readfds_tmp))
         {
             // pobierz odpowiedź z serwera
-            if(! socket_irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_sock))
+            if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_sock))
             {
                 wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
             }
@@ -359,7 +359,7 @@ int main_window(bool use_colors)
 
             if(send_irc)
             {
-                if(! socket_irc_send(socketfd_irc, irc_ok, msg, msg_sock))      // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
+                if(! irc_send(socketfd_irc, irc_ok, msg, msg_sock))         // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
                 {
                     wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);   // w przypadku błędu pokaż, co się stało
                 }
