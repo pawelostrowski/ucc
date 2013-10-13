@@ -2,6 +2,7 @@
 #include <cerrno>           // perror()
 #include "main_window.hpp"
 
+#include "sockets.hpp"
 
 int main(int argc, char *argv[])
 {

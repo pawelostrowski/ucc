@@ -23,14 +23,14 @@ bool socket_init(int &socketfd, std::string host, short port, std::string &msg_e
     }
 
     // utwórz deskryptor gniazda (socket)
-    socketfd = socket(PF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+    socketfd = socket(AF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
     if(socketfd == -1)
     {
         msg_err = "Nie udało się utworzyć deskryptora gniazda";
         return false;
     }
 
-    serv_info.sin_family = PF_INET;
+    serv_info.sin_family = AF_INET;
     serv_info.sin_port = htons(port);
     serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
     bzero(&(serv_info.sin_zero), 8);
@@ -207,22 +207,32 @@ bool http_get_data(std::string method, std::string host, short port, std::string
             return false;
         }
 
-        // pobierz odpowiedź (bez sprawdzania, czy to cała odpowiedź, bo z założenia w tym przypadku pobierana ilość danych jest niewielka)
-        bytes_recv = SSL_read(ssl_handle, buffer_recv, 1500 - 1);
-        if(bytes_recv <= -1)
+        // pobierz odpowiedź
+        offset_recv = 0;
+        do
         {
-            close(socketfd);
-            msg_err = "Nie udało się pobrać danych z hosta " + host + " [SSL]";
-            return false;
-        }
-        if(bytes_recv == 0)
-        {
-            close(socketfd);
-            msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie [SSL]";
-            return false;
-        }
+            bytes_recv = SSL_read(ssl_handle, buffer_tmp, 1500);
+            if(bytes_recv <= -1)
+            {
+                close(socketfd);
+                msg_err = "Nie udało się pobrać danych z hosta " + host + " [SSL]";
+                return false;
+            }
+            if(first_recv)
+            {
+                if(bytes_recv == 0)
+                {
+                    close(socketfd);
+                    msg_err = "Podczas pobierania danych host " + host + " zakończył połączenie [SSL]";
+                    return false;
+                }
+            }
+            first_recv = false;
+            memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);
+            offset_recv += bytes_recv;
+        } while(bytes_recv != 0);
 
-        buffer_recv[bytes_recv] = '\0';
+        buffer_recv[offset_recv] = '\0';
 
         // zamknij połączenie z hostem
         close(socketfd);
