@@ -82,7 +82,7 @@ int main_window(bool use_colors)
                                                      "\n# Aby zakończyć działanie programu, wpisz:"
                                                      "\n/quit lub /q");
 
-    wrefresh(stdscr);
+    refresh();
     wrefresh(win_diag);
 
     // zapamiętaj aktualną pozycję kursora w oknie diagnostycznym
@@ -114,23 +114,23 @@ int main_window(bool use_colors)
 
         // paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
         wattrset_color(stdscr, use_colors, UCC_BLUE_WHITE);
-        wattron(stdscr, A_REVERSE);
-        wmove(stdscr, 0, 0);
+        attron(A_REVERSE);
+        move(0, 0);
         for(int i = 0; i < term_x; i++)
-            wprintw(stdscr, " ");
-        wmove(stdscr, term_y - 2, 0);
+            printw(" ");
+        move(term_y - 2, 0);
         for(int i = 0; i < term_x; i++)
-            wprintw(stdscr, " ");
+            printw(" ");
 
 
 /*
     Tymczasowo pokazuj informacje pomocnicze, usunąć po testach
 */
-        wmove(stdscr, term_y - 2, 0);
-        wprintw(stdscr, "sum: %d, kbd: %d, irc: %d", ix + iy, ix, iy);
+        move(term_y - 2, 0);
+        printw("sum: %d, kbd: %d, irc: %d", ix + iy, ix, iy);
 
-        wmove(stdscr, 0, 0);
-        wprintw(stdscr, "socketfd_irc: %d", socketfd_irc);
+        move(0, 0);
+        printw("socketfd_irc: %d", socketfd_irc);
 /*
     Koniec informacji tymczasowych
 */
@@ -140,7 +140,7 @@ int main_window(bool use_colors)
         kbd_buf_show(kbd_buf, zuousername, term_y, kbd_buf_pos);
 
         wrefresh(win_diag);
-        wrefresh(stdscr);
+        refresh();
 
         // czekaj na aktywność klawiatury lub gniazda (socket)
         if(select(socketfd_irc + 1, &readfds_tmp, NULL, NULL, NULL) == -1)
@@ -148,7 +148,7 @@ int main_window(bool use_colors)
             // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
             if(errno == EINTR)      // Interrupted system call (wywołany np. przez SIGWINCH)
             {
-                wrefresh(win_diag);
+                refresh();
                 wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
                 getch();            // ignoruj KEY_RESIZE
                 continue;           // wróć do początku pętli while()
@@ -223,9 +223,9 @@ int main_window(bool use_colors)
                 if(kbd_buf.size() != 0)             // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
                     // "wyczyść" pole wpisywanego tekstu (aby nie było widać zwłoki, np. podczas pobierania obrazka z kodem do przepisania)
-                    wmove(stdscr, term_y - 1, zuousername.size() + 3);      // ustaw kursor za nickiem i spacją za nawiasem
+                    move(term_y - 1, zuousername.size() + 3);       // ustaw kursor za nickiem i spacją za nawiasem
                     clrtoeol();
-                    wrefresh(stdscr);
+                    refresh();
                     // wykonaj obsługę bufora (zidentyfikuj polecenie)
                     kbd_parser(kbd_buf, msg, msg_color, msg_irc, my_nick, my_password, zuousername, cookies,
                                uokey, command_ok, captcha_ready, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit);

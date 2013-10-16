@@ -4,6 +4,7 @@
 #include <iconv.h>          // konwersja kodowania znaków
 
 #include "window_utils.hpp"
+#include "ucc_colors.hpp"
 
 
 bool check_colors()
@@ -23,15 +24,15 @@ bool check_colors()
         background_color = -1;
     }
 
-    init_pair(1, COLOR_RED, background_color);
-    init_pair(2, COLOR_GREEN, background_color);
-    init_pair(3, COLOR_YELLOW, background_color);
-    init_pair(4, COLOR_BLUE, background_color);
-    init_pair(5, COLOR_MAGENTA, background_color);
-    init_pair(6, COLOR_CYAN, background_color);
-    init_pair(7, COLOR_WHITE, background_color);
-    init_pair(8, font_color, background_color);
-    init_pair(9, COLOR_BLUE, COLOR_WHITE);
+    init_pair(UCC_RED, COLOR_RED, background_color);
+    init_pair(UCC_GREEN, COLOR_GREEN, background_color);
+    init_pair(UCC_YELLOW, COLOR_YELLOW, background_color);
+    init_pair(UCC_BLUE, COLOR_BLUE, background_color);
+    init_pair(UCC_MAGENTA, COLOR_MAGENTA, background_color);
+    init_pair(UCC_CYAN, COLOR_CYAN, background_color);
+    init_pair(UCC_WHITE, COLOR_WHITE, background_color);
+    init_pair(UCC_TERM, font_color, background_color);
+    init_pair(UCC_BLUE_WHITE, COLOR_BLUE, COLOR_WHITE);
 
     return true;
 }
