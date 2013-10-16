@@ -1,9 +1,11 @@
-#include <cstring>          // strlen(), memcpy()
+#include <cstring>          // memcpy()
 #include <sstream>          // std::string, std::stringstream
 #include <fstream>          // std::ofstream
 #include <cstdlib>          // system()
 #include "auth.hpp"
 #include "sockets.hpp"
+
+#define FILE_GIF "/tmp/onetcaptcha.gif"
 
 
 bool auth_code(std::string &authkey)

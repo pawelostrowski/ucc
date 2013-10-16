@@ -1,4 +1,4 @@
-#include <cstring>          // memset()
+#include <cstring>          // strlen()
 #include <string>           // std::string, setlocale()
 #include <ctime>            // czas
 #include <cerrno>           // errno
