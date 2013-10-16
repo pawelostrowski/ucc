@@ -1,6 +1,6 @@
-#include <string>       // std::string
-#include <cstring>      // strdup()
-#include <unistd.h>     // close()
+#include <string>           // std::string
+#include <cstring>          // strdup()
+
 #include "irc_parser.hpp"
 #include "auth.hpp"
 #include "ucc_colors.hpp"

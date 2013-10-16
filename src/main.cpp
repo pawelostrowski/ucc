@@ -1,6 +1,8 @@
 #include <iostream>         // std::cerr, std::endl
-#include <cerrno>           // perror()
+#include <cstdio>           // perror()
+
 #include "main_window.hpp"
+
 
 int main(int argc, char *argv[])
 {

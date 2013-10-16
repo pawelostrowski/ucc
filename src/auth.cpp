@@ -2,8 +2,8 @@
 #include <sstream>          // std::string, std::stringstream
 #include <fstream>          // std::ofstream
 #include <cstdlib>          // system()
+
 #include "auth.hpp"
-#include "sockets.hpp"
 
 #define FILE_GIF "/tmp/onetcaptcha.gif"
 
@@ -120,6 +120,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 
     return true;
 }
+
 
 bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 {

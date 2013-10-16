@@ -1,6 +1,7 @@
 #include <sstream>          // std::string, std::stringstream
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <openssl/ssl.h>    // poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
+
 #include "sockets.hpp"
 
 #define BUF_SIZE 1500
