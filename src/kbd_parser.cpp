@@ -153,8 +153,8 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
                 return;     // w przypadku błędu wróć z komunikatem w msg
 
 // dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-//            if(! http_auth_useroverride(cookies, my_nick, msg))
-//                return;     // w przypadku błędu wróć z komunikatem w msg
+            if(! http_auth_useroverride(cookies, my_nick, msg))
+                return;     // w przypadku błędu wróć z komunikatem w msg
 
             if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
                 return;     // w przypadku błędu wróć z komunikatem w msg

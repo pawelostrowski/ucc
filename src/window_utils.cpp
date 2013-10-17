@@ -95,8 +95,23 @@ void kbd_utf2iso(int &key_code)
 }
 
 
-void kbd_buf_show(std::string &kbd_buf, std::string &zuousername, int term_y, int kbd_buf_pos)
+void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int term_x, int kbd_buf_pos, int kbd_buf_max)
 {
+    int cut_left = 0;
+    int cut_right = 0;
+
+    if(kbd_buf_pos + (int)zuousername.size() + 4 > term_x)
+    {
+        cut_left = kbd_buf_pos + zuousername.size() + 4 - term_x;
+        kbd_buf.erase(0, cut_left);
+    }
+
+    if((int)kbd_buf.size() + (int)zuousername.size() + 3 > term_x)
+    {
+        cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
+        kbd_buf.erase((zuousername.size() + 3 - term_x) * -1, cut_right);
+    }
+
     // konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8
     char c_in[kbd_buf.size() + zuousername.size() + 1 + 3];         // bufor + nick (+ 1 na NULL, + 3, bo nick objęty jest nawiasem oraz spacją za nawiasem)
     char c_out[(kbd_buf.size() + zuousername.size()) * 6 + 1 + 3];  // przyjęto najgorszy możliwy przypadek, gdzie są same 6-bajtowe znaki

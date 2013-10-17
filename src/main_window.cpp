@@ -137,7 +137,7 @@ int main_window(bool use_colors)
 
         // wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
         //  oraz ustaw kursor w obecnie przetwarzany znak
-        kbd_buf_show(kbd_buf, zuousername, term_y, kbd_buf_pos);
+        kbd_buf_show(kbd_buf, zuousername, term_y, term_x, kbd_buf_pos, kbd_buf_max);
 
         wrefresh(win_diag);
         refresh();
