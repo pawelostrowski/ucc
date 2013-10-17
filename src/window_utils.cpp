@@ -152,6 +152,51 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
 }
 
 
+void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str)
+{
+    int pos_buffer_end;
+    char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
+    static bool first_use = true;
+
+    // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie jest pierwsze użycie funkcji
+    if(! first_use)
+        wprintw(active_window, "\n");
+
+    // kolejne użycie spowoduje przejście do nowego wiersza na początku
+    first_use = false;
+
+    // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli)
+    wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+    get_time(time_hms);
+    wprintw(active_window, "%s", time_hms);
+    wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+
+    // wyświetl bufor bez ostatniego kodu \n (wykryj, czy ten kod tam jest)
+    if(buffer_str[buffer_str.size() - 1] == '\n')
+        pos_buffer_end = buffer_str.size() - 1;     // jeśli jest kod \n, pętla wykona się o 1 mniej niż wielkość bufora
+    else
+        pos_buffer_end = buffer_str.size();         // w przeciwnym razie pętla wykona się tyle razy, ile ma wielkość bufora (nie ma błędu, bo w pętli i = 0)
+
+    // wypisywanie w pętli
+    for(int i = 0; i < pos_buffer_end; ++i)
+    {
+        if(buffer_str[i] == '\r')
+            continue;
+
+        wprintw(active_window, "%c", buffer_str[i]);
+
+        // po każdym znaku \n pokaż czas (na początku nowego wiersza)
+        if(buffer_str[i] == '\n')
+        {
+            wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+            get_time(time_hms);
+            wprintw(active_window, "%s", time_hms);
+            wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+        }
+    }
+}
+
+
 void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str)
 {
     // funckja wypisuje zawartość bufora, dodaje do początku wiersza czas oraz wykrywa polskie znaki w kodowaniu ISO-8859-2 i konwertuje je na UTF-8,
@@ -162,9 +207,10 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     int pos_buffer_end;
     char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
 
-    // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie dotyczy paska wpisywania tekstu
+    // zacznij od przejścia do nowego wiersza
     wprintw(active_window, "\n");
-    // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli), ale tylko, gdy to nie dotyczy paska wpisywania tekstu
+
+    // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli)
     wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
     get_time(time_hms);
     wprintw(active_window, "%s", time_hms);

@@ -68,19 +68,19 @@ int main_window(bool use_colors)
     scrollok(win_diag, TRUE);           // włącz przewijanie w tym oknie
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
-    wprintw_iso2utf(win_diag, use_colors, UCC_GREEN, "Ucieszony Chat Client"
-                                                     "\n# Aby się zalogować na nick tymczasowy, wpisz:"
-                                                     "\n/nick nazwa_nicka"
-                                                     "\n/connect"
-                                                     "\n# Następnie przepisz kod z obrazka, w tym celu wpisz:"
-                                                     "\n/captcha kod_z_obrazka"
-                                                     "\n# Aby się zalogować na nick stały (zarejestrowany), wpisz:"
-                                                     "\n/nick nazwa_nicka hasło_do_nicka"
-                                                     "\n/connect"
-                                                     "\n# Aby zobaczyć dostępne polecenia, wpisz:"
-                                                     "\n/help"
-                                                     "\n# Aby zakończyć działanie programu, wpisz:"
-                                                     "\n/quit lub /q");
+    wprintw_utf(win_diag, use_colors, UCC_GREEN, "Ucieszony Chat Client"
+                                                 "\n# Aby się zalogować na nick tymczasowy, wpisz:"
+                                                 "\n/nick nazwa_nicka"
+                                                 "\n/connect"
+                                                 "\n# Następnie przepisz kod z obrazka, w tym celu wpisz:"
+                                                 "\n/captcha kod_z_obrazka"
+                                                 "\n# Aby się zalogować na nick stały (zarejestrowany), wpisz:"
+                                                 "\n/nick nazwa_nicka hasło_do_nicka"
+                                                 "\n/connect"
+                                                 "\n# Aby zobaczyć dostępne polecenia, wpisz:"
+                                                 "\n/help"
+                                                 "\n# Aby zakończyć działanie programu, wpisz:"
+                                                 "\n/quit lub /q");
 
     refresh();
     wrefresh(win_diag);
@@ -238,11 +238,16 @@ int main_window(bool use_colors)
                         // wyślij wiadomość na serwer
                         if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
                         }
                     }
-                    // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wyświetlenia na terminalu, pokaż go
-                    else if(msg.size() != 0)
+                    // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wyświetlenia na terminalu i nie jest to poloecenie /me, pokaż go
+                    else if(msg.size() != 0 && ! command_me)
+                    {
+                        wprintw_utf(win_diag, use_colors, msg_color, msg);
+                    }
+                    // polecenie /me jest z kodowaniem ISO-8859-2, więc tak je wyświetl
+                    else if(msg.size() != 0 && command_me)
                     {
                         wprintw_iso2utf(win_diag, use_colors, msg_color, msg);
                     }
@@ -250,10 +255,10 @@ int main_window(bool use_colors)
                     //  (stan połączenia do IRC wykrywany jest w kbd_parser(), więc nie trzeba się obawiać, że komunikat zostanie wysłany do niezalogowanego czata)
                     if(msg_irc.size() != 0 && command_ok)
                     {
-                        wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);           // tymczasowo pokaż, co program wysyła na serwer
+                        wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);       // tymczasowo pokaż, co program wysyła na serwer
                         if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
                         }
                     }
                     // sprawdź gotowość do połączenia z IRC
@@ -265,7 +270,7 @@ int main_window(bool use_colors)
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: NICK <~nick>
                         irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, zuousername, msg);
@@ -273,7 +278,7 @@ int main_window(bool use_colors)
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY
                         irc_auth_status = irc_auth_3(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
@@ -281,21 +286,21 @@ int main_window(bool use_colors)
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY <AUTHKEY>
                         irc_auth_status = irc_auth_4(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
                         irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, buffer_irc_sent, zuousername, uokey, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg);    // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
                         // od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
                         if(irc_ok)
@@ -348,7 +353,7 @@ int main_window(bool use_colors)
             // pobierz odpowiedź z serwera
             if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_sock))
             {
-                wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
             }
 
             // zinterpretuj odpowiedź
@@ -358,7 +363,7 @@ int main_window(bool use_colors)
             {
                 if(! irc_send(socketfd_irc, irc_ok, msg, msg_sock))         // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
                 {
-                    wprintw_iso2utf(win_diag, use_colors, UCC_RED, msg_sock);   // w przypadku błędu pokaż, co się stało
+                    wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);   // w przypadku błędu pokaż, co się stało
                 }
             }
 
@@ -366,7 +371,7 @@ int main_window(bool use_colors)
             {
                 if(msg.size() != 0)
                 {
-                    wprintw_iso2utf(win_diag, use_colors, msg_color, msg);
+                    wprintw_utf(win_diag, use_colors, msg_color, msg);
                 }
                 else
                 {
