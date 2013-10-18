@@ -234,7 +234,7 @@ int main_window(bool use_colors)
                     if(! command_ok)
                     {
                         // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
-                        wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, msg);
+                        wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg, true);
                         // wyślij wiadomość na serwer
                         if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                         {
@@ -371,7 +371,7 @@ int main_window(bool use_colors)
             {
                 if(msg.size() != 0)
                 {
-                    wprintw_utf(win_diag, use_colors, msg_color, msg);
+                    wprintw_iso2utf(win_diag, use_colors, msg_color, msg);
                 }
                 else
                 {

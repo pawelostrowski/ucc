@@ -42,7 +42,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &buffer_irc_recv_tmp, 
     {
         std::string nick_on_irc;
         find_value(strdup(buffer_irc_recv.c_str()), ":", "!", nick_on_irc);
-        msg_color = UCC_YELLOW;
+        msg_color = UCC_TERM;
         msg = "<" + nick_on_irc + "> " + f_value;
         return;
     }

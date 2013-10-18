@@ -194,18 +194,21 @@ void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::str
             wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
         }
     }
+
+    // odświeżenie ekranu nastąpi poza funkcją
 }
 
 
-void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str)
+void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick)
 {
     // funckja wypisuje zawartość bufora, dodaje do początku wiersza czas oraz wykrywa polskie znaki w kodowaniu ISO-8859-2 i konwertuje je na UTF-8,
-    //  jeśli textbox = true, nie będzie pokazywany czas oraz nie będzie przechodzenia do nowego wiersza przed pętlą,
-    //  polskie znaki w kodowaniu UTF-8 wyświetla bez konwersji
+    //  jeśli textbox = true, nie będzie pokazywany czas oraz nie będzie przechodzenia do nowego wiersza przed pętlą
 
     unsigned char c;            // aktualnie przetwarzany znak z bufora
     int pos_buffer_end;
+    int j;
     char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
+    std::string onet_color, onet_icon;
 
     // zacznij od przejścia do nowego wiersza
     wprintw(active_window, "\n");
@@ -225,6 +228,108 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     // wypisywanie w pętli
     for(int i = 0; i < pos_buffer_end; ++i)
     {
+        // obsługa % do wykrywania fontu, koloru i ikon
+        j = i;
+        do
+        {
+            if(buffer_str[j] == '%')
+            {
+                ++j;
+                // wykryj atrybuty fontu
+                if(buffer_str[j] == 'F' && j < pos_buffer_end)
+                {
+                    ++j;
+                    if(buffer_str[j] == 'b' && j < pos_buffer_end)
+                    {
+                        for(++j; j < pos_buffer_end && j < pos_buffer_end; ++j)
+                        {
+                            if(buffer_str[j] == ' ')
+                                break;
+                            if(buffer_str[j] == '%')
+                                break;
+                        }
+                        // gdy zakończono na %, zmień atrybuty
+                        if(buffer_str[j] == '%')
+                        {
+                            wattron(active_window, A_BOLD);
+                            i = j + 1;
+                        }
+                    }
+                    // gdy to nie bold, pomiń %F...% (o ile to prawidłowy kod bez spacji wewnątrz)
+                    else
+                    {
+                        for(++j; j < pos_buffer_end && j < pos_buffer_end; ++j)
+                        {
+                            if(buffer_str[j] == ' ')
+                                break;
+                            if(buffer_str[j] == '%')
+                                break;
+                        }
+                        if(buffer_str[j] == '%')
+                        {
+                            i = j + 1;
+                        }
+                    }
+                }
+                // wykryj atrybuty koloru
+                else if(buffer_str[j] == 'C' && j < pos_buffer_end)
+                {
+                    onet_color.clear();
+                    // wczytaj kolor
+                    for(++j; j < pos_buffer_end; ++j)
+                    {
+                        if(buffer_str[j] == ' ')
+                            break;
+                        if(buffer_str[j] == '%')
+                            break;
+                        onet_color += buffer_str[j];
+                    }
+                    if(buffer_str[j] == '%' && onet_color.size() == 6)  // kolor musi mieć 6 znaków
+                    {
+                        wattrset_color(active_window, use_colors, onet_color_conv(onet_color));
+                        i = j + 1;
+                    }
+                }
+                // ikony konwertuj na //nazwa_ikony
+                else if(buffer_str[j] == 'I' && j < pos_buffer_end)
+                {
+                    onet_icon.clear();
+                    // konwersja ikony
+                    for(++j; j < pos_buffer_end; ++j)
+                    {
+                        if(buffer_str[j] == ' ')
+                            break;
+                        if(buffer_str[j] == '%')
+                            break;
+                        onet_icon += buffer_str[j];
+                    }
+                    if(buffer_str[j] == '%')
+                    {
+                        // wyświetl ikonę jako //nazwa_ikony
+                        wprintw(active_window, "//%s", onet_icon.c_str());
+                        i = j + 1;
+                    }
+                }
+            }
+        } while(buffer_str[j] == '%');
+
+        // na razie mało elegancji sposób na pogrubienie własnego nicka (do poprawy jeszcze)
+        if(bold_my_nick)
+        {
+            // wykryj początek nicka, który zaczyna się od <
+            if(buffer_str[i] == '<')
+            {
+                wattrset_color(active_window, use_colors, UCC_TERM);
+                wattron(active_window, A_BOLD);
+            }
+            // wykryj koniec nicka
+            if(buffer_str[i - 1] == '>')
+            {
+                wattrset_color(active_window, use_colors, color_p);
+                wattroff(active_window, A_BOLD);
+            }
+        }
+
         // pobierz znak z bufora
         c = buffer_str[i];
 
@@ -322,4 +427,52 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     }
 
     // odświeżenie ekranu nastąpi poza funkcją
+}
+
+
+short onet_color_conv(std::string onet_color)
+{
+    if(onet_color == "623c00")  // brązowy, ale najbliższy to żółty
+        return UCC_YELLOW;
+
+    else if(onet_color == "c86c00") // ciemny pomarańczowy, ale najbliższy to żółty
+        return UCC_YELLOW;
+
+    else if(onet_color == "ff6500") // pomarańczowy, ale najbliższy to żółty
+        return UCC_YELLOW;
+
+    else if(onet_color == "ff0000") // czerwony
+        return UCC_RED;
+
+    else if(onet_color == "e40f0f") // ciemniejszy czerwony
+        return UCC_RED;
+
+    else if(onet_color == "990033") // bordowy
+        return UCC_RED;
+
+    else if(onet_color == "8800ab") // fioletowy
+        return UCC_MAGENTA;
+
+    else if(onet_color == "ce00ff") // magenta
+        return UCC_MAGENTA;
+
+    else if(onet_color == "0f2ab1") // granatowy
+        return UCC_BLUE;
+
+    else if(onet_color == "3030ce") // ciemny niebieski
+        return UCC_BLUE;
+
+    else if(onet_color == "006699") // cyjan
+        return UCC_CYAN;
+
+    else if(onet_color == "1a866e") // zielono-cyjanowy
+        return UCC_CYAN;
+
+    else if(onet_color == "008100") // zielony
+        return UCC_GREEN;
+
+    else if(onet_color == "959595") // szary
+        return UCC_WHITE;
+
+    return UCC_TERM;    // gdy żaden z wymienionych
 }

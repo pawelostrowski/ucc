@@ -15,6 +15,8 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
 
 void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str);
 
-void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str);
+void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick = false);
+
+short onet_color_conv(std::string onet_color);
 
 #endif      // WINDOW_UTILS_HPP
