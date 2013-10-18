@@ -201,9 +201,6 @@ void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::str
 
 void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick)
 {
-    // funckja wypisuje zawartość bufora, dodaje do początku wiersza czas oraz wykrywa polskie znaki w kodowaniu ISO-8859-2 i konwertuje je na UTF-8,
-    //  jeśli textbox = true, nie będzie pokazywany czas oraz nie będzie przechodzenia do nowego wiersza przed pętlą
-
     unsigned char c;            // aktualnie przetwarzany znak z bufora
     int pos_buffer_end;
     int j;
@@ -316,7 +313,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
         // na razie mało elegancji sposób na pogrubienie własnego nicka (do poprawy jeszcze)
         if(bold_my_nick)
         {
-            // wykryj początek nicka, który zaczyna się od <
+            // wykryj początek nicka
             if(buffer_str[i] == '<')
             {
                 wattrset_color(active_window, use_colors, UCC_TERM);
