@@ -342,6 +342,7 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
     {
         msg_err = msg_err_pre + "Serwer nie zwrócił err_code.";
+        free(buffer_recv);
         return false;
     }
 
