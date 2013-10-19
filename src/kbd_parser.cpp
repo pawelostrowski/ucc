@@ -36,13 +36,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // jeśli brak połączenia z IRC, wiadomości nie można wysłać, więc pokaż ostrzeżenie
         if(! irc_ok)
         {
-            msg = "# Najpierw się zaloguj";
+            msg = "# Najpierw się zaloguj.";
             return;
         }
         // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
         else if(! room_ok)
         {
-            msg = "# Nie jesteś w aktywnym pokoju";
+            msg = "# Nie jesteś w aktywnym pokoju.";
             return;
         }
         // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
@@ -71,13 +71,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // wykryj błędnie wpisane polecenie
     if(f_command_status == 1)
     {
-        msg = "# Polecenie błędne, sam znak / nie jest poleceniem";
+        msg = "# Polecenie błędne, sam znak / nie jest poleceniem.";
         return;
     }
 
     else if(f_command_status == 2)
     {
-        msg = "# Polecenie błędne, po znaku / nie może być spacji";
+        msg = "# Polecenie błędne, po znaku / nie może być spacji.";
         return;
     }
 
@@ -89,7 +89,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     {
         if(irc_ok)
         {
-            msg = "# Już zalogowano się";
+            msg = "# Już zalogowano się.";
             return;
         }
 
@@ -103,13 +103,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         find_arg(kbd_buf, captcha, pos_arg_start, false);
         if(pos_arg_start == 0)
         {
-            msg = "# Nie podano kodu, spróbuj jeszcze raz";
+            msg = "# Nie podano kodu, spróbuj jeszcze raz.";
             return;
         }
 
         if(captcha.size() != 6)
         {
-            msg = "# Kod musi mieć 6 znaków, spróbuj jeszcze raz";
+            msg = "# Kod musi mieć 6 znaków, spróbuj jeszcze raz.";
             return;
         }
 
@@ -129,13 +129,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     {
         if(irc_ok)
         {
-            msg = "# Już zalogowano się";
+            msg = "# Już zalogowano się.";
             return;
         }
 
         if(my_nick.size() == 0)
         {
-            msg = "# Nie wpisano nicka, wpisz /nick nazwa_nicka i dopiero /connect";
+            msg = "# Nie wpisano nicka.";
             return;
         }
 
@@ -179,7 +179,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // jeśli nie ma połączenia z IRC, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
         if(! irc_ok)
         {
-            msg = "# Nie zalogowano się";
+            msg = "# Nie zalogowano się.";
             return;
         }
         // przygotuj polecenie do wysłania do IRC
@@ -223,7 +223,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             find_arg(kbd_buf, room, pos_arg_start, false);
             if(pos_arg_start == 0)
             {
-                msg = "# Nie podano pokoju";
+                msg = "# Nie podano pokoju.";
                 return;
             }
             // gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
@@ -250,7 +250,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
             if(! room_ok)
             {
-                msg = "# Nie jesteś w aktywnym pokoju";
+                msg = "# Nie jesteś w aktywnym pokoju.";
                 return;
             }
             // jeśli jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w oknie terminala oraz polecenie dla IRC
@@ -277,7 +277,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             {
                 if(my_nick.size() == 0)
                 {
-                    msg = "# Nie podano nicka";
+                    msg = "# Nie podano nicka.";
                     return;
                 }
                 else
@@ -296,12 +296,12 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             }
             if(f_arg.size() < 3)
             {
-                msg = "# Nick jest za krótki (minimalnie 3 znaki)";
+                msg = "# Nick jest za krótki (minimalnie 3 znaki).";
                 return;
             }
             if(f_arg.size() > 32)
             {
-                msg = "# Nick jest za długi (maksymalnie 32 znaki)";
+                msg = "# Nick jest za długi (maksymalnie 32 znaki).";
                 return;
             }
             // jeśli za nickiem wpisano hasło, pobierz je do bufora
@@ -321,7 +321,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
         // po połączeniu z IRC nie można zmienić nicka
         else
         {
-            msg = "# Po zalogowaniu się nie można zmienić nicka";
+            msg = "# Po zalogowaniu się nie można zmienić nicka.";
         }
     }
 
@@ -353,7 +353,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             // jeśli nie podano parametrów, pokaż ostrzeżenie
             if(! rest_args(kbd_buf, pos_arg_start, r_args))
             {
-                msg = "# Nie podano parametrów";
+                msg = "# Nie podano parametrów.";
                 return;
             }
             // polecenie do IRC
@@ -374,7 +374,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
             find_arg(kbd_buf, f_arg, pos_arg_start, false);
             if(pos_arg_start == 0)
             {
-                msg = "# Nie podano nicka do sprawdzenia";
+                msg = "# Nie podano nicka do sprawdzenia.";
                 return;
             }
         // polecenie do IRC
@@ -390,7 +390,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
     // gdy nie znaleziono polecenia
     else
     {
-        msg = "/" + f_command_org + ": nieznane polecenie";     // tutaj pokaż oryginalnie wpisane polecenie
+        msg = "# Nieznane polecenie: /" + f_command_org;     // tutaj pokaż oryginalnie wpisane polecenie
     }
 
 }
@@ -398,7 +398,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg, short &msg_color, std::s
 
 void msg_connect_irc(std::string &msg)
 {
-    msg = "# Aby wysłać polecenie przeznaczone dla IRC, musisz się zalogować";
+    msg = "# Aby wysłać polecenie przeznaczone dla IRC, musisz się zalogować.";
 }
 
 

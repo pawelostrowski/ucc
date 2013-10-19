@@ -131,6 +131,8 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     long offset_recv;
     char *buffer_recv;
     char *buffer_gif_ptr;
+    int system_status;
+    std::stringstream system_status_str;
     std::string msg_err_pre = "# http_auth_getcaptcha: ";
 
     buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, offset_recv, msg_err);
@@ -144,7 +146,8 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     buffer_gif_ptr = strstr(buffer_recv, "GIF");
     if(buffer_gif_ptr == NULL)
     {
-        msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania";
+        msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania.";
+        free(buffer_recv);
         return false;
     }
 
@@ -153,6 +156,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     if(file_gif == NULL)
     {
         msg_err = msg_err_pre + "Nie udało się zapisać obrazka z kodem do przepisania, sprawdź uprawnienia do " + FILE_GIF;
+        free(buffer_recv);
         return false;
     }
 
@@ -162,10 +166,16 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
     // zamknij plik po zapisaniu
     file_gif.close();
 
-    // wyświetl obrazek z kodem do przepisania
-    system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
-
     free(buffer_recv);
+
+    // wyświetl obrazek z kodem do przepisania
+    system_status = system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+    if(system_status != 0)
+    {
+        system_status_str << system_status;
+        msg_err = "Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + system_status_str.str();
+        return false;
+    }
 
     return true;
 }
@@ -214,9 +224,12 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
     // czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
     if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
     {
-        msg_err = msg_err_pre + "Serwer nie zwrócił err_code";
+        msg_err = msg_err_pre + "Serwer nie zwrócił err_code.";
+        free(buffer_recv);
         return false;
     }
+
+    free(buffer_recv);
 
     // jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
     if(err_code == "FALSE")
@@ -231,8 +244,6 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
         msg_err = msg_err_pre + "Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code;
         return false;
     }
-
-    free(buffer_recv);
 
     return true;
 }
@@ -330,7 +341,7 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     // pobierz kod błędu
     if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
     {
-        msg_err = msg_err_pre + "Serwer nie zwrócił err_code";
+        msg_err = msg_err_pre + "Serwer nie zwrócił err_code.";
         return false;
     }
 
@@ -338,28 +349,31 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     if(err_code != "TRUE")
     {
         if(err_code == "-2")    // -2 oznacza nieprawidłowy nick (stały) lub hasło
-            msg_err = "# Błąd serwera (-2): nieprawidłowy nick lub hasło";      // tutaj msg_err_pre nie jest wymagany
+            msg_err = "# Błąd serwera (-2): nieprawidłowy nick lub hasło.";      // tutaj msg_err_pre nie jest wymagany
 
         else if(err_code == "-4")   // -4 oznacza nieprawidłowe znaki w nicku tymczasowym
-            msg_err = "# Błąd serwera (-4): nick zawiera niedozwolone znaki";   // tutaj msg_err_pre nie jest wymagany
+            msg_err = "# Błąd serwera (-4): nick zawiera niedozwolone znaki.";   // tutaj msg_err_pre nie jest wymagany
 
         else
             msg_err = msg_err_pre + "Nieznany błąd serwera, kod błędu: " + err_code;
 
+        free(buffer_recv);
         return false;
     }
 
     // pobierz uoKey
     if(find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey) != 0)
     {
-        msg_err = msg_err_pre + "Serwer nie zwrócił uoKey";
+        msg_err = msg_err_pre + "Serwer nie zwrócił uoKey.";
+        free(buffer_recv);
         return false;
     }
 
     // pobierz zuoUsername (nick, który zwrócił serwer)
     if(find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername) != 0)
     {
-        msg_err = msg_err_pre + "Serwer nie zwrócił zuoUsername";
+        msg_err = msg_err_pre + "Serwer nie zwrócił zuoUsername.";
+        free(buffer_recv);
         return false;
     }
 
@@ -377,7 +391,8 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     irc_ok = true;
 
     // zainicjalizuj gniazdo oraz połącz z IRC
-    if(! socket_init(socketfd_irc, "czat-app.onet.pl", 5015, msg_err))
+    socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
+    if(socketfd_irc == 0)
     {
         irc_ok = false;
         msg_err = msg_err_pre + msg_err;
@@ -486,21 +501,21 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     if(raw_801 == std::string::npos)
     {
         irc_ok = false;
-        msg_err = msg_err_pre + "Nie uzyskano AUTHKEY (brak odpowiedzi 801)";
+        msg_err = msg_err_pre + "Nie uzyskano AUTHKEY (brak odpowiedzi 801).";
         return false;
     }
     pos_authkey_start = buffer_irc_recv.find(":", raw_801);     // szukaj drugiego dwukropka
     if(pos_authkey_start == std::string::npos)
     {
         irc_ok = false;
-        msg_err = msg_err_pre + "Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801)";
+        msg_err = msg_err_pre + "Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801).";
         return false;
     }
     pos_authkey_end = buffer_irc_recv.find("\n", raw_801);      // szukaj końca wiersza
     if(pos_authkey_end == std::string::npos)
     {
         irc_ok = false;
-        msg_err = msg_err_pre + "Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801)";
+        msg_err = msg_err_pre + "Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801).";
         return false;
     }
 
@@ -511,7 +526,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     if(! auth_code(authkey))
     {
         irc_ok = false;
-        msg_err = msg_err_pre + "AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?)";
+        msg_err = msg_err_pre + "AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?).";
         return false;
     }
 

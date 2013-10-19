@@ -12,13 +12,15 @@
 
 int main_window(bool use_colors)
 {
-    freopen("/dev/tty", "r", stdin);    // zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
+    // zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
+    if(freopen("/dev/tty", "r", stdin) == NULL)
+        return 1;
 
     setlocale(LC_ALL, "");      // aby polskie znaki w UTF-8 wyświetlały się prawidłowo
 
     // inicjalizacja ncurses
     if(! initscr())
-        return 1;
+        return 2;
 
     bool ucc_quit = false;      // aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
     bool command_ok = false;    // true, gdy wpisano polecenie
@@ -158,7 +160,8 @@ int main_window(bool use_colors)
             {
                 delwin(win_diag);
                 endwin();           // zakończ tryb ncurses
-                return 2;
+                fclose(stdin);
+                return 3;
             }
         }
 
@@ -403,6 +406,7 @@ int main_window(bool use_colors)
 
     delwin(win_diag);
     endwin();           // zakończ tryb ncurses
+    fclose(stdin);
 
     return 0;
 }
