@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
         perror("select()");
 
     else if(window_status != 0)
-        std::cerr << "Wystąpił błąd nr " << window_status << std::endl;
+        std::cerr << "Wystąpił błąd numer: " << window_status << std::endl;
 
     return 0;
 }

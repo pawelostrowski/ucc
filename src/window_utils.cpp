@@ -95,21 +95,59 @@ void kbd_utf2iso(int &key_code)
 }
 
 
-void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int term_x, int kbd_buf_pos, int kbd_buf_max)
+void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int term_x, int kbd_buf_pos)
 {
+    static int x = 0;
+    static int term_x_len = 0;
+    static int kbd_buf_len = term_x;
+    static int kbd_buf_rest = 0;
     int cut_left = 0;
     int cut_right = 0;
 
-    if(kbd_buf_pos + (int)zuousername.size() + 4 > term_x)
+    // rozsuwaj tekst, gdy terminal jest powiększany w poziomie oraz gdy z lewej strony tekst jest ukryty (dopracować, aby szybka zmiana też poprawnie rozsuwała tekst!!!)
+    if(term_x > term_x_len && x > 0)
+        --x;
+
+    term_x_len = term_x;
+
+    // Backspace powoduje przesuwanie się tekstu z lewej do kursora, gdy ta część jest niewidoczna
+    if((int)kbd_buf.size() < kbd_buf_len && x > 0 && (int)kbd_buf.size() - kbd_buf_pos == kbd_buf_rest)
+        --x;
+
+    // zachowaj rozmiar bufora dla wyżej wymienionego sprawdzania
+    kbd_buf_len = kbd_buf.size();
+
+    // zapamiętaj, ile po kursorze zostało w buforze, aby powyższe przesuwanie z lewej do kursora nie działało dla Delete
+    kbd_buf_rest = kbd_buf.size() - kbd_buf_pos;
+
+    // gdy kursor cofamy w lewo i jest tam ukryty tekst, odsłaniaj go co jedno przesunięcie
+    if(kbd_buf_pos <= x)
+        x = kbd_buf_pos;
+
+    // wycinaj ukryty od lewej strony tekst
+    if(x > 0)
+        kbd_buf.erase(0, x);
+
+    // gdy pozycja kursora przekracza rozmiar terminala, obetnij tekst z lewej (po jednym znaku, bo reszta z x była obcięta wyżej)
+    if(kbd_buf_pos - x + (int)zuousername.size() + 4 > term_x)
     {
-        cut_left = kbd_buf_pos + zuousername.size() + 4 - term_x;
+        cut_left = kbd_buf_pos - x + zuousername.size() + 4 - term_x;
         kbd_buf.erase(0, cut_left);
     }
 
+    // dopisuj, ile ukryto tekstu z lewej strony
+    if(cut_left > 0)
+        x += cut_left;
+
+    // obetnij to, co wystaje poza terminal
     if((int)kbd_buf.size() + (int)zuousername.size() + 3 > term_x)
     {
-        cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
-        kbd_buf.erase((zuousername.size() + 3 - term_x) * -1, cut_right);
+        // jeśli szerokość terminala jest mniejsza od długości nicka wraz z nawiasem i spacją, nic nie obcinaj, bo doprowadzi to do wywalenia się programu
+        if(term_x > (int)zuousername.size() + 3)
+        {
+            cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
+            kbd_buf.erase((zuousername.size() + 3 - term_x) * -1, cut_right);
+        }
     }
 
     // konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8
@@ -145,10 +183,11 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
     // pozostałe znaki w wierszu wykasuj
     clrtoeol();
 
-    // ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja)
-    move(term_y - 1, kbd_buf_pos + zuousername.size() + 3);
+    // ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja oraz uwzględnij ewentualny ukryty tekst z lewej w x)
+    move(term_y - 1, kbd_buf_pos + zuousername.size() + 3 - x);
 
-    // odświeżenie ekranu nastąpi poza funkcją
+    // odśwież główne (standardowe) okno, aby od razu pokazać zmiany na pasku
+    refresh();
 }
 
 

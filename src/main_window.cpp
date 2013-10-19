@@ -139,7 +139,7 @@ int main_window(bool use_colors)
 
         // wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
         //  oraz ustaw kursor w obecnie przetwarzany znak
-        kbd_buf_show(kbd_buf, zuousername, term_y, term_x, kbd_buf_pos, kbd_buf_max);
+        kbd_buf_show(kbd_buf, zuousername, term_y, term_x, kbd_buf_pos);
 
         wrefresh(win_diag);
         refresh();
@@ -150,8 +150,8 @@ int main_window(bool use_colors)
             // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
             if(errno == EINTR)      // Interrupted system call (wywołany np. przez SIGWINCH)
             {
-                refresh();
-                wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
+//                wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
+//                refresh();
                 getch();            // ignoruj KEY_RESIZE
                 continue;           // wróć do początku pętli while()
             }
