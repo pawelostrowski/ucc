@@ -282,13 +282,12 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                             if(buffer_str[j] == ' ')
                                 break;
                             if(buffer_str[j] == '%')
+                            {
+                                // gdy zakończono na %, zmień atrybuty
+                                wattron(active_window, A_BOLD);
+                                i = j + 1;
                                 break;
-                        }
-                        // gdy zakończono na %, zmień atrybuty
-                        if(buffer_str[j] == '%')
-                        {
-                            wattron(active_window, A_BOLD);
-                            i = j + 1;
+                            }
                         }
                     }
                     // gdy to nie bold, pomiń %F...% (o ile to prawidłowy kod bez spacji wewnątrz)
@@ -299,11 +298,10 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                             if(buffer_str[j] == ' ')
                                 break;
                             if(buffer_str[j] == '%')
+                            {
+                                i = j + 1;
                                 break;
-                        }
-                        if(buffer_str[j] == '%')
-                        {
-                            i = j + 1;
+                            }
                         }
                     }
                 }
@@ -317,15 +315,14 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         if(buffer_str[j] == ' ')
                             break;
                         if(buffer_str[j] == '%')
+                        {
+                            // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
+                            if(use_colors)
+                                wattron(active_window, COLOR_PAIR(onet_color_conv(onet_color)));
+                            i = j + 1;
                             break;
+                        }
                         onet_color += buffer_str[j];
-                    }
-                    if(buffer_str[j] == '%' && onet_color.size() == 6)  // kolor musi mieć 6 znaków
-                    {
-                        // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
-                        if(use_colors)
-                            wattron(active_window, COLOR_PAIR(onet_color_conv(onet_color)));
-                        i = j + 1;
                     }
                 }
                 // ikony konwertuj na //nazwa_ikony
@@ -338,14 +335,13 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         if(buffer_str[j] == ' ')
                             break;
                         if(buffer_str[j] == '%')
+                        {
+                            // wyświetl ikonę jako //nazwa_ikony
+                            wprintw(active_window, "//%s", onet_icon.c_str());
+                            i = j + 1;
                             break;
+                        }
                         onet_icon += buffer_str[j];
-                    }
-                    if(buffer_str[j] == '%')
-                    {
-                        // wyświetl ikonę jako //nazwa_ikony
-                        wprintw(active_window, "//%s", onet_icon.c_str());
-                        i = j + 1;
                     }
                 }
             }
