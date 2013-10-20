@@ -141,6 +141,7 @@ int main_window(bool use_colors)
         //  oraz ustaw kursor w obecnie przetwarzany znak
         kbd_buf_show(kbd_buf, zuousername, term_y, term_x, kbd_buf_pos);
 
+        // odśwież okna (kolejność jest ważna, bo przy zmianie rozmiaru okna terminala odwrotna kolejność rozwala wygląd)
         wrefresh(win_diag);
         refresh();
 
@@ -150,8 +151,6 @@ int main_window(bool use_colors)
             // sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu w kosmos
             if(errno == EINTR)      // Interrupted system call (wywołany np. przez SIGWINCH)
             {
-//                wrefresh(stdscr);   // odświeżenie w tym miejscu jest wymagane, gdy zmienimy rozmiar terminala
-//                refresh();
                 getch();            // ignoruj KEY_RESIZE
                 continue;           // wróć do początku pętli while()
             }

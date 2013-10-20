@@ -322,7 +322,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                     }
                     if(buffer_str[j] == '%' && onet_color.size() == 6)  // kolor musi mieć 6 znaków
                     {
-                        wattrset_color(active_window, use_colors, onet_color_conv(onet_color));
+                        // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
+                        if(use_colors)
+                            wattron(active_window, COLOR_PAIR(onet_color_conv(onet_color)));
                         i = j + 1;
                     }
                 }
