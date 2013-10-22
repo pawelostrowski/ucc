@@ -30,19 +30,19 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
     bool irc_auth_status;       // status wykonania którejś z funkcji irc_auth_x()
     bool irc_ok = false;        // stan połączenia z czatem
     bool send_irc = false;      // true oznacza, że irc_parser() zwrócił PONG do wysłania do IRC
-    bool room_ok = false;       // stan wejścia do pokoju (kanału)
+    bool channel_ok = false;    // stan wejścia do pokoju (kanału)
     bool command_me = false;    // true oznacza, że wpisano polecenie /me, które trzeba wyświetlić z uwzględnieniem kodowania bufora w ISO-8859-2
     int term_y, term_x;         // wymiary terminala
     int cur_y, cur_x;           // aktualna pozycja kursora
     int kbd_buf_pos = 0;        // początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
     int kbd_buf_max = 0;        // początkowy maksymalny rozmiar bufora klawiatury
     int key_code;               // kod ostatnio wciśniętego klawisza
-    std::string kbd_buf;        // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
+    std::string kbd_buf;        // bufor odczytanych znaków z klawiatury
     std::string msg;            // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
     std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
     std::string zuousername = "Niezalogowany";
-    std::string cookies, my_nick, my_password, uokey, room, msg_sock;
+    std::string cookies, my_nick, my_password, uokey, channel, msg_sock;
     int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
     std::string buffer_irc_recv;    // bufor odebranych danych z IRC
     std::string buffer_irc_sent;    // dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
@@ -229,7 +229,8 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                     refresh();
 
                     // wykonaj obsługę bufora (zidentyfikuj polecenie), gdy funkcja zwróci false, wypisz na czerwono komunikat błędu
-                    if(! kbd_parser(kbd_buf, msg, msg_irc, my_nick, my_password, zuousername, cookies, uokey, command_ok, captcha_ready, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit))
+                    if(! kbd_parser(kbd_buf, msg, msg_irc, my_nick, my_password, zuousername, cookies, uokey, command_ok, captcha_ready, irc_ready, irc_ok,
+                                    channel, channel_ok, command_me, ucc_quit))
                     {
                         wprintw_utf(win_diag, use_colors, UCC_RED, msg);
                     }
@@ -303,7 +304,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                         {
                             wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
-                        // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
+                        // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
                         irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, buffer_irc_sent, zuousername, uokey, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
@@ -327,6 +328,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
                     // zachowaj pozycję kursora dla kolejnego komunikatu
                     getyx(win_diag, cur_y, cur_x);
+
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
                     kbd_buf_pos = 0;
@@ -366,7 +368,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             }
 
             // zinterpretuj odpowiedź
-            irc_parser(buffer_irc_recv, msg, room, send_irc, irc_ok);
+            irc_parser(buffer_irc_recv, msg, channel, send_irc, irc_ok);
 
             if(send_irc)
             {

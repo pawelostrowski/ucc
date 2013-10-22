@@ -6,7 +6,7 @@
 
 
 bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &zuousername, std::string &cookies,
-                std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &room, bool &room_ok, bool &command_me, bool &ucc_quit)
+                std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &channel, bool &channel_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
 
@@ -37,7 +37,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
             return false;
         }
         // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
-        else if(! room_ok)
+        else if(! channel_ok)
         {
             msg = "# Nie jesteś w aktywnym pokoju.";
             return false;
@@ -45,7 +45,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
         // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
         command_ok = false;     // wpisano tekst do wysłania do aktywnego pokoju
         msg = "<" + zuousername + "> " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
-        msg_irc = "PRIVMSG " + room + " :" + kbd_buf;
+        msg_irc = "PRIVMSG " + channel + " :" + kbd_buf;
         return true;            // gdy wpisano zwykły tekst, zakończ
     }
 
@@ -215,20 +215,20 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
         // jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
         if(irc_ok)
         {
-            find_arg(kbd_buf, room, pos_arg_start, false);
+            find_arg(kbd_buf, channel, pos_arg_start, false);
             if(pos_arg_start == 0)
             {
                 msg = "# Nie podano pokoju.";
                 return false;
             }
             // gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
-            room_ok = true;     // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
+            channel_ok = true;      // nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
             // jeśli nie podano # przed nazwą pokoju, dodaj #
-            if(room[0] != '#')
+            if(channel[0] != '#')
             {
-                room.insert(0, "#");
+                channel.insert(0, "#");
             }
-            msg_irc = "JOIN " + room;
+            msg_irc = "JOIN " + channel;
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else
@@ -244,7 +244,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
         if(irc_ok)
         {
             // jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
-            if(! room_ok)
+            if(! channel_ok)
             {
                 msg = "# Nie jesteś w aktywnym pokoju.";
                 return false;
@@ -253,7 +253,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
             command_me = true;      // polecenie to wymaga, aby komunikat wyświetlić zgodnie z kodowaniem bufora w ISO-8859-2
             rest_args(kbd_buf, pos_arg_start, r_args);     // pobierz wpisany komunikat dla /me (nie jest niezbędny)
             msg = "* " + zuousername + " " + r_args;
-            msg_irc = "PRIVMSG " + room + " :\1ACTION " + r_args + "\1";
+            msg_irc = "PRIVMSG " + channel + " :\1ACTION " + r_args + "\1";
         }
         // jeśli nie połączono z IRC, pokaż ostrzeżenie
         else

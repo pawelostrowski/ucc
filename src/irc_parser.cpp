@@ -6,7 +6,7 @@
 #include "ucc_colors.hpp"
 
 
-void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &room, bool &send_irc, bool &irc_ok)
+void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &channel, bool &send_irc, bool &irc_ok)
 {
     size_t pos_last_n;
     std::string f_value;
@@ -41,7 +41,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &roo
     }
 
     // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
-    else if(find_value(strdup(buffer_irc_recv.c_str()), "PRIVMSG " + room + " :", "\n", f_value) == 0)
+    else if(find_value(strdup(buffer_irc_recv.c_str()), "PRIVMSG " + channel + " :", "\n", f_value) == 0)
     {
         std::string nick_on_irc;
         find_value(strdup(buffer_irc_recv.c_str()), ":", "!", nick_on_irc);

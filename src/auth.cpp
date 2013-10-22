@@ -560,8 +560,8 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, s
     std::string buffer_irc_send;
     std::string msg_err_pre = "# irc_auth_5: ";
 
-    // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>
-    buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername;
+    // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
+    buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\r\nPROTOCTL ONETNAMESX";
     buffer_irc_sent = buffer_irc_send;
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
