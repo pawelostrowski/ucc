@@ -6,14 +6,17 @@
 #include "ucc_colors.hpp"
 
 
-void irc_parser(std::string &buffer_irc_recv, std::string &buffer_irc_recv_tmp, std::string &msg, short &msg_color, std::string &room, bool &send_irc, bool &irc_ok)
+void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &room, bool &send_irc, bool &irc_ok)
 {
-    std::string f_value;
     size_t pos_last_n;
+    std::string f_value;
+
+    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
+    static std::string buffer_irc_recv_tmp;
 
     // dopisz do początku bufora głównego ewentualnie zachowany fragment poprzedniego wiersza z bufora tymczasowego
     buffer_irc_recv.insert(0, buffer_irc_recv_tmp);
-    buffer_irc_recv_tmp.clear();        // usuń tymczasową zawartość
+    buffer_irc_recv_tmp.clear();        // po przepisaniu usuń tymczasową zawartość
 
     // wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora tymczasowego
     pos_last_n = buffer_irc_recv.rfind("\n");
@@ -42,7 +45,6 @@ void irc_parser(std::string &buffer_irc_recv, std::string &buffer_irc_recv_tmp, 
     {
         std::string nick_on_irc;
         find_value(strdup(buffer_irc_recv.c_str()), ":", "!", nick_on_irc);
-        msg_color = UCC_TERM;
         msg = "<" + nick_on_irc + "> " + f_value;
         return;
     }

@@ -11,7 +11,7 @@
 #include "ucc_colors.hpp"
 
 
-int main_window(bool use_colors)
+int main_window(bool use_colors, bool ucc_dbg_irc)
 {
     // zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
     if(freopen("/dev/tty", "r", stdin) == NULL)
@@ -40,13 +40,11 @@ int main_window(bool use_colors)
     std::string kbd_buf;        // bufor odczytanych znaków z klawiatury
     std::string key_code_tmp;   // tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
     std::string msg;            // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
-    short msg_color;            // kolor komunikatu z zainicjalizowanej pary kolorów (można posługiwać się prefiksem UCC_)
     std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
     std::string zuousername = "Niezalogowany";
     std::string cookies, my_nick, my_password, uokey, room, msg_sock;
     int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
     std::string buffer_irc_recv;    // bufor odebranych danych z IRC
-    std::string buffer_irc_recv_tmp;    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
     std::string buffer_irc_sent;    // dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
 
     fd_set readfds;         // deskryptor dla select()
@@ -221,7 +219,7 @@ int main_window(bool use_colors)
                 //wscrl(win_diag, -1);
             }
 
-            else if(key_code == '\n')               // Enter
+            else if(key_code == '\n')               // Enter (0x0A)
             {
                 if(kbd_buf.size() != 0)             // wykonaj obsługę bufora tylko, gdy coś w nim jest
                 {
@@ -229,41 +227,48 @@ int main_window(bool use_colors)
                     move(term_y - 1, zuousername.size() + 3);       // ustaw kursor za nickiem i spacją za nawiasem
                     clrtoeol();
                     refresh();
-                    // wykonaj obsługę bufora (zidentyfikuj polecenie)
-                    kbd_parser(kbd_buf, msg, msg_color, msg_irc, my_nick, my_password, zuousername, cookies,
-                               uokey, command_ok, captcha_ready, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit);
-                    // jeśli wpisano zwykły tekst (nie polecenie), pokaż go wraz z nickiem i wyślij polecenie do IRC (wykrycie, czy połączono się z IRC oraz czy otwarty
-                    //  jest aktywny pokój jest wykonywane w kbd_parser(), przy błędzie nie jest ustawiany command_ok, aby pokazać komunikat poniżej)
-                    if(! command_ok)
+
+                    // wykonaj obsługę bufora (zidentyfikuj polecenie), gdy funkcja zwróci false, wypisz na czerwono komunikat błędu
+                    if(! kbd_parser(kbd_buf, msg, msg_irc, my_nick, my_password, zuousername, cookies, uokey, command_ok, captcha_ready, irc_ready, irc_ok, room, room_ok, command_me, ucc_quit))
                     {
-                        // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
-                        wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg, true);
-                        // wyślij wiadomość na serwer
-                        if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
+                        wprintw_utf(win_diag, use_colors, UCC_RED, msg);
+                    }
+                    else
+                    {
+                        // jeśli wpisano zwykły tekst (nie polecenie), pokaż go wraz z nickiem i wyślij polecenie do IRC (wykrycie, czy połączono się z IRC oraz czy otwarty
+                        //  jest aktywny pokój jest wykonywane w kbd_parser(), przy błędzie nie jest ustawiany command_ok, aby pokazać komunikat poniżej)
+                        if(! command_ok)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                            // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
+                            wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg, true);
+                            // wyślij wiadomość na serwer
+                            if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
+                            {
+                                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                            }
+                        }
+                        // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wyświetlenia na terminalu i nie jest to poloecenie /me, pokaż go (nie jest to błąd, więc na zielono)
+                        else if(msg.size() != 0 && ! command_me)
+                        {
+                            wprintw_utf(win_diag, use_colors, UCC_GREEN, msg);
+                        }
+                        // polecenie /me jest z kodowaniem ISO-8859-2, więc tak je wyświetl
+                        else if(msg.size() != 0 && command_me)
+                        {
+                            wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, msg);
+                        }
+                        // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wysłania do IRC i nie jest to zwykły tekst wypisany w wprintw_iso2utf(), wyślij go do IRC
+                        //  (stan połączenia do IRC wykrywany jest w kbd_parser(), więc nie trzeba się obawiać, że komunikat zostanie wysłany do niezalogowanego czata)
+                        if(msg_irc.size() != 0 && command_ok)
+                        {
+                            wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);       // tymczasowo pokaż, co program wysyła na serwer
+                            if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
+                            {
+                                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                            }
                         }
                     }
-                    // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wyświetlenia na terminalu i nie jest to poloecenie /me, pokaż go
-                    else if(msg.size() != 0 && ! command_me)
-                    {
-                        wprintw_utf(win_diag, use_colors, msg_color, msg);
-                    }
-                    // polecenie /me jest z kodowaniem ISO-8859-2, więc tak je wyświetl
-                    else if(msg.size() != 0 && command_me)
-                    {
-                        wprintw_iso2utf(win_diag, use_colors, msg_color, msg);
-                    }
-                    // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wysłania do IRC i nie jest to zwykły tekst wypisany w wprintw_iso2utf(), wyślij go do IRC
-                    //  (stan połączenia do IRC wykrywany jest w kbd_parser(), więc nie trzeba się obawiać, że komunikat zostanie wysłany do niezalogowanego czata)
-                    if(msg_irc.size() != 0 && command_ok)
-                    {
-                        wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);       // tymczasowo pokaż, co program wysyła na serwer
-                        if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
-                        {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
-                        }
-                    }
+
                     // sprawdź gotowość do połączenia z IRC
                     if(irc_ready)
                     {
@@ -310,6 +315,7 @@ int main_window(bool use_colors)
                         {
                             FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
                         }
+
                         // gdy połączenie do IRC nie powiedzie się, wyzeruj socket i ustaw z powrotem nick w pasku wpisywania na Niezalogowany
                         else
                         {
@@ -360,7 +366,7 @@ int main_window(bool use_colors)
             }
 
             // zinterpretuj odpowiedź
-            irc_parser(buffer_irc_recv, buffer_irc_recv_tmp, msg, msg_color, room, send_irc, irc_ok);
+            irc_parser(buffer_irc_recv, msg, room, send_irc, irc_ok);
 
             if(send_irc)
             {
@@ -374,7 +380,7 @@ int main_window(bool use_colors)
             {
                 if(msg.size() != 0)
                 {
-                    wprintw_iso2utf(win_diag, use_colors, msg_color, msg);
+                    wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg);
                 }
                 else
                 {

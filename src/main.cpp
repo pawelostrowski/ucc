@@ -7,9 +7,10 @@
 int main(int argc, char *argv[])
 {
     bool use_colors = true;     // domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)
+    bool ucc_dbg_irc = true;    // domyślnie pracuj w trybie debugowania IRC (potem zamienić to na parametr pobierany z argv[])
     int window_status;
 
-    window_status = main_window(use_colors);
+    window_status = main_window(use_colors, ucc_dbg_irc);
 
     if(window_status == 1)
         perror("freopen()");
