@@ -175,8 +175,6 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
         } while(bytes_recv != 0);
 
-        buffer_recv[offset_recv] = '\0';
-
         // zamknij połączenie z hostem
         close(socketfd);
 
@@ -286,8 +284,6 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
         } while(bytes_recv != 0);
 
-        buffer_recv[offset_recv] = '\0';
-
         // zamknij połączenie z hostem
         close(socketfd);
 
@@ -296,6 +292,9 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
         SSL_CTX_free(ssl_context);
 
     }   // else if(port == 443)
+
+    // zakończ bufor kodem NULL
+    buffer_recv[offset_recv] = '\0';
 
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)

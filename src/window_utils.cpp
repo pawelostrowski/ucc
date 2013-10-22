@@ -268,11 +268,13 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     {
         // obsługa % do wykrywania fontu, koloru i ikon
         j = i;
+
         do
         {
             if(buffer_str[j] == '%')
             {
                 ++j;
+
                 // wykryj atrybuty fontu
                 if(buffer_str[j] == 'F' && j < pos_buffer_end)
                 {
@@ -282,7 +284,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         for(++j; j < pos_buffer_end && j < pos_buffer_end; ++j)
                         {
                             if(buffer_str[j] == ' ')
+                            {
                                 break;
+                            }
                             if(buffer_str[j] == '%')
                             {
                                 // gdy zakończono na %, zmień atrybuty
@@ -298,7 +302,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         for(++j; j < pos_buffer_end && j < pos_buffer_end; ++j)
                         {
                             if(buffer_str[j] == ' ')
+                            {
                                 break;
+                            }
                             if(buffer_str[j] == '%')
                             {
                                 i = j + 1;
@@ -307,6 +313,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         }
                     }
                 }
+
                 // wykryj atrybuty koloru
                 else if(buffer_str[j] == 'C' && j < pos_buffer_end)
                 {
@@ -315,18 +322,23 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                     for(++j; j < pos_buffer_end; ++j)
                     {
                         if(buffer_str[j] == ' ')
+                        {
                             break;
+                        }
                         if(buffer_str[j] == '%')
                         {
                             // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
                             if(use_colors)
+                            {
                                 wattron(active_window, COLOR_PAIR(onet_color_conv(onet_color)));
+                            }
                             i = j + 1;
                             break;
                         }
                         onet_color += buffer_str[j];
                     }
                 }
+
                 // ikony konwertuj na //nazwa_ikony
                 else if(buffer_str[j] == 'I' && j < pos_buffer_end)
                 {
@@ -335,7 +347,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                     for(++j; j < pos_buffer_end; ++j)
                     {
                         if(buffer_str[j] == ' ')
+                        {
                             break;
+                        }
                         if(buffer_str[j] == '%')
                         {
                             // wyświetl ikonę jako //nazwa_ikony
@@ -346,7 +360,9 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         onet_icon += buffer_str[j];
                     }
                 }
-            }
+
+            }   // if(buffer_str[j] == '%')
+
         } while(buffer_str[j] == '%');
 
         // na razie mało elegancji sposób na pogrubienie własnego nicka (do poprawy jeszcze)
@@ -460,7 +476,8 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
             wprintw(active_window, "%s", time_hms);
             wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
         }
-    }
+
+    }   // for(int i = 0; i < pos_buffer_end; ++i)
 
     // odświeżenie ekranu nastąpi poza funkcją
 }

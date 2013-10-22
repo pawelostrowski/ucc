@@ -6,9 +6,9 @@
 
 int main(int argc, char *argv[])
 {
+    int window_status;
     bool use_colors = true;     // domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)
     bool ucc_dbg_irc = true;    // domyślnie pracuj w trybie debugowania IRC (potem zamienić to na parametr pobierany z argv[])
-    int window_status;
 
     window_status = main_window(use_colors, ucc_dbg_irc);
 
@@ -24,5 +24,5 @@ int main(int argc, char *argv[])
     else if(window_status != 0)
         std::cerr << "Wystąpił błąd numer: " << window_status << std::endl;
 
-    return 0;
+    return window_status;
 }
