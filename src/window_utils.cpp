@@ -9,7 +9,8 @@
 
 bool check_colors()
 {
-    if(has_colors() == FALSE)       // gdy nie da się używać kolorów, nie kończ programu, po prostu używaj czarno-białego terminala
+    // gdy nie da się używać kolorów, używaj czarno-białego terminala
+    if(has_colors() == FALSE)
         return false;
 
     if(start_color() == ERR)
@@ -18,7 +19,8 @@ bool check_colors()
     short font_color = COLOR_WHITE;
     short background_color = COLOR_BLACK;
 
-    if(use_default_colors() == OK)       // jeśli się da, dopasuj kolory do ustawień terminala
+    // jeśli się da, dopasuj kolory do ustawień terminala
+    if(use_default_colors() == OK)
     {
         font_color = -1;
         background_color = -1;
