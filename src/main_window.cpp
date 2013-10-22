@@ -6,6 +6,7 @@
 #include "window_utils.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
+#include "sockets.hpp"
 #include "auth.hpp"
 #include "ucc_colors.hpp"
 

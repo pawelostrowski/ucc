@@ -1,8 +1,6 @@
 #ifndef AUTH_HPP
 #define AUTH_HPP
 
-#include "sockets.hpp"
-
 bool auth_code(std::string &authkey);
 
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);     // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
