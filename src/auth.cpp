@@ -48,7 +48,7 @@ bool auth_code(std::string &authkey)
     for(int i = 0; i < 16; ++i)
         ai[i] = f1[ai[i] + i];
 
-    memcpy(ai1, ai, sizeof(ai1));    // skopiuj ai do ai1
+    memcpy(ai1, ai, sizeof(ai1));   // skopiuj ai do ai1
 
     for(int i = 0; i < 16; ++i)
         ai[i] = (ai[i] + ai1[p1[i]]) % 62;
@@ -56,7 +56,7 @@ bool auth_code(std::string &authkey)
     for(int i = 0; i < 16; ++i)
         ai[i] = f2[ai[i] + i];
 
-    memcpy(ai1, ai, sizeof(ai1));    // skopiuj ai do ai1
+    memcpy(ai1, ai, sizeof(ai1));   // skopiuj ai do ai1
 
     for(int i = 0; i < 16; ++i)
         ai[i] = (ai[i] + ai1[p2[i]]) % 62;
@@ -69,7 +69,7 @@ bool auth_code(std::string &authkey)
         c = ai[i];
         // ASCII:    \n         $        =        7        0
         ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
-        authkey[i] = ai[i];           // int na std::string (po jednym znaku)
+        authkey[i] = ai[i];         // char na std::string (po jednym znaku)
     }
 
     return true;
