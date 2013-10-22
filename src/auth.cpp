@@ -4,7 +4,7 @@
 #include <cstdlib>          // system()
 
 #include "auth.hpp"
-#include "sockets.hpp"
+#include "network.hpp"
 
 #define FILE_GIF "/tmp/onetcaptcha.gif"
 

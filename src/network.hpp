@@ -1,5 +1,5 @@
-#ifndef SOCKETS_HPP
-#define SOCKETS_HPP
+#ifndef NETWORK_HPP
+#define NETWORK_HPP
 
 #include <unistd.h>         // close() - socket
 
@@ -13,4 +13,4 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
 
 bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err);
 
-#endif      // SOCKETS_HPP
+#endif      // NETWORK_HPP
