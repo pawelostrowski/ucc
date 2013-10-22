@@ -273,7 +273,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                     // sprawdź gotowość do połączenia z IRC
                     if(irc_ready)
                     {
-                        irc_ready = false;      // po połączeniu nie próbuj się znowu łączyć do IRC od zera
+                        irc_ready = false;      // nie próbuj się znowu łączyć do IRC od zera
                         // połącz z serwerem IRC
                         irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
@@ -281,7 +281,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                         {
                             wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
-                        // wyślij: NICK <~nick>
+                        // wyślij: NICK <zuousername>
                         irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, zuousername, msg);
                         wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
                         wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
@@ -311,12 +311,12 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                         {
                             wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
                         }
+
                         // od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
                         if(irc_ok)
                         {
                             FD_SET(socketfd_irc, &readfds);  // gniazdo IRC (socket)
                         }
-
                         // gdy połączenie do IRC nie powiedzie się, wyzeruj socket i ustaw z powrotem nick w pasku wpisywania na Niezalogowany
                         else
                         {

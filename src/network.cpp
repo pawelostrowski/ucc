@@ -4,7 +4,7 @@
 
 #include "network.hpp"
 
-#define BUF_SIZE 1500
+#define BUF_SIZE (1500 * sizeof(char))
 
 
 int socket_init(std::string host, short port, std::string &msg_err)
@@ -116,7 +116,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             return NULL;
         }
         // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-        if(bytes_sent != (int)data_send.size())     // (int) konwertuje zwracaną wartość na int
+        if(bytes_sent != static_cast<int>(data_send.size()))        // static_cast<int> - rzutowanie size_t (w tym przypadku) na int
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
@@ -129,7 +129,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             // wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
             if(buffer_recv == NULL)
             {
-                buffer_recv = (char*)malloc(BUF_SIZE);
+                buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));   // reinterpret_cast<char *> - rzutowanie void* (w tym przypadku) na char*
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas alokacji pamięci przez malloc()";
@@ -139,7 +139,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             // gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
             else
             {
-                buffer_recv = (char*)realloc(buffer_recv, offset_recv + BUF_SIZE);
+                buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas realokacji pamięci przez realloc()";
@@ -230,7 +230,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]";
             return NULL;
         }
-        if(bytes_sent != (int)data_send.size())
+        if(bytes_sent != static_cast<int>(data_send.size()))
         {
             close(socketfd);
             msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
@@ -242,7 +242,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
         {
             if(buffer_recv == NULL)
             {
-                buffer_recv = (char*)malloc(BUF_SIZE);
+                buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
@@ -251,7 +251,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             }
             else
             {
-                buffer_recv = (char*)realloc(buffer_recv, offset_recv + BUF_SIZE);
+                buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
                 if(buffer_recv == NULL)
                 {
                     msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
@@ -376,7 +376,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
         return false;
     }
 
-    if(bytes_sent != (int)buffer_irc_send.size())
+    if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
     {
         close(socketfd_irc);
         irc_ok = false;

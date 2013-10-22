@@ -78,8 +78,8 @@ void kbd_utf2iso(int &key_code)
     char c_out[5];
 
     // wpisz bajt wejściowy oraz drugi bajt znaku
-    c_in[0] = (char)key_code;
-    c_in[1] = (char)getch();
+    c_in[0] = key_code;
+    c_in[1] = getch();
     c_in[2] = '\0';     // NULL na końcu
 
     // dokonaj konwersji znaku (dwubajtowego) z UTF-8 na ISO-8859-2
@@ -113,7 +113,7 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
     term_x_len = term_x;
 
     // Backspace powoduje przesuwanie się tekstu z lewej do kursora, gdy ta część jest niewidoczna
-    if((int)kbd_buf.size() < kbd_buf_len && x > 0 && (int)kbd_buf.size() - kbd_buf_pos == kbd_buf_rest)
+    if(static_cast<int>(kbd_buf.size()) < kbd_buf_len && x > 0 && static_cast<int>(kbd_buf.size()) - kbd_buf_pos == kbd_buf_rest)
         --x;
 
     // zachowaj rozmiar bufora dla wyżej wymienionego sprawdzania
@@ -131,7 +131,7 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
         kbd_buf.erase(0, x);
 
     // gdy pozycja kursora przekracza rozmiar terminala, obetnij tekst z lewej (po jednym znaku, bo reszta z x była obcięta wyżej)
-    if(kbd_buf_pos - x + (int)zuousername.size() + 4 > term_x)
+    if(kbd_buf_pos - x + static_cast<int>(zuousername.size()) + 4 > term_x)
     {
         cut_left = kbd_buf_pos - x + zuousername.size() + 4 - term_x;
         kbd_buf.erase(0, cut_left);
@@ -142,10 +142,10 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
         x += cut_left;
 
     // obetnij to, co wystaje poza terminal
-    if((int)kbd_buf.size() + (int)zuousername.size() + 3 > term_x)
+    if(static_cast<int>(kbd_buf.size()) + static_cast<int>(zuousername.size()) + 3 > term_x)
     {
         // jeśli szerokość terminala jest mniejsza od długości nicka wraz z nawiasem i spacją, nic nie obcinaj, bo doprowadzi to do wywalenia się programu
-        if(term_x > (int)zuousername.size() + 3)
+        if(term_x > static_cast<int>(zuousername.size()) + 3)
         {
             cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
             kbd_buf.erase((zuousername.size() + 3 - term_x) * -1, cut_right);

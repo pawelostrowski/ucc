@@ -430,7 +430,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     std::string buffer_irc_send;
     std::string msg_err_pre = "# irc_auth_2: ";
 
-    // wyślij: NICK <~nick>
+    // wyślij: NICK <zuousername>
     buffer_irc_send = "NICK " + zuousername;
     buffer_irc_sent = buffer_irc_send;      // rozdzielono to w sten sposób, aby można było podejrzeć, co zostało wysłane do serwera (inf. do debugowania)
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))

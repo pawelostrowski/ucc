@@ -464,7 +464,7 @@ int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_co
     f_command_org = f_command;
 
     // zamień małe litery w poleceniu na wielkie (łatwiej będzie je sprawdzać)
-    for(int i = 0; i < (int)f_command.size(); ++i)
+    for(int i = 0; i < static_cast<int>(f_command.size()); ++i)     // static_cast<int> - rzutowanie size_t (w tym przypadku) na int
     {
         if(islower(f_command[i]))
         {
@@ -516,7 +516,7 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
     // jeśli trzeba, zamień małe litery w argumencie na wielkie
     if(lower2upper)
     {
-        for(int i = 0; i < (int)f_arg.size(); ++i)
+        for(int i = 0; i < static_cast<int>(f_arg.size()); ++i)
         {
             if(islower(f_arg[i]))
             {
