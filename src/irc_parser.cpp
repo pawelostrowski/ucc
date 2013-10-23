@@ -26,7 +26,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &cha
         buffer_irc_recv.erase(pos_last_n + 1, buffer_irc_recv.size() - pos_last_n - 1);         // oraz usuń go z głównego bufora
     }
 
-    // zacznij od wyzerowania bufora powrotnego
+    // zacznij od wyczyszczenia bufora powrotnego
     msg.clear();
 
     // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC

@@ -3,7 +3,8 @@
 
 bool auth_code(std::string &authkey);
 
-int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);     // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
+// szuka wartości pomiędzy wyrażeniem początkowym i końcowym
+int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);
 
 bool http_auth_init(std::string &cookies, std::string &msg_err);
 

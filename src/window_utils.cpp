@@ -106,7 +106,8 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
     int cut_left = 0;
     int cut_right = 0;
 
-    // rozsuwaj tekst, gdy terminal jest powiększany w poziomie oraz gdy z lewej strony tekst jest ukryty (dopracować, aby szybka zmiana też poprawnie rozsuwała tekst!!!)
+    // rozsuwaj tekst, gdy terminal jest powiększany w poziomie oraz gdy z lewej strony tekst jest ukryty
+    //  (dopracować, aby szybka zmiana też poprawnie rozsuwała tekst!!!)
     if(term_x > term_x_len && x > 0)
         --x;
 

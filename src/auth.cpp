@@ -101,7 +101,7 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 bool http_auth_init(std::string &cookies, std::string &msg_err)
 {
 /*
-    pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn)
+    Pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn).
 */
 
     long offset_recv;
@@ -128,7 +128,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 {
 /*
-    pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka
+    Pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka.
 */
 
     long offset_recv;
@@ -187,7 +187,8 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 {
 /*
-    w przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać, pobierając z serwera mały obrazek
+    W przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać,
+    pobierając z serwera mały obrazek.
 */
 
     long offset_recv;
@@ -255,7 +256,7 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
 {
 /*
-    w tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid)
+    W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid).
 */
 
     long offset_recv;
@@ -280,7 +281,8 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
 bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::string &msg_err)
 {
 /*
-    funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku), dotyczy nicka stałego
+    Funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku),
+    dotyczy nicka stałego.
 */
 
     long offset_recv;
@@ -318,7 +320,8 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
     if(my_password.size() == 0)
     {
         temp_nick = "1";        // tymczasowy
-        // jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
+        // jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje,
+        //  mimo iż potem taki nick zwraca po zalogowaniu się
         if(my_nick[0] == '~')
         {
             my_nick.erase(0, 1);
@@ -394,7 +397,8 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 {
     std::string msg_err_pre = "# irc_auth_1: ";
 
-    // zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie, gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
+    // zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie,
+    //  gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
     irc_ok = true;
 
     // zainicjalizuj gniazdo oraz połącz z IRC

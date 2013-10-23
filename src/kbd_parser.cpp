@@ -5,8 +5,9 @@
 #include "ucc_colors.hpp"
 
 
-bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &zuousername, std::string &cookies,
-                std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &channel, bool &channel_ok, bool &command_me, bool &ucc_quit)
+bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &zuousername,
+                std::string &cookies, std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &channel,
+                bool &channel_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
 
@@ -46,7 +47,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
 
         // gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
         command_ok = false;     // wpisano tekst do wysłania do aktywnego pokoju
-        msg = "<" + zuousername + "> " + kbd_buf;     // kolor nie jest zmieniany, bo do wyświetlenia komunikatu w terminalu używana jest funkcja, która w parametrze przyjmuje kolor
+        msg = "<" + zuousername + "> " + kbd_buf;
         msg_irc = "PRIVMSG " + channel + " :" + kbd_buf;
         return true;            // gdy wpisano zwykły tekst, zakończ
     }
