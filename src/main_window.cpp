@@ -41,6 +41,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
     std::string kbd_buf;        // bufor odczytanych znaków z klawiatury
     std::string msg;            // komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
     std::string msg_irc;        // komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() (opcjonalny)
+    std::string msg_dbg;        // komunikaty do debugowania (z gniazda), gdy aktywna jest funkcja debugowania IRC
     std::string zuousername = "Niezalogowany";
     std::string cookies, my_nick, my_password, uokey, channel, msg_sock;
     int socketfd_irc = 0;       // gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
@@ -64,30 +65,30 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
     // utwórz okno, w którym będą komunikaty serwera oraz inne (np. diagnostyczne)
     getmaxyx(stdscr, term_y, term_x);   // pobierz wymiary terminala (okna głównego)
-    WINDOW *win_diag;
-    win_diag = newwin(term_y - 3, term_x, 1, 0);
-    scrollok(win_diag, TRUE);           // włącz przewijanie w tym oknie
+    WINDOW *win_status;
+    win_status = newwin(term_y - 3, term_x, 1, 0);
+    scrollok(win_status, TRUE);         // włącz przewijanie w tym oknie
 
     // jeśli terminal obsługuje kolory, poniższy komunikat powitalny wyświetl w kolorze zielonym
-    wprintw_utf(win_diag, use_colors, UCC_GREEN, "Ucieszony Chat Client"
-                                                 "\n# Aby się zalogować na nick tymczasowy, wpisz:"
-                                                 "\n/nick nazwa_nicka"
-                                                 "\n/connect"
-                                                 "\n# Następnie przepisz kod z obrazka, w tym celu wpisz:"
-                                                 "\n/captcha kod_z_obrazka"
-                                                 "\n# Aby się zalogować na nick stały (zarejestrowany), wpisz:"
-                                                 "\n/nick nazwa_nicka hasło_do_nicka"
-                                                 "\n/connect"
-                                                 "\n# Aby zobaczyć dostępne polecenia, wpisz:"
-                                                 "\n/help"
-                                                 "\n# Aby zakończyć działanie programu, wpisz:"
-                                                 "\n/quit lub /q");
+    wprintw_utf(win_status, use_colors, UCC_GREEN, "Ucieszony Chat Client"
+                                                   "\n# Aby się zalogować na nick tymczasowy, wpisz:"
+                                                   "\n/nick nazwa_nicka"
+                                                   "\n/connect"
+                                                   "\n# Następnie przepisz kod z obrazka, w tym celu wpisz:"
+                                                   "\n/captcha kod_z_obrazka"
+                                                   "\n# Aby się zalogować na nick stały (zarejestrowany), wpisz:"
+                                                   "\n/nick nazwa_nicka hasło_do_nicka"
+                                                   "\n/connect"
+                                                   "\n# Aby zobaczyć dostępne polecenia, wpisz:"
+                                                   "\n/help"
+                                                   "\n# Aby zakończyć działanie programu, wpisz:"
+                                                   "\n/quit lub /q");
 
     refresh();
-    wrefresh(win_diag);
+    wrefresh(win_status);
 
     // zapamiętaj aktualną pozycję kursora w oknie diagnostycznym
-    getyx(win_diag, cur_y, cur_x);
+    getyx(win_status, cur_y, cur_x);
 
 /*
     Tymczasowe wskaźniki pomocnicze, usunąć po testach
@@ -105,9 +106,9 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
         // wykryj zmianę rozmiaru okna terminala
         if(is_term_resized(term_y, term_x))
         {
-            getmaxyx(stdscr, term_y, term_x);       // pobierz nowe wymiary terminala (okna głównego) po jego zmianie
-            wresize(stdscr, term_y, term_x);        // zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
-            wresize(win_diag, term_y - 3, term_x);  // j/w, ale dla okna diagnostycznego
+            getmaxyx(stdscr, term_y, term_x);           // pobierz nowe wymiary terminala (okna głównego) po jego zmianie
+            wresize(stdscr, term_y, term_x);            // zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
+            wresize(win_status, term_y - 3, term_x);    // j/w, ale dla okna diagnostycznego
             // po zmianie rozmiaru terminala sprawdź, czy maksymalna pozycja kursora Y nie jest większa od wymiarów okna
             if(cur_y >= term_y - 3)
                 cur_y = term_y - 4;     // - 4, bo piszemy do max granicy, nie wchodząc na nią
@@ -141,7 +142,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
         kbd_buf_show(kbd_buf, zuousername, term_y, term_x, kbd_buf_pos);
 
         // odśwież okna (kolejność jest ważna, bo przy zmianie rozmiaru okna terminala odwrotna kolejność rozwala wygląd)
-        wrefresh(win_diag);
+        wrefresh(win_status);
         refresh();
 
         // czekaj na aktywność klawiatury lub gniazda (socket)
@@ -156,7 +157,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             // inny błąd select() powoduje zakończenie działania programu
             else
             {
-                delwin(win_diag);
+                delwin(win_status);
                 endwin();           // zakończ tryb ncurses
                 fclose(stdin);
                 return 3;
@@ -211,12 +212,12 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
             else if(key_code == KEY_PPAGE)          // PageUp
             {
-                //wscrl(win_diag, 1);
+                //wscrl(win_status, 1);
             }
 
             else if(key_code == KEY_NPAGE)          // PageDown
             {
-                //wscrl(win_diag, -1);
+                //wscrl(win_status, -1);
             }
 
             else if(key_code == '\n')               // Enter (0x0A)
@@ -230,9 +231,9 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
                     // wykonaj obsługę bufora (zidentyfikuj polecenie), gdy funkcja zwróci false, wypisz na czerwono komunikat błędu
                     if(! kbd_parser(kbd_buf, msg, msg_irc, my_nick, my_password, zuousername, cookies, uokey, command_ok, captcha_ready, irc_ready, irc_ok,
-                                    channel, channel_ok, command_me, ucc_quit))
+                                    channel, channel_ok, command_me, ucc_quit, msg_dbg))
                     {
-                        wprintw_utf(win_diag, use_colors, UCC_RED, msg);
+                        wprintw_utf(win_status, use_colors, UCC_RED, msg);
                     }
                     else
                     {
@@ -242,33 +243,33 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                         if(! command_ok)
                         {
                             // pokaż komunikat z uwzględnieniem tego, że w buforze jest kodowanie ISO-8859-2
-                            wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg, true);
+                            wprintw_iso2utf(win_status, use_colors, UCC_TERM, msg, true);
                             // wyślij wiadomość na serwer
                             if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                             {
-                                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                                wprintw_utf(win_status, use_colors, UCC_RED, msg_sock);     // w przypadku błędu pokaż, co się stało
                             }
                         }
                         // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wyświetlenia na terminalu i nie jest to poloecenie /me, pokaż go
                         //  (nie jest to błąd, więc na zielono)
                         else if(msg.size() != 0 && ! command_me)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_GREEN, msg);
+                            wprintw_utf(win_status, use_colors, UCC_GREEN, msg);
                         }
                         // polecenie /me jest z kodowaniem ISO-8859-2, więc tak je wyświetl
                         else if(msg.size() != 0 && command_me)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_MAGENTA, msg);
+                            wprintw_iso2utf(win_status, use_colors, UCC_MAGENTA, msg);
                         }
                         // gdy kbd_parser() zwrócił jakiś komunikat przeznaczony do wysłania do IRC i nie jest to zwykły tekst wypisany w wprintw_iso2utf(),
                         //  wyślij go do IRC (stan połączenia do IRC wykrywany jest w kbd_parser(), więc nie trzeba się obawiać, że komunikat zostanie
                         //  wysłany do niezalogowanego czata)
                         if(msg_irc.size() != 0 && command_ok)
                         {
-                            wprintw_iso2utf(win_diag, use_colors, UCC_BLUE, msg_irc);       // tymczasowo pokaż, co program wysyła na serwer
+                            wprintw_iso2utf(win_status, use_colors, UCC_BLUE, msg_irc);     // tymczasowo pokaż, co program wysyła na serwer
                             if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_sock))
                             {
-                                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                                wprintw_utf(win_status, use_colors, UCC_RED, msg_sock);     // w przypadku błędu pokaż, co się stało
                             }
                         }
                     }
@@ -279,40 +280,40 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                         irc_ready = false;      // nie próbuj się znowu łączyć do IRC od zera
                         // połącz z serwerem IRC
                         irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, msg);
-                        wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_WHITE, buffer_irc_recv);    // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_status, use_colors, UCC_RED, msg);      // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: NICK <zuousername>
                         irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, zuousername, msg);
-                        wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
-                        wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_YELLOW, buffer_irc_sent);   // pokaż, co wysłano do serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_WHITE, buffer_irc_recv);    // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_status, use_colors, UCC_RED, msg);      // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY
                         irc_auth_status = irc_auth_3(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
-                        wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
-                        wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);      // pokaż odpowiedź serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_YELLOW, buffer_irc_sent);   // pokaż, co wysłano do serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_WHITE, buffer_irc_recv);    // pokaż odpowiedź serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_status, use_colors, UCC_RED, msg);      // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: AUTHKEY <AUTHKEY>
                         irc_auth_status = irc_auth_4(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg);
-                        wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_YELLOW, buffer_irc_sent);   // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_status, use_colors, UCC_RED, msg);      // w przypadku błędu pokaż, co się stało
                         }
                         // wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
                         irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, buffer_irc_sent, zuousername, uokey, msg);
-                        wprintw_iso2utf(win_diag, use_colors, UCC_YELLOW, buffer_irc_sent);     // pokaż, co wysłano do serwera
+                        wprintw_iso2utf(win_status, use_colors, UCC_YELLOW, buffer_irc_sent);   // pokaż, co wysłano do serwera
                         if(! irc_auth_status)
                         {
-                            wprintw_utf(win_diag, use_colors, UCC_RED, msg);        // w przypadku błędu pokaż, co się stało
+                            wprintw_utf(win_status, use_colors, UCC_RED, msg);      // w przypadku błędu pokaż, co się stało
                         }
 
                         // od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
@@ -330,7 +331,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
                     }   // if(irc_ready)
 
                     // zachowaj pozycję kursora dla kolejnego komunikatu
-                    getyx(win_diag, cur_y, cur_x);
+                    getyx(win_status, cur_y, cur_x);
 
                     // po obsłudze bufora wyczyść go
                     kbd_buf.clear();
@@ -367,7 +368,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             // pobierz odpowiedź z serwera
             if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_sock))
             {
-                wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);       // w przypadku błędu pokaż, co się stało
+                wprintw_utf(win_status, use_colors, UCC_RED, msg_sock);     // w przypadku błędu pokaż, co się stało
             }
 
             // zinterpretuj odpowiedź
@@ -377,7 +378,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             {
                 if(! irc_send(socketfd_irc, irc_ok, msg, msg_sock))         // dotychczas wysyłaną odpowiedzią w tym miejscu jest PONG
                 {
-                    wprintw_utf(win_diag, use_colors, UCC_RED, msg_sock);   // w przypadku błędu pokaż, co się stało
+                    wprintw_utf(win_status, use_colors, UCC_RED, msg_sock);     // w przypadku błędu pokaż, co się stało
                 }
             }
 
@@ -385,16 +386,16 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             {
                 if(msg.size() != 0)
                 {
-                    wprintw_iso2utf(win_diag, use_colors, UCC_TERM, msg);
+                    wprintw_iso2utf(win_status, use_colors, UCC_TERM, msg);
                 }
                 else
                 {
-                    wprintw_iso2utf(win_diag, use_colors, UCC_WHITE, buffer_irc_recv);
+                    wprintw_iso2utf(win_status, use_colors, UCC_WHITE, buffer_irc_recv);
                 }
             }
 
             // zachowaj pozycję kursora dla kolejnego komunikatu
-            getyx(win_diag, cur_y, cur_x);
+            getyx(win_status, cur_y, cur_x);
 
             // gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select(), wyzeruj socket oraz ustaw z powrotem nick
             //  w pasku wpisywania na Niezalogowany
@@ -416,7 +417,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
     if(socketfd_irc > 0)
         close(socketfd_irc);
 
-    delwin(win_diag);
+    delwin(win_status);
     endwin();           // zakończ tryb ncurses
     fclose(stdin);
 

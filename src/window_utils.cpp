@@ -40,12 +40,12 @@ bool check_colors()
 }
 
 
-void wattrset_color(WINDOW *active_window, bool use_colors, short color_p)
+void wattrset_color(WINDOW *win_active, bool use_colors, short color_p)
 {
     if(use_colors)
-        wattrset(active_window, COLOR_PAIR(color_p));    // wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
+        wattrset(win_active, COLOR_PAIR(color_p));      // wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
     else
-        wattrset(active_window, A_NORMAL);
+        wattrset(win_active, A_NORMAL);
 }
 
 
@@ -194,7 +194,7 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
 }
 
 
-void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str)
+void wprintw_utf(WINDOW *win_active, bool use_colors, short color_p, std::string buffer_str)
 {
     int pos_buffer_end;
     char time_hms[20];          // tablica do pobrania aktualnego czasu [HH:MM:SS] (z nadmiarem)
@@ -202,16 +202,16 @@ void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::str
 
     // zacznij od przejścia do nowego wiersza, ale tylko, gdy to nie jest pierwsze użycie funkcji
     if(! first_use)
-        wprintw(active_window, "\n");
+        wprintw(win_active, "\n");
 
     // kolejne użycie spowoduje przejście do nowego wiersza na początku
     first_use = false;
 
     // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli)
-    wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+    wattrset(win_active, A_NORMAL);     // czas ze zwykłymi atrybutami fontu
     get_time(time_hms);
-    wprintw(active_window, "%s", time_hms);
-    wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+    wprintw(win_active, "%s", time_hms);
+    wattrset_color(win_active, use_colors, color_p);    // przywróc kolor wejściowy
 
     // wyświetl bufor bez ostatniego kodu \n (wykryj, czy ten kod tam jest)
     if(buffer_str[buffer_str.size() - 1] == '\n')
@@ -225,15 +225,15 @@ void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::str
         if(buffer_str[i] == '\r')
             continue;
 
-        wprintw(active_window, "%c", buffer_str[i]);
+        wprintw(win_active, "%c", buffer_str[i]);
 
         // po każdym znaku \n pokaż czas (na początku nowego wiersza)
         if(buffer_str[i] == '\n')
         {
-            wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+            wattrset(win_active, A_NORMAL);     // czas ze zwykłymi atrybutami fontu
             get_time(time_hms);
-            wprintw(active_window, "%s", time_hms);
-            wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+            wprintw(win_active, "%s", time_hms);
+            wattrset_color(win_active, use_colors, color_p);    // przywróc kolor wejściowy
         }
     }
 
@@ -241,7 +241,7 @@ void wprintw_utf(WINDOW *active_window, bool use_colors, short color_p, std::str
 }
 
 
-void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick)
+void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick)
 {
     unsigned char c;            // aktualnie przetwarzany znak z bufora
     int pos_buffer_end;
@@ -250,13 +250,13 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
     std::string onet_color, onet_icon;
 
     // zacznij od przejścia do nowego wiersza
-    wprintw(active_window, "\n");
+    wprintw(win_active, "\n");
 
     // pokaż czas w każdym wywołaniu tej funkcji (reszta w pętli)
-    wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+    wattrset(win_active, A_NORMAL);     // czas ze zwykłymi atrybutami fontu
     get_time(time_hms);
-    wprintw(active_window, "%s", time_hms);
-    wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+    wprintw(win_active, "%s", time_hms);
+    wattrset_color(win_active, use_colors, color_p);    // przywróc kolor wejściowy
 
     // wyświetl bufor bez ostatniego kodu \n (wykryj, czy ten kod tam jest)
     if(buffer_str[buffer_str.size() - 1] == '\n')
@@ -291,7 +291,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                             if(buffer_str[j] == '%')
                             {
                                 // gdy zakończono na %, zmień atrybuty
-                                wattron(active_window, A_BOLD);
+                                wattron(win_active, A_BOLD);
                                 i = j + 1;
                                 break;
                             }
@@ -331,7 +331,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                             // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
                             if(use_colors)
                             {
-                                wattron(active_window, COLOR_PAIR(onet_color_conv(onet_color)));
+                                wattron(win_active, COLOR_PAIR(onet_color_conv(onet_color)));
                             }
                             i = j + 1;
                             break;
@@ -354,7 +354,7 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
                         if(buffer_str[j] == '%')
                         {
                             // wyświetl ikonę jako //nazwa_ikony
-                            wprintw(active_window, "//%s", onet_icon.c_str());
+                            wprintw(win_active, "//%s", onet_icon.c_str());
                             i = j + 1;
                             break;
                         }
@@ -372,14 +372,14 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
             // wykryj początek nicka
             if(buffer_str[i] == '<')
             {
-                wattrset_color(active_window, use_colors, UCC_TERM);
-                wattron(active_window, A_BOLD);
+                wattrset_color(win_active, use_colors, UCC_TERM);
+                wattron(win_active, A_BOLD);
             }
             // wykryj koniec nicka
             if(buffer_str[i - 1] == '>')
             {
-                wattrset_color(active_window, use_colors, color_p);
-                wattroff(active_window, A_BOLD);
+                wattrset_color(win_active, use_colors, color_p);
+                wattroff(win_active, A_BOLD);
             }
         }
 
@@ -390,92 +390,92 @@ void wprintw_iso2utf(WINDOW *active_window, bool use_colors, short color_p, std:
         switch(c)
         {
         case 0xB1:          // ą
-            wprintw(active_window, "%c%c", 0xC4, 0x85);    // zamień na UTF-8
+            wprintw(win_active, "%c%c", 0xC4, 0x85);    // zamień na UTF-8
             break;
 
         case 0xE6:          // ć
-            wprintw(active_window, "%c%c", 0xC4, 0x87);
+            wprintw(win_active, "%c%c", 0xC4, 0x87);
             break;
 
         case 0xEA:          // ę
-            wprintw(active_window, "%c%c", 0xC4, 0x99);
+            wprintw(win_active, "%c%c", 0xC4, 0x99);
             break;
 
         case 0xB3:          // ł
-            wprintw(active_window, "%c%c", 0xC5, 0x82);
+            wprintw(win_active, "%c%c", 0xC5, 0x82);
             break;
 
         case 0xF1:          // ń
-            wprintw(active_window, "%c%c", 0xC5, 0x84);
+            wprintw(win_active, "%c%c", 0xC5, 0x84);
             break;
 
         case 0xF3:          // ó
-            wprintw(active_window, "%c%c", 0xC3, 0xB3);
+            wprintw(win_active, "%c%c", 0xC3, 0xB3);
             break;
 
         case 0xB6:          // ś
-            wprintw(active_window, "%c%c", 0xC5, 0x9B);
+            wprintw(win_active, "%c%c", 0xC5, 0x9B);
             break;
 
         case 0xBC:          // ź
-            wprintw(active_window, "%c%c", 0xC5, 0xBA);
+            wprintw(win_active, "%c%c", 0xC5, 0xBA);
             break;
 
         case 0xBF:          // ż
-            wprintw(active_window, "%c%c", 0xC5, 0xBC);
+            wprintw(win_active, "%c%c", 0xC5, 0xBC);
             break;
 
         case 0xA1:          // Ą
-            wprintw(active_window, "%c%c", 0xC4, 0x84);
+            wprintw(win_active, "%c%c", 0xC4, 0x84);
             break;
 
         case 0xC6:          // Ć
-            wprintw(active_window, "%c%c", 0xC4, 0x86);
+            wprintw(win_active, "%c%c", 0xC4, 0x86);
             break;
 
         case 0xCA:          // Ę
-            wprintw(active_window, "%c%c", 0xC4, 0x98);
+            wprintw(win_active, "%c%c", 0xC4, 0x98);
             break;
 
         case 0xA3:          // Ł
-            wprintw(active_window, "%c%c", 0xC5, 0x81);
+            wprintw(win_active, "%c%c", 0xC5, 0x81);
             break;
 
         case 0xD1:          // Ń
-            wprintw(active_window, "%c%c", 0xC5, 0x83);
+            wprintw(win_active, "%c%c", 0xC5, 0x83);
             break;
 
         case 0xD3:          // Ó
-            wprintw(active_window, "%c%c", 0xC3, 0x93);
+            wprintw(win_active, "%c%c", 0xC3, 0x93);
             break;
 
         case 0xA6:          // Ś
-            wprintw(active_window, "%c%c", 0xC5, 0x9A);
+            wprintw(win_active, "%c%c", 0xC5, 0x9A);
             break;
 
         case 0xAC:          // Ź
-            wprintw(active_window, "%c%c", 0xC5, 0xB9);
+            wprintw(win_active, "%c%c", 0xC5, 0xB9);
             break;
 
         case 0xAF:          // Ż
-            wprintw(active_window, "%c%c", 0xC5, 0xBB);
+            wprintw(win_active, "%c%c", 0xC5, 0xBB);
             break;
 
         case '\r':
             break;
 
         default:
-            wprintw(active_window, "%c", c);   // gdy to nie był polski znak w kodowaniu ISO-8859-2, wpisz odczytaną wartość bez modyfikacji
+            wprintw(win_active, "%c", c);   // gdy to nie był polski znak w kodowaniu ISO-8859-2, wpisz odczytaną wartość bez modyfikacji
             break;
         }
 
         // po każdym znaku \n pokaż czas (na początku nowego wiersza)
         if(buffer_str[i] == '\n')
         {
-            wattrset(active_window, A_NORMAL);      // czas ze zwykłymi atrybutami fontu
+            wattrset(win_active, A_NORMAL);     // czas ze zwykłymi atrybutami fontu
             get_time(time_hms);
-            wprintw(active_window, "%s", time_hms);
-            wattrset_color(active_window, use_colors, color_p);     // przywróc kolor wejściowy
+            wprintw(win_active, "%s", time_hms);
+            wattrset_color(win_active, use_colors, color_p);    // przywróc kolor wejściowy
         }
 
     }   // for(int i = 0; i < pos_buffer_end; ++i)

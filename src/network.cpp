@@ -1,4 +1,5 @@
 #include <sstream>          // std::string, std::stringstream
+#include <fstream>          // std::fstream
 #include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
 #include <openssl/ssl.h>    // poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
 
@@ -52,7 +53,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 
 char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                    long &offset_recv, std::string &msg_err)
+                    long &offset_recv, std::string &msg_err_pre, std::string &msg_err, bool dbg_first_save)
 {
     if(method != "GET" && method != "POST")
     {
@@ -77,21 +78,19 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
     data_send =  method + " " + stock + " HTTP/1.1\r\n"
                 "Host: " + host + "\r\n"
                 "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
-                "Content-Type: application/x-www-form-urlencoded\r\n"
-                "Accept: text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2\r\n"
-                "Cache-Control: no-cache\r\n"
-                "Connection: close\r\n";
+                "Accept-Language: pl\r\n";
 
     if(method == "POST")
     {
         content_length << content.size();       // wczytaj długość zapytania
-        data_send += "Content-Length: " + content_length.str() + "\r\n";    // content_length.str()  <--- zamienia liczbę na std::string
+        data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
+                     "Content-Length: " + content_length.str() + "\r\n";        // content_length.str()  <--- zamienia liczbę na std::string
     }
 
     if(cookies.size() != 0)
         data_send += "Cookie:" + cookies + "\r\n";
 
-    data_send += "\r\n";
+    data_send += "Connection: close\r\n\r\n";
 
     if(content.size() != 0)
         data_send += content;
@@ -297,6 +296,97 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
     // zakończ bufor kodem NULL
     buffer_recv[offset_recv] = '\0';
 
+// jeśli trzeba, zapisz wysłane i pobrane dane do pliku w celu dokonania debugowania
+#if DBG_HTTP == 1
+
+    std::string data_sent = data_send;
+    std::string data_recv = std::string(buffer_recv);
+
+    std::fstream file_dbg;
+
+    if(dbg_first_save)
+        file_dbg.open(FILE_DBG_HTTP, std::ios::out);
+    else
+        file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
+
+    if(file_dbg.good() == false)
+    {
+        free(buffer_recv);
+        msg_err = "Błąd podczas dostępu do pliku debugowania HTTP ("FILE_DBG_HTTP"), sprawdź uprawnienia do zapisu.";
+        return NULL;
+    }
+
+    // jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
+    size_t exp_start, exp_end;
+    std::string pwd_str = "haslo=";
+    std::string con_str = "Content-Length: ";
+
+    exp_start = data_sent.find(pwd_str);
+    if(exp_start != std::string::npos)
+    {
+        exp_end = data_sent.find("&", exp_start);
+        if(exp_end != std::string::npos)
+        {
+            data_sent.erase(exp_start + pwd_str.size(), exp_end - exp_start - pwd_str.size());
+            data_sent.insert(exp_start + pwd_str.size(), "[hidden]");
+
+            // było hasło, więc ukryj długość zapytania
+            exp_start = data_sent.find(con_str);
+            if(exp_start != std::string::npos)
+            {
+                exp_end = data_sent.find("\r\n", exp_start);
+                if(exp_end != std::string::npos)
+                {
+                    data_sent.erase(exp_start + con_str.size(), exp_end - exp_start - con_str.size());
+                    data_sent.insert(exp_start + con_str.size(), "[hidden]");
+                }
+            }
+
+        }
+    }
+
+    // jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
+    std::string gif_str = "GIF";
+
+    exp_start = data_recv.find(gif_str);
+    if(exp_start != std::string::npos)
+        data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
+
+    // usuń \r z buforów, aby w pliku nie było go
+    while(data_sent.find("\r") != std::string::npos)
+        data_sent.erase(data_sent.find("\r"), 1);
+
+    while(data_recv.find("\r") != std::string::npos)
+        data_recv.erase(data_recv.find("\r"), 1);
+
+    // zapisz dane
+    std::string s;
+
+    if(port == 443)
+        s = "s";
+
+    file_dbg << "================================================================================\n";
+
+    file_dbg << msg_err_pre + "\n\n\n";
+
+    file_dbg << ">>> SENT (http" + s + "://" + host + stock + "):\n\n";
+
+    file_dbg << data_sent + "\n";
+
+    if(data_sent[data_sent.size() - 1] != '\n')
+        file_dbg << "\n\n";
+
+    file_dbg << ">>> RECV:\n\n";
+
+    file_dbg << data_recv + "\n";
+
+    if(data_recv[data_recv.size() - 1] != '\n')
+        file_dbg << "\n\n";
+
+    file_dbg.close();
+
+#endif      // DBG_HTTP
+
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)
     {
@@ -419,11 +509,11 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
     buffer_irc_recv = std::string(buffer_tmp);
 
     //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-    while (buffer_irc_recv.find("\2") != std::string::npos)
+    while(buffer_irc_recv.find("\2") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
 
     //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
-    while (buffer_irc_recv.find("\r") != std::string::npos)
+    while(buffer_irc_recv.find("\r") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
     return true;

@@ -1,6 +1,8 @@
 #include <iostream>         // std::cerr, std::endl
 #include <cstdio>           // perror()
 
+//#include <sys/stat.h>
+
 #include "main_window.hpp"
 
 
@@ -23,6 +25,16 @@ int main(int argc, char *argv[])
 
     else if(window_status != 0)
         std::cerr << "Wystąpił błąd numer: " << window_status << std::endl;
+
+//    std::string ucc_dir = std::string(getenv("HOME"));
+//    char ucc_dir[] = "/.ucc";
+//    char full_dir[120];
+//    memcpy(full_dir, home_dir, strlen(home_dir));
+//    memcpy(full_dir + strlen(home_dir), ucc_dir, strlen(ucc_dir));
+//    full_dir[strlen(home_dir) + strlen(ucc_dir)] = '\0';
+//    int st = mkdir(full_dir, 0755);
+//    perror("mkdir");
+//    std::cout << ucc_dir << std::endl;
 
     return window_status;
 }
