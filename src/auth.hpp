@@ -6,7 +6,7 @@ bool auth_code(std::string &authkey);
 // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);
 
-bool http_auth_init(std::string &cookies, std::string &msg_err, std::string &msg_dbg);
+bool http_auth_init(std::string &cookies, std::string &msg_err);
 
 bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err);
 

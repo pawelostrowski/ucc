@@ -3,7 +3,13 @@
 
 #include <ncursesw/ncurses.h>   // wersja ncurses ze wsparciem dla UTF-8
 
-struct channel
+struct wstatus      // okno statusu i debugowania IRC (gdy włączone)
+{
+    std::string win_buffer;
+    std::string channel_name;
+};
+
+struct wchannel     // okna pokoi
 {
     int channel_index;
     std::string win_buffer;

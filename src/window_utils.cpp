@@ -67,9 +67,7 @@ void kbd_utf2iso(int &key_code)
     // zamień znak (jeden) w UTF-8 na ISO-8859-2
     // UWAGA - funkcja nie działa dla znaków więcej, niż 2-bajtowych oraz nie wykrywa nieprawidłowo wprowadzonych znaków!
 
-    int det_utf;
-
-    det_utf = key_code & 0xE0;      // iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
+    int det_utf = key_code & 0xE0;      // iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
 
     if(det_utf != 0xC0)     // wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
         return;             // jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
@@ -149,7 +147,7 @@ void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int 
         if(term_x > static_cast<int>(zuousername.size()) + 3)
         {
             cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
-            kbd_buf.erase((zuousername.size() + 3 - term_x) * -1, cut_right);
+            kbd_buf.erase((zuousername.size() + 3 - term_x) * (-1), cut_right);
         }
     }
 
@@ -308,6 +306,7 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
                             }
                             if(buffer_str[j] == '%')
                             {
+                                wattroff(win_active, A_BOLD);
                                 i = j + 1;
                                 break;
                             }

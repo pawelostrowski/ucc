@@ -1,11 +1,15 @@
 #include <sstream>          // std::string, std::stringstream
-#include <fstream>          // std::fstream
-#include <netdb.h>          // getaddrinfo(), freeaddrinfo(), socket()
+#include <netdb.h>          // gethostbyname(), socket(), htons(), connect(), send(), recv()
 #include <openssl/ssl.h>    // poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
 
 #include "network.hpp"
 
 #define BUF_SIZE (1500 * sizeof(char))
+
+#if DBG_HTTP == 1
+#include <fstream>          // std::fstream
+#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
+#endif      // DBG_HTTP
 
 
 int socket_init(std::string host, short port, std::string &msg_err)
@@ -23,7 +27,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
     host_info = gethostbyname(host.c_str());
     if(host_info == NULL)
     {
-        msg_err = "Nie udało się pobrać informacji o hoście " + host + " (sprawdź swoje połączenie internetowe).";
+        msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
         return 0;
     }
 
@@ -123,7 +127,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             return NULL;
         }
 
-        // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie)
+        // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie), z wyjątkiem pierwszego obiegu
         do
         {
             // wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
@@ -173,7 +177,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
             offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
 
-        } while(bytes_recv != 0);
+        } while(bytes_recv > 0);
 
         // zamknij połączenie z hostem
         close(socketfd);
@@ -282,7 +286,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
             memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);
             offset_recv += bytes_recv;
 
-        } while(bytes_recv != 0);
+        } while(bytes_recv > 0);
 
         // zamknij połączenie z hostem
         close(socketfd);

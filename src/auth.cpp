@@ -1,8 +1,7 @@
 #include <cstring>          // memcpy()
 #include <sstream>          // std::string, std::stringstream
-#include <sys/stat.h>
 #include <fstream>          // std::ofstream
-#include <cstdlib>          // getenv(), system()
+#include <cstdlib>          // system()
 
 #include "auth.hpp"
 #include "network.hpp"
@@ -99,7 +98,7 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 }
 
 
-bool http_auth_init(std::string &cookies, std::string &msg_err, std::string &msg_dbg)
+bool http_auth_init(std::string &cookies, std::string &msg_err)
 {
 /*
     Pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn).
@@ -414,7 +413,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // pobierz pierwszą odpowiedż serwera po połączeniu
     if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -440,7 +439,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     buffer_irc_sent = buffer_irc_send;      // rozdzielono to w sten sposób, aby można było podejrzeć, co zostało wysłane do serwera (inf. do debugowania)
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -449,7 +448,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // pobierz odpowiedź z serwera
     if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -475,7 +474,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     buffer_irc_sent = buffer_irc_send;
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -484,7 +483,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     // pobierz odpowiedź z serwera (AUTHKEY)
     if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -547,7 +546,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
     buffer_irc_sent = buffer_irc_send;
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;
@@ -573,7 +572,7 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, s
     buffer_irc_sent = buffer_irc_send;
     if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
     {
-        // usuń # i spację ze zwracanego stringa (bo socket_irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
+        // usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
         msg_err.erase(0, 2);
         msg_err = msg_err_pre + msg_err;
         return false;

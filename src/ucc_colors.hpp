@@ -1,7 +1,7 @@
 #ifndef UCC_COLORS_HPP
 #define UCC_COLORS_HPP
 
-// przypisanie własnych nazwy kolorów dla zainicjalizowanych par kolorów
+// przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define UCC_RED         1
 #define UCC_GREEN       2
 #define UCC_YELLOW      3

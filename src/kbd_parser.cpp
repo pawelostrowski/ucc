@@ -7,7 +7,7 @@
 
 bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &zuousername,
                 std::string &cookies, std::string &uokey, bool &command_ok, bool &captcha_ready, bool &irc_ready, bool irc_ok, std::string &channel,
-                bool &channel_ok, bool &command_me, bool &ucc_quit, std::string &msg_dbg)
+                bool &channel_ok, bool &command_me, bool &ucc_quit)
 {
     // prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji)
 
@@ -142,7 +142,7 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
         }
 
         // gdy wpisano nick, rozpocznij łączenie
-        if(! http_auth_init(cookies, msg, msg_dbg))
+        if(! http_auth_init(cookies, msg))
         {
             return false;       // w przypadku błędu wróć z komunikatem w msg
         }
@@ -158,6 +158,10 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
             {
                 return false;   // w przypadku błędu wróć z komunikatem w msg
             }
+            if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
+            {
+                return false;   // w przypadku błędu wróć z komunikatem w msg
+            }
 // dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
 /*
             if(! http_auth_useroverride(cookies, my_nick, msg))
@@ -165,10 +169,6 @@ bool kbd_parser(std::string &kbd_buf, std::string &msg, std::string &msg_irc, st
                 return false;   // w przypadku błędu wróć z komunikatem w msg
             }
 */
-            if(! http_auth_getuo(cookies, my_nick, my_password, zuousername, uokey, msg))
-            {
-                return false;   // w przypadku błędu wróć z komunikatem w msg
-            }
             irc_ready = true;       // gotowość do połączenia z IRC
         }
 
