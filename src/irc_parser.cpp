@@ -8,26 +8,29 @@
 
 void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &channel, bool &send_irc, bool &irc_ok)
 {
-    size_t pos_last_n;
     std::string f_value;
 
-    // bufor pomocniczy do zachowania fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
-    static std::string buffer_irc_recv_tmp;
-
-    // dopisz do początku bufora głównego ewentualnie zachowany fragment poprzedniego wiersza z bufora tymczasowego
-    buffer_irc_recv.insert(0, buffer_irc_recv_tmp);
-    buffer_irc_recv_tmp.clear();        // po przepisaniu usuń tymczasową zawartość
-
-    // wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora tymczasowego
-    pos_last_n = buffer_irc_recv.rfind("\n");
-    if(pos_last_n != buffer_irc_recv.size() - 1)    // - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
-    {
-        buffer_irc_recv_tmp.insert(0, buffer_irc_recv, pos_last_n + 1, buffer_irc_recv.size() - pos_last_n - 1);    // zachowaj ostatni niepełny wiersz
-        buffer_irc_recv.erase(pos_last_n + 1, buffer_irc_recv.size() - pos_last_n - 1);         // oraz usuń go z głównego bufora
-    }
+//    std::string buffer_irc_raw;
+//    static size_t pos_raw_end = 0;
 
     // zacznij od wyczyszczenia bufora powrotnego
     msg.clear();
+
+/*
+    // znajdź koniec wiersza
+    pos_raw_end = buffer_irc_recv.find("\n", pos_raw_end);
+
+    // nie może dojść do sytuacji, że na końcu wiersza nie ma \n
+    if(pos_raw_end == std::string::npos)
+    {
+        pos_raw_end = 0;
+        msg = "# Błąd w buforze IRC!";
+        return;
+    }
+
+    // wstaw aktualnie obsługiwany wiersz (raw)
+    buffer_irc_raw.insert(0, buffer_irc_recv, )
+*/
 
     // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC
     send_irc = false;

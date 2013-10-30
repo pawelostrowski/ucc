@@ -454,6 +454,26 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
     // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
     buffer_irc_send += "\r\n";
 
+/*
+    DBG IRC START
+*/
+    std::string data_sent = buffer_irc_send;
+    std::fstream file_dbg;
+
+    while(data_sent.find("\r") != std::string::npos)
+        data_sent.erase(data_sent.find("\r"), 1);
+
+    data_sent.insert(0, ">");
+
+    file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
+
+    file_dbg << data_sent;
+
+    file_dbg.close();
+/*
+    DBG IRC END
+*/
+
     bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
 
     if(bytes_sent == -1)
@@ -489,6 +509,10 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
     int bytes_recv;
     char buffer_tmp[BUF_SIZE];
 
+    // pozycja oraz bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
+    size_t pos_incomplete;
+    static std::string buffer_irc_recv_incomplete;
+
     bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
     buffer_tmp[bytes_recv] = '\0';
 
@@ -519,6 +543,38 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
     //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
     while(buffer_irc_recv.find("\r") != std::string::npos)
         buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
+
+/*
+    DBG IRC START
+*/
+    std::fstream file_dbg;
+
+    file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
+
+    file_dbg << "<---new--->";
+    file_dbg << buffer_irc_recv;
+
+    file_dbg.close();
+/*
+    DBG IRC END
+*/
+
+    // dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
+    if(buffer_irc_recv_incomplete.size() > 0)
+        buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
+
+    // po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
+    buffer_irc_recv_incomplete.clear();
+
+    // wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
+    pos_incomplete = buffer_irc_recv.rfind("\n");   // \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej
+    if(pos_incomplete != buffer_irc_recv.size() - 1)    // - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
+    {
+        // zachowaj ostatni niepełny wiersz
+        buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+        // oraz usuń go z głównego bufora
+        buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+    }
 
     return true;
 }
