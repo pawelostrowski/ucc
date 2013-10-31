@@ -6,53 +6,64 @@
 #include "ucc_colors.hpp"
 
 
-void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &channel, bool &send_irc, bool &irc_ok)
+void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg_irc, std::string &channel, bool &irc_ok)
 {
     std::string f_value;
 
-//    std::string buffer_irc_raw;
-//    static size_t pos_raw_end = 0;
+    std::string buffer_irc_raw;
+    size_t pos_raw_start = 0, pos_raw_end = 0;
 
-    // zacznij od wyczyszczenia bufora powrotnego
+    // zacznij od wyczyszczenia bufora powrotnego oraz bufora IRC
     msg.clear();
+    msg_irc.clear();
 
-/*
-    // znajdź koniec wiersza
-    pos_raw_end = buffer_irc_recv.find("\n", pos_raw_end);
-
-    // nie może dojść do sytuacji, że na końcu wiersza nie ma \n
-    if(pos_raw_end == std::string::npos)
+    do
     {
-        pos_raw_end = 0;
-        msg = "# Błąd w buforze IRC!";
-        return;
-    }
+        // znajdź koniec wiersza
+        pos_raw_end = buffer_irc_recv.find("\n", pos_raw_start);
 
-    // wstaw aktualnie obsługiwany wiersz (raw)
-    buffer_irc_raw.insert(0, buffer_irc_recv, )
-*/
+        // nie może dojść do sytuacji, że na końcu wiersza nie ma \n
+        if(pos_raw_end == std::string::npos)
+        {
+            pos_raw_start = 0;
+            pos_raw_end = 0;
+            msg = "# Błąd w buforze IRC!";
+            return;
+        }
 
-    // domyślnie wiadomości nie są przeznaczone do wysłania do sieci IRC
-    send_irc = false;
+        // wstaw aktualnie obsługiwany wiersz (raw)
+        buffer_irc_raw.clear();
+        buffer_irc_raw.insert(0, buffer_irc_recv, pos_raw_start, pos_raw_end - pos_raw_start + 1);
 
-    // odpowiedz na PING
-    if(find_value(strdup(buffer_irc_recv.c_str()), "PING :", "\n", f_value) == 0)
-    {
-        send_irc = true;    // wiadomość do odesłania na IRC
-        msg = "PONG :" + f_value;
-        return;
-    }
+        // przyjmij, że kolejny wiersz jest za kodem \n, a jeśli to koniec bufora, wykryte to będzie na końcu pętli do{} while()
+        pos_raw_start = pos_raw_end + 1;
 
-    // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
-    else if(find_value(strdup(buffer_irc_recv.c_str()), "PRIVMSG " + channel + " :", "\n", f_value) == 0)
-    {
-        std::string nick_on_irc;
-        find_value(strdup(buffer_irc_recv.c_str()), ":", "!", nick_on_irc);
-        msg = "<" + nick_on_irc + "> " + f_value;
-        return;
-    }
+        // odpowiedz na PING
+        if(find_value(strdup(buffer_irc_raw.c_str()), "PING :", "\n", f_value) == 0)
+        {
+            msg_irc = "PONG :" + f_value;
+        }
 
-    // wykryj, gdy serwer odpowie ERROR
-    if(find_value(strdup(buffer_irc_recv.c_str()), "ERROR :", "\n", f_value) == 0)
-        irc_ok = false;
+        // nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
+        else if(find_value(strdup(buffer_irc_raw.c_str()), "PRIVMSG " + channel + " :", "\n", f_value) == 0)
+        {
+            std::string nick_on_irc;
+            find_value(strdup(buffer_irc_raw.c_str()), ":", "!", nick_on_irc);
+            msg += "<" + nick_on_irc + "> " + f_value + "\n";
+        }
+
+        // wykryj, gdy serwer odpowie ERROR
+        else if(find_value(strdup(buffer_irc_raw.c_str()), "ERROR :", "\n", f_value) == 0)
+        {
+            irc_ok = false;
+        }
+
+        // nieznane lub jeszcze niezaimplementowane rawy wyświetl bez zmian
+        else
+        {
+            msg += buffer_irc_raw;
+        }
+
+    } while(pos_raw_start < buffer_irc_recv.size());
+
 }
