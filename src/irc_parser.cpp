@@ -3,7 +3,7 @@
 
 #include "irc_parser.hpp"
 #include "auth.hpp"
-#include "ucc_colors.hpp"
+#include "ucc_global.hpp"
 
 
 void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg_irc, std::string &channel, bool &irc_ok)
@@ -56,6 +56,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
         else if(find_value(strdup(buffer_irc_raw.c_str()), "ERROR :", "\n", f_value) == 0)
         {
             irc_ok = false;
+            msg += buffer_irc_raw;      // pokaż też komunikat serwera
         }
 
         // nieznane lub jeszcze niezaimplementowane rawy wyświetl bez zmian

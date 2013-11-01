@@ -111,7 +111,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
     // wyczyść bufor cookies przed zapoczątkowaniem połączenia
     cookies.clear();
 
-    buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "", cookies, true, offset_recv, msg_err_pre, msg_err, true);
+    buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "", cookies, true, offset_recv, msg_err_pre, msg_err);
     if(buffer_recv == NULL)
     {
         msg_err = msg_err_pre + msg_err;

@@ -15,7 +15,7 @@
 int socket_init(std::string host, short port, std::string &msg_err)
 {
 /*
-    utwórz gniazdo (socket) oraz połącz się z hostem
+    Utwórz gniazdo (socket) oraz połącz się z hostem.
 */
 
     int socketfd;
@@ -57,7 +57,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 
 char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                    long &offset_recv, std::string &msg_err_pre, std::string &msg_err, bool dbg_first_save)
+                    long &offset_recv, std::string &msg_err_pre, std::string &msg_err)
 {
     if(method != "GET" && method != "POST")
     {
@@ -300,9 +300,13 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
     // zakończ bufor kodem NULL
     buffer_recv[offset_recv] = '\0';
 
-// jeśli trzeba, zapisz wysłane i pobrane dane do pliku w celu dokonania debugowania
+/*
+    Jeśli trzeba, zapisz wysłane i pobrane dane do pliku. Przydatne podczas debugowania.
+*/
+
 #if DBG_HTTP == 1
 
+    static bool dbg_first_save = true;      // pierwszy zapis nadpisuje starą zawartość pliku
     std::string data_sent = data_send;
     std::string data_recv = std::string(buffer_recv);
 
@@ -312,6 +316,8 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
         file_dbg.open(FILE_DBG_HTTP, std::ios::out);
     else
         file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
+
+    dbg_first_save = false;     // kolejne zapisy dopisują dane do pliku
 
     if(file_dbg.good() == false)
     {
@@ -391,6 +397,10 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 #endif      // DBG_HTTP
 
+/*
+    Koniec części odpowiedzialnej za zapis do pliku.
+*/
+
     // jeśli trzeba, wyciągnij cookies z bufora
     if(get_cookies)
     {
@@ -449,7 +459,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 
 bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
 {
-	int bytes_sent;
+    int bytes_sent;
 
     // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
     buffer_irc_send += "\r\n";
@@ -474,6 +484,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
     DBG IRC END
 */
 
+    // wyślij dane do hosta
     bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
 
     if(bytes_sent == -1)
@@ -513,6 +524,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
     size_t pos_incomplete;
     static std::string buffer_irc_recv_incomplete;
 
+    // pobierz dane od hosta
     bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
     buffer_tmp[bytes_recv] = '\0';
 

@@ -4,7 +4,7 @@
 #include <iconv.h>          // konwersja kodowania znaków
 
 #include "window_utils.hpp"
-#include "ucc_colors.hpp"
+#include "ucc_global.hpp"
 
 
 bool check_colors()
@@ -325,7 +325,7 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
                         {
                             break;
                         }
-                        if(buffer_str[j] == '%')
+                        if(buffer_str[j] == '%' && onet_color.size() == 6)  // kolor musi mieć 6 znaków
                         {
                             // tutaj wattrset_color() się nie nadaje, bo nadpisuje atrybuty
                             if(use_colors)
@@ -381,6 +381,10 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
                 wattroff(win_active, A_BOLD);
             }
         }
+
+        // nie dpouść do czytania poza buforem
+        if(i >= pos_buffer_end)
+            break;
 
         // pobierz znak z bufora
         c = buffer_str[i];
