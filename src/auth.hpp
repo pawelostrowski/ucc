@@ -30,4 +30,4 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 
 bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, std::string &zuousername, std::string &uokey, std::string &msg_err);
 
-#endif      // AUTH_HPP
+#endif		// AUTH_HPP

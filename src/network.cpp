@@ -1,592 +1,603 @@
-#include <sstream>          // std::string, std::stringstream
-#include <netdb.h>          // gethostbyname(), socket(), htons(), connect(), send(), recv()
-#include <openssl/ssl.h>    // poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
+#include <sstream>		// std::string, std::stringstream
+#include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
+#include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
 
 #include "network.hpp"
 
 #define BUF_SIZE (1500 * sizeof(char))
 
 #if DBG_HTTP == 1
-#include <fstream>          // std::fstream
+#include <fstream>		// std::fstream
 #define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
-#endif      // DBG_HTTP
+#endif		// DBG_HTTP
 
 
 int socket_init(std::string host, short port, std::string &msg_err)
 {
 /*
-    Utwórz gniazdo (socket) oraz połącz się z hostem.
+	Utwórz gniazdo (socket) oraz połącz się z hostem.
 */
 
-    int socketfd;
+	int socketfd;
 
-    struct hostent *host_info;
-    struct sockaddr_in serv_info;
+	struct hostent *host_info;
+	struct sockaddr_in serv_info;
 
-    // pobierz adres IP hosta
-    host_info = gethostbyname(host.c_str());
-    if(host_info == NULL)
-    {
-        msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
-        return 0;
-    }
+	// pobierz adres IP hosta
+	host_info = gethostbyname(host.c_str());
+	if(host_info == NULL)
+	{
+		msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
+		return 0;
+	}
 
-    // utwórz deskryptor gniazda (socket)
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);     // SOCK_STREAM - TCP, SOCK_DGRAM - UDP
-    if(socketfd == -1)
-    {
-        msg_err = "Nie udało się utworzyć deskryptora gniazda.";
-        return 0;
-    }
+	// utwórz deskryptor gniazda (socket)
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);	// SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+	if(socketfd == -1)
+	{
+		msg_err = "Nie udało się utworzyć deskryptora gniazda.";
+		return 0;
+	}
 
-    serv_info.sin_family = AF_INET;
-    serv_info.sin_port = htons(port);
-    serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
-    bzero(&(serv_info.sin_zero), 8);
+	serv_info.sin_family = AF_INET;
+	serv_info.sin_port = htons(port);
+	serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
+	bzero(&(serv_info.sin_zero), 8);
 
-    // połącz z hostem
-    if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
-    {
-        close(socketfd);
-        msg_err = "Nie udało się połączyć z hostem: " + host;
-        return 0;
-    }
+	// połącz z hostem
+	if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
+	{
+		close(socketfd);
+		msg_err = "Nie udało się połączyć z hostem: " + host;
+		return 0;
+	}
 
-    return socketfd;
+	return socketfd;
 }
 
 
 char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
                     long &offset_recv, std::string &msg_err_pre, std::string &msg_err)
 {
-    if(method != "GET" && method != "POST")
-    {
-        msg_err = "Nieobsługiwana metoda: " + method;
-        return NULL;
-    }
+	if(method != "GET" && method != "POST")
+	{
+		msg_err = "Nieobsługiwana metoda: " + method;
+		return NULL;
+	}
 
-    int socketfd;               // deskryptor gniazda (socket)
-    int bytes_sent, bytes_recv;
-    char *buffer_recv = NULL;
-    char buffer_tmp[BUF_SIZE];  // bufor tymczasowy pobranych danych
-    bool first_recv = true;     // czy to pierwsze pobranie w pętli
-    std::string data_send;      // dane do wysłania do hosta
-    std::stringstream content_length;
+	int socketfd;			// deskryptor gniazda (socket)
+	int bytes_sent, bytes_recv;
+	char *buffer_recv = NULL;
+	char buffer_tmp[BUF_SIZE];	// bufor tymczasowy pobranych danych
+	bool first_recv = true;		// czy to pierwsze pobranie w pętli
+	std::string data_send;		// dane do wysłania do hosta
+	std::stringstream content_length;
 
-    // utwórz gniazdo (socket) oraz połącz się z hostem
-    socketfd = socket_init(host, port, msg_err);
-    if(socketfd == 0)
-        return NULL;        // zwróć komunikat błędu w msg_err
+	// utwórz gniazdo (socket) oraz połącz się z hostem
+	socketfd = socket_init(host, port, msg_err);
+	if(socketfd == 0)
+		return NULL;	// zwróć komunikat błędu w msg_err
 
-    // utwórz dane do wysłania do hosta
-    data_send =  method + " " + stock + " HTTP/1.1\r\n"
-                "Host: " + host + "\r\n"
-                "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0\r\n"
-                "Accept-Language: pl\r\n";
+	// utwórz dane do wysłania do hosta
+	data_send =  method + " " + stock + " HTTP/1.1\r\n"
+		    "Host: " + host + "\r\n"
+		    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/28.0\r\n"
+		    "Accept-Language: pl\r\n";
 
-    if(method == "POST")
-    {
-        content_length << content.size();       // wczytaj długość zapytania
-        data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
-                     "Content-Length: " + content_length.str() + "\r\n";        // content_length.str()  <--- zamienia liczbę na std::string
-    }
+	if(method == "POST")
+	{
+		content_length << content.size();	// wczytaj długość zapytania
+		data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
+			     "Content-Length: " + content_length.str() + "\r\n";	// content_length.str()  <--- zamienia liczbę na std::string
+	}
 
-    if(cookies.size() != 0)
-        data_send += "Cookie:" + cookies + "\r\n";
+	if(cookies.size() != 0)
+		data_send += "Cookie:" + cookies + "\r\n";
 
-    data_send += "Connection: close\r\n\r\n";
+	data_send += "Connection: close\r\n\r\n";
 
-    if(content.size() != 0)
-        data_send += content;
+	if(content.size() != 0)
+		data_send += content;
 
-    // offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
-    offset_recv = 0;
+	// offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
+	offset_recv = 0;
 
-    // połączenie na porcie różnym od 443 uruchomi transmisję nieszyfrowaną
-    if(port != 443)
-    {
-        // wyślij dane do hosta
-        bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
-        if(bytes_sent == -1)
-        {
-            close(socketfd);
-            msg_err = "Nie udało się wysłać danych do hosta: " + host;
-            return NULL;
-        }
-        if(bytes_sent == 0)
-        {
-            close(socketfd);
-            msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie.";
-            return NULL;
-        }
-        // sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-        if(bytes_sent != static_cast<int>(data_send.size()))        // static_cast<int> - rzutowanie size_t (w tym przypadku) na int
-        {
-            close(socketfd);
-            msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
-            return NULL;
-        }
+	// połączenie na porcie różnym od 443 uruchomi transmisję nieszyfrowaną
+	if(port != 443)
+	{
+		// wyślij dane do hosta
+		bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
+		if(bytes_sent == -1)
+		{
+			close(socketfd);
+			msg_err = "Nie udało się wysłać danych do hosta: " + host;
+			return NULL;
+		}
 
-        // poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie), z wyjątkiem pierwszego obiegu
-        do
-        {
-            // wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
-            if(buffer_recv == NULL)
-            {
-                buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));   // reinterpret_cast<char *> - rzutowanie void* (w tym przypadku) na char*
-                if(buffer_recv == NULL)
-                {
-                    msg_err = "Błąd podczas alokacji pamięci przez malloc()";
-                    return NULL;
-                }
-            }
-            // gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
-            else
-            {
-                buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
-                if(buffer_recv == NULL)
-                {
-                    msg_err = "Błąd podczas realokacji pamięci przez realloc()";
-                    return NULL;
-                }
-            }
+		if(bytes_sent == 0)
+		{
+			close(socketfd);
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie.";
+			return NULL;
+		}
 
-            // pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-            bytes_recv = recv(socketfd, buffer_tmp, BUF_SIZE, 0);
-            // sprawdź, czy pobieranie danych się powiodło
-            if(bytes_recv == -1)
-            {
-                close(socketfd);
-                free(buffer_recv);      // w przypadku błędu zwolnij pamięć zajmowaną przez bufor
-                msg_err = "Nie udało się pobrać danych z hosta: " + host;
-                return NULL;
-            }
-            // sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
-            if(first_recv)
-            {
-                if(bytes_recv == 0)
-                {
-                    close(socketfd);
-                    free(buffer_recv);
-                    msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
-                    return NULL;
-                }
-            }
+		// sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
+		if(bytes_sent != static_cast<int>(data_send.size()))	// static_cast<int> - rzutowanie size_t (w tym przypadku) na int
+		{
+			close(socketfd);
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
+			return NULL;
+		}
 
-            first_recv = false;     // kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
-            memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);      // pobrane dane "dopisz" do bufora
-            offset_recv += bytes_recv;      // zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
+		// poniższa pętla pobiera dane z hosta do bufora aż do napotkania 0 pobranych bajtów (gdy host zamyka połączenie),
+		// z wyjątkiem pierwszego obiegu
+		do
+		{
+			// wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
+			if(buffer_recv == NULL)
+			{
+				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));	// reinterpret_cast<char *> - rzutowanie void*
+												// (w tym przypadku) na char*
 
-        } while(bytes_recv > 0);
+				if(buffer_recv == NULL)
+				{
+					msg_err = "Błąd podczas alokacji pamięci przez malloc()";
+					return NULL;
+				}
+			}
 
-        // zamknij połączenie z hostem
-        close(socketfd);
+			// gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
+			else
+			{
+				buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
+				if(buffer_recv == NULL)
+				{
+					msg_err = "Błąd podczas realokacji pamięci przez realloc()";
+					return NULL;
+				}
+			}
 
-    }   // if(port != 443)
+			// pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
+			bytes_recv = recv(socketfd, buffer_tmp, BUF_SIZE, 0);
 
-    // połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
-    else if(port == 443)
-    {
-        SSL_CTX *ssl_context;
-        SSL *ssl_handle;
+			// sprawdź, czy pobieranie danych się powiodło
+			if(bytes_recv == -1)
+			{
+				close(socketfd);
+				free(buffer_recv);	// w przypadku błędu zwolnij pamięć zajmowaną przez bufor
+				msg_err = "Nie udało się pobrać danych z hosta: " + host;
+				return NULL;
+			}
 
-        SSL_load_error_strings();
-        SSL_library_init();
-        OpenSSL_add_all_algorithms();
+			// sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
+			if(first_recv)
+			{
+				if(bytes_recv == 0)
+				{
+					close(socketfd);
+					free(buffer_recv);
+					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
+					return NULL;
+				}
+			}
 
-        ssl_context = SSL_CTX_new(SSLv23_client_method());
-        if(ssl_context == NULL)
-        {
-            msg_err = "Błąd podczas tworzenia obiektu SSL_CTX.";
-            return NULL;
-        }
+			first_recv = false;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
+			memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);	// pobrane dane "dopisz" do bufora
+			offset_recv += bytes_recv;	// zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
 
-        ssl_handle = SSL_new(ssl_context);
-        if(ssl_handle == NULL)
-        {
-            msg_err = "Błąd podczas tworzenia struktury SSL.";
-            return NULL;
-        }
+		} while(bytes_recv > 0);
 
-        if(! SSL_set_fd(ssl_handle, socketfd))
-        {
-            msg_err = "Błąd podczas łączenia desktyptora SSL.";
-            return NULL;
-        }
+		// zamknij połączenie z hostem
+		close(socketfd);
 
-        if(SSL_connect(ssl_handle) != 1)
-        {
-            msg_err = "Błąd podczas łączenia się z " + host + " przez SSL.";
-            return NULL;
-        }
+	}	// if(port != 443)
 
-        // wyślij dane do hosta
-        bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send.size());
-        if(bytes_sent <= -1)
-        {
-            close(socketfd);
-            msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
-            return NULL;
-        }
-        if(bytes_sent == 0)
-        {
-            close(socketfd);
-            msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]";
-            return NULL;
-        }
-        if(bytes_sent != static_cast<int>(data_send.size()))
-        {
-            close(socketfd);
-            msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
-            return NULL;
-        }
+	// połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
+	else if(port == 443)
+	{
+		SSL_CTX *ssl_context;
+		SSL *ssl_handle;
 
-        // pobierz odpowiedź
-        do
-        {
-            if(buffer_recv == NULL)
-            {
-                buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
-                if(buffer_recv == NULL)
-                {
-                    msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
-                    return NULL;
-                }
-            }
-            else
-            {
-                buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
-                if(buffer_recv == NULL)
-                {
-                    msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
-                    return NULL;
-                }
-            }
+		SSL_load_error_strings();
+		SSL_library_init();
+		OpenSSL_add_all_algorithms();
 
-            bytes_recv = SSL_read(ssl_handle, buffer_tmp, BUF_SIZE);
-            if(bytes_recv <= -1)
-            {
-                close(socketfd);
-                free(buffer_recv);
-                msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL]";
-                return NULL;
-            }
-            if(first_recv)
-            {
-                if(bytes_recv == 0)
-                {
-                    close(socketfd);
-                    free(buffer_recv);
-                    msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]";
-                    return NULL;
-                }
-            }
+		ssl_context = SSL_CTX_new(SSLv23_client_method());
+		if(ssl_context == NULL)
+		{
+			msg_err = "Błąd podczas tworzenia obiektu SSL_CTX.";
+			return NULL;
+		}
 
-            first_recv = false;
-            memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);
-            offset_recv += bytes_recv;
+		ssl_handle = SSL_new(ssl_context);
+		if(ssl_handle == NULL)
+		{
+			msg_err = "Błąd podczas tworzenia struktury SSL.";
+			return NULL;
+		}
 
-        } while(bytes_recv > 0);
+		if(! SSL_set_fd(ssl_handle, socketfd))
+		{
+			msg_err = "Błąd podczas łączenia desktyptora SSL.";
+			return NULL;
+		}
 
-        // zamknij połączenie z hostem
-        close(socketfd);
+		if(SSL_connect(ssl_handle) != 1)
+		{
+			msg_err = "Błąd podczas łączenia się z " + host + " przez SSL.";
+			return NULL;
+		}
 
-        SSL_shutdown(ssl_handle);
-        SSL_free(ssl_handle);
-        SSL_CTX_free(ssl_context);
+		// wyślij dane do hosta
+		bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+		if(bytes_sent <= -1)
+		{
+			close(socketfd);
+			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
+			return NULL;
+		}
+		if(bytes_sent == 0)
+		{
+			close(socketfd);
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]";
+			return NULL;
+		}
+		if(bytes_sent != static_cast<int>(data_send.size()))
+		{
+			close(socketfd);
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
+			return NULL;
+		}
 
-    }   // else if(port == 443)
+		// pobierz odpowiedź
+		do
+		{
+			if(buffer_recv == NULL)
+			{
+				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
+				if(buffer_recv == NULL)
+				{
+					msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
+					return NULL;
+				}
+			}
 
-    // zakończ bufor kodem NULL
-    buffer_recv[offset_recv] = '\0';
+			else
+			{
+				buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
+				if(buffer_recv == NULL)
+				{
+					msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
+					return NULL;
+				}
+			}
+
+			bytes_recv = SSL_read(ssl_handle, buffer_tmp, BUF_SIZE);
+			if(bytes_recv <= -1)
+			{
+				close(socketfd);
+				free(buffer_recv);
+				msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL]";
+				return NULL;
+			}
+
+			if(first_recv)
+			{
+				if(bytes_recv == 0)
+				{
+					close(socketfd);
+					free(buffer_recv);
+					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]";
+					return NULL;
+				}
+			}
+
+			first_recv = false;
+			memcpy(buffer_recv + offset_recv, buffer_tmp, bytes_recv);
+			offset_recv += bytes_recv;
+
+		} while(bytes_recv > 0);
+
+		// zamknij połączenie z hostem
+		close(socketfd);
+
+		SSL_shutdown(ssl_handle);
+		SSL_free(ssl_handle);
+		SSL_CTX_free(ssl_context);
+
+	}	// else if(port == 443)
+
+	// zakończ bufor kodem NULL
+	buffer_recv[offset_recv] = '\0';
 
 /*
-    Jeśli trzeba, zapisz wysłane i pobrane dane do pliku. Przydatne podczas debugowania.
+	Jeśli trzeba, zapisz wysłane i pobrane dane do pliku. Przydatne podczas debugowania.
 */
 
 #if DBG_HTTP == 1
 
-    static bool dbg_first_save = true;      // pierwszy zapis nadpisuje starą zawartość pliku
-    std::string data_sent = data_send;
-    std::string data_recv = std::string(buffer_recv);
+	static bool dbg_first_save = true;	// pierwszy zapis nadpisuje starą zawartość pliku
+	std::string data_sent = data_send;
+	std::string data_recv = std::string(buffer_recv);
 
-    std::fstream file_dbg;
+	std::fstream file_dbg;
 
-    if(dbg_first_save)
-        file_dbg.open(FILE_DBG_HTTP, std::ios::out);
-    else
-        file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
+	if(dbg_first_save)
+		file_dbg.open(FILE_DBG_HTTP, std::ios::out);
+	else
+		file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
 
-    dbg_first_save = false;     // kolejne zapisy dopisują dane do pliku
+	dbg_first_save = false;			// kolejne zapisy dopisują dane do pliku
 
-    if(file_dbg.good() == false)
-    {
-        free(buffer_recv);
-        msg_err = "Błąd podczas dostępu do pliku debugowania HTTP ("FILE_DBG_HTTP"), sprawdź uprawnienia do zapisu.";
-        return NULL;
-    }
+	if(file_dbg.good() == false)
+	{
+		free(buffer_recv);
+		msg_err = "Błąd podczas dostępu do pliku debugowania HTTP ("FILE_DBG_HTTP"), sprawdź uprawnienia do zapisu.";
+		return NULL;
+	}
 
-    // jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
-    size_t exp_start, exp_end;
-    std::string pwd_str = "haslo=";
-    std::string con_str = "Content-Length: ";
+	// jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
+	size_t exp_start, exp_end;
+	std::string pwd_str = "haslo=";
+	std::string con_str = "Content-Length: ";
 
-    exp_start = data_sent.find(pwd_str);
-    if(exp_start != std::string::npos)
-    {
-        exp_end = data_sent.find("&", exp_start);
-        if(exp_end != std::string::npos)
-        {
-            data_sent.erase(exp_start + pwd_str.size(), exp_end - exp_start - pwd_str.size());
-            data_sent.insert(exp_start + pwd_str.size(), "[hidden]");
+	exp_start = data_sent.find(pwd_str);
+	if(exp_start != std::string::npos)
+	{
+		exp_end = data_sent.find("&", exp_start);
+		if(exp_end != std::string::npos)
+		{
+			data_sent.erase(exp_start + pwd_str.size(), exp_end - exp_start - pwd_str.size());
+			data_sent.insert(exp_start + pwd_str.size(), "[hidden]");
 
-            // było hasło, więc ukryj długość zapytania
-            exp_start = data_sent.find(con_str);
-            if(exp_start != std::string::npos)
-            {
-                exp_end = data_sent.find("\r\n", exp_start);
-                if(exp_end != std::string::npos)
-                {
-                    data_sent.erase(exp_start + con_str.size(), exp_end - exp_start - con_str.size());
-                    data_sent.insert(exp_start + con_str.size(), "[hidden]");
-                }
-            }
+			// było hasło, więc ukryj długość zapytania
+			exp_start = data_sent.find(con_str);
+			if(exp_start != std::string::npos)
+			{
+				exp_end = data_sent.find("\r\n", exp_start);
+				if(exp_end != std::string::npos)
+				{
+					data_sent.erase(exp_start + con_str.size(), exp_end - exp_start - con_str.size());
+					data_sent.insert(exp_start + con_str.size(), "[hidden]");
+				}
+			}
 
-        }
-    }
+		}
 
-    // jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
-    std::string gif_str = "GIF";
+	}
 
-    exp_start = data_recv.find(gif_str);
-    if(exp_start != std::string::npos)
-        data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
+	// jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
+	std::string gif_str = "GIF";
 
-    // usuń \r z buforów, aby w pliku nie było go
-    while(data_sent.find("\r") != std::string::npos)
-        data_sent.erase(data_sent.find("\r"), 1);
+	exp_start = data_recv.find(gif_str);
+	if(exp_start != std::string::npos)
+		data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
 
-    while(data_recv.find("\r") != std::string::npos)
-        data_recv.erase(data_recv.find("\r"), 1);
+	// usuń \r z buforów, aby w pliku nie było go
+	while(data_sent.find("\r") != std::string::npos)
+		data_sent.erase(data_sent.find("\r"), 1);
 
-    // zapisz dane
-    std::string s;
+	while(data_recv.find("\r") != std::string::npos)
+		data_recv.erase(data_recv.find("\r"), 1);
 
-    if(port == 443)
-        s = "s";
+	// zapisz dane
+	std::string s;
 
-    file_dbg << "================================================================================\n";
+	if(port == 443)
+		s = "s";
 
-    file_dbg << msg_err_pre + "\n\n\n";
+	file_dbg << "================================================================================\n";
 
-    file_dbg << ">>> SENT (http" + s + "://" + host + stock + "):\n\n";
+	file_dbg << msg_err_pre + "\n\n\n";
 
-    file_dbg << data_sent + "\n";
+	file_dbg << ">>> SENT (http" + s + "://" + host + stock + "):\n\n";
 
-    if(data_sent[data_sent.size() - 1] != '\n')
-        file_dbg << "\n\n";
+	file_dbg << data_sent + "\n";
 
-    file_dbg << ">>> RECV:\n\n";
+	if(data_sent[data_sent.size() - 1] != '\n')
+		file_dbg << "\n\n";
 
-    file_dbg << data_recv + "\n";
+	file_dbg << ">>> RECV:\n\n";
 
-    if(data_recv[data_recv.size() - 1] != '\n')
-        file_dbg << "\n\n";
+	file_dbg << data_recv + "\n";
 
-    file_dbg.close();
+	if(data_recv[data_recv.size() - 1] != '\n')
+		file_dbg << "\n\n";
 
-#endif      // DBG_HTTP
+	file_dbg.close();
+
+#endif		// DBG_HTTP
 
 /*
-    Koniec części odpowiedzialnej za zapis do pliku.
+	Koniec części odpowiedzialnej za zapis do pliku.
 */
 
-    // jeśli trzeba, wyciągnij cookies z bufora
-    if(get_cookies)
-    {
-        if(! find_cookies(buffer_recv, cookies, msg_err))
-        {
-            free(buffer_recv);
-            return NULL;        // zwróć komunikat błędu w msg_err
-        }
-    }
+	// jeśli trzeba, wyciągnij cookies z bufora
+	if(get_cookies)
+	{
+		if(! find_cookies(buffer_recv, cookies, msg_err))
+		{
+			free(buffer_recv);
+			return NULL;	// zwróć komunikat błędu w msg_err
+		}
+	}
 
-    return buffer_recv;         // zwróć wskaźnik do bufora pobranych danych
+	return buffer_recv;	// zwróć wskaźnik do bufora pobranych danych
 }
 
 
 bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
-    size_t pos_cookie_start, pos_cookie_end;
-    std::string cookie_string, cookie_tmp;
+	size_t pos_cookie_start, pos_cookie_end;
+	std::string cookie_string, cookie_tmp;
 
-    cookie_string = "Set-Cookie:";      // celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
+	cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
 
-    // znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
-    pos_cookie_start = std::string(buffer_recv).find(cookie_string);    // std::string(buffer_recv) zamienia C string na std::string
-    if(pos_cookie_start == std::string::npos)
-    {
-        msg_err = "Nie znaleziono żadnego cookie.";
-        return false;
-    }
+	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+	pos_cookie_start = std::string(buffer_recv).find(cookie_string);	// std::string(buffer_recv) zamienia C string na std::string
+	if(pos_cookie_start == std::string::npos)
+	{
+		msg_err = "Nie znaleziono żadnego cookie.";
+		return false;
+	}
 
-    do
-    {
-        // szukaj ";" od pozycji początku cookie
-        pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
-        if(pos_cookie_end == std::string::npos)
-        {
-            msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
-            return false;
-        }
+	do
+	{
+		// szukaj ";" od pozycji początku cookie
+		pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
+		if(pos_cookie_end == std::string::npos)
+		{
+			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
+			return false;
+		}
 
-        // skopiuj cookie do bufora pomocniczego
-        cookie_tmp.clear();     // wyczyść bufor pomocniczy
-        cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
-                          pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+		// skopiuj cookie do bufora pomocniczego
+		cookie_tmp.clear();	// wyczyść bufor pomocniczy
+		cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
+				  pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
-        // dopisz kolejne cookie do bufora
-        cookies += cookie_tmp;
+		// dopisz kolejne cookie do bufora
+		cookies += cookie_tmp;
 
-        // znajdź kolejne cookie
-        pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
+		// znajdź kolejne cookie
+		pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
 
-    } while(pos_cookie_start != std::string::npos);     // zakończ szukanie, gdy nie znaleziono kolejnego cookie
+	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie znaleziono kolejnego cookie
 
-    return true;
+	return true;
 }
 
 
 bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
 {
-    int bytes_sent;
+	int bytes_sent;
 
-    // do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
-    buffer_irc_send += "\r\n";
+	// do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+	buffer_irc_send += "\r\n";
 
 /*
-    DBG IRC START
+	DBG IRC START
 */
-    std::string data_sent = buffer_irc_send;
-    std::fstream file_dbg;
+	std::string data_sent = buffer_irc_send;
+	std::fstream file_dbg;
 
-    while(data_sent.find("\r") != std::string::npos)
-        data_sent.erase(data_sent.find("\r"), 1);
+	while(data_sent.find("\r") != std::string::npos)
+		data_sent.erase(data_sent.find("\r"), 1);
 
-    data_sent.insert(0, ">");
+	data_sent.insert(0, ">");
 
-    file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
+	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
 
-    file_dbg << data_sent;
+	file_dbg << data_sent;
 
-    file_dbg.close();
+	file_dbg.close();
 /*
-    DBG IRC END
+	DBG IRC END
 */
 
-    // wyślij dane do hosta
-    bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
+	// wyślij dane do hosta
+	bytes_sent = send(socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
 
-    if(bytes_sent == -1)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się wysłać danych do serwera, rozłączono. [IRC]";
-        return false;
-    }
+	if(bytes_sent == -1)
+	{
+		close(socketfd_irc);
+		irc_ok = false;
+		msg_err = "# Nie udało się wysłać danych do serwera, rozłączono. [IRC]";
+		return false;
+	}
 
-    if(bytes_sent == 0)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie. [IRC]";
-        return false;
-    }
+	if(bytes_sent == 0)
+	{
+		close(socketfd_irc);
+		irc_ok = false;
+		msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie. [IRC]";
+		return false;
+	}
 
-    if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono. [IRC]";
-        return false;
-    }
+	if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
+	{
+		close(socketfd_irc);
+		irc_ok = false;
+		msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono. [IRC]";
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 
 bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
 {
-    int bytes_recv;
-    char buffer_tmp[BUF_SIZE];
+	int bytes_recv;
+	char buffer_tmp[BUF_SIZE];
 
-    // pozycja oraz bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
-    size_t pos_incomplete;
-    static std::string buffer_irc_recv_incomplete;
+	// pozycja oraz bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
+	size_t pos_incomplete;
+	static std::string buffer_irc_recv_incomplete;
 
-    // pobierz dane od hosta
-    bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
-    buffer_tmp[bytes_recv] = '\0';
+	// pobierz dane od hosta
+	bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
+	buffer_tmp[bytes_recv] = '\0';
 
-    if(bytes_recv == -1)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Nie udało się pobrać danych z serwera, rozłączono. [IRC]";
-        return false;
-    }
+	if(bytes_recv == -1)
+	{
+		close(socketfd_irc);
+		irc_ok = false;
+		msg_err = "# Nie udało się pobrać danych z serwera, rozłączono. [IRC]";
+		return false;
+	}
 
-    if(bytes_recv == 0)
-    {
-        close(socketfd_irc);
-        irc_ok = false;
-        msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie. [IRC]";
-        return false;
-    }
+	if(bytes_recv == 0)
+	{
+		close(socketfd_irc);
+		irc_ok = false;
+		msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie. [IRC]";
+		return false;
+	}
 
-    // odebrane dane zwróć w buforze std::string
-    buffer_irc_recv.clear();
-    buffer_irc_recv = std::string(buffer_tmp);
+	// odebrane dane zwróć w buforze std::string
+	buffer_irc_recv.clear();
+	buffer_irc_recv = std::string(buffer_tmp);
 
-    //usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-    while(buffer_irc_recv.find("\2") != std::string::npos)
-        buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
+	//usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
+	while(buffer_irc_recv.find("\2") != std::string::npos)
+		buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
 
-    //usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
-    while(buffer_irc_recv.find("\r") != std::string::npos)
-        buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
+	//usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+	while(buffer_irc_recv.find("\r") != std::string::npos)
+		buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
 
 /*
-    DBG IRC START
+	DBG IRC START
 */
-    std::fstream file_dbg;
+	std::fstream file_dbg;
 
-    file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
+	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
 
-    file_dbg << "<---new--->";
-    file_dbg << buffer_irc_recv;
+	file_dbg << "<---new--->";
+	file_dbg << buffer_irc_recv;
 
-    file_dbg.close();
+	file_dbg.close();
 /*
-    DBG IRC END
+	DBG IRC END
 */
 
-    // dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
-    if(buffer_irc_recv_incomplete.size() > 0)
-        buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
+	// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
+	if(buffer_irc_recv_incomplete.size() > 0)
+		buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
 
-    // po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
-    buffer_irc_recv_incomplete.clear();
+	// po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
+	buffer_irc_recv_incomplete.clear();
 
-    // wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
-    pos_incomplete = buffer_irc_recv.rfind("\n");   // \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej
-    if(pos_incomplete != buffer_irc_recv.size() - 1)    // - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
-    {
-        // zachowaj ostatni niepełny wiersz
-        buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
-        // oraz usuń go z głównego bufora
-        buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
-    }
+	// wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
+	pos_incomplete = buffer_irc_recv.rfind("\n");	// \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej
+	if(pos_incomplete != buffer_irc_recv.size() - 1)	// - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
+	{
+		// zachowaj ostatni niepełny wiersz
+		buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+		// oraz usuń go z głównego bufora
+		buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+	}
 
-    return true;
+	return true;
 }

@@ -1,15 +1,15 @@
 #ifndef WINDOW_UTILS_HPP
 #define WINDOW_UTILS_HPP
 
-#include <ncursesw/ncurses.h>   // wersja ncurses ze wsparciem dla UTF-8
+#include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8
 
-struct wstatus      // okno statusu i debugowania IRC (gdy włączone)
+struct wstatus		// okno statusu i debugowania IRC (gdy włączone)
 {
     std::string win_buffer;
     std::string channel_name;
 };
 
-struct wchannel     // okna pokoi
+struct wchannel		// okna pokoi
 {
     int channel_index;
     std::string win_buffer;
@@ -34,4 +34,4 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
 
 short onet_color_conv(std::string onet_color);
 
-#endif      // WINDOW_UTILS_HPP
+#endif		// WINDOW_UTILS_HPP

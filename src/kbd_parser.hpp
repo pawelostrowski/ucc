@@ -13,4 +13,4 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
 
 bool rest_args(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest);
 
-#endif      // KBD_PARSER_HPP
+#endif		// KBD_PARSER_HPP
