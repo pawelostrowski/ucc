@@ -24,7 +24,7 @@ void wattrset_color(WINDOW *win_active, bool use_colors, short color_p);
 
 void get_time(char *time_hms);
 
-void kbd_utf2iso(int &key_code);
+int kbd_utf2iso(int key_code);
 
 void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int term_x, int kbd_buf_pos);
 

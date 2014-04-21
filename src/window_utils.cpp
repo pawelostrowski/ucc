@@ -51,26 +51,30 @@ void wattrset_color(WINDOW *win_active, bool use_colors, short color_p)
 
 void get_time(char *time_hms)
 {
-    // funkcja zwraca w *time_hms lokalny czas w postaci [HH:MM:SS] (ze spacją na końcu)
+/*
+    Funkcja zwraca w *time_hms lokalny czas w postaci [HH:MM:SS] (ze spacją na końcu).
+*/
 
     time_t time_g;      // czas skoordynowany z Greenwich
     struct tm *time_l;  // czas lokalny
 
     time(&time_g);
     time_l = localtime(&time_g);
-    strftime(time_hms, 20, "[%H:%M:%S] ", time_l);
+    strftime(time_hms, 15, "[%H:%M:%S] ", time_l);
 }
 
 
-void kbd_utf2iso(int &key_code)
+int kbd_utf2iso(int key_code)
 {
-    // zamień znak (jeden) w UTF-8 na ISO-8859-2
-    // UWAGA - funkcja nie działa dla znaków więcej, niż 2-bajtowych oraz nie wykrywa nieprawidłowo wprowadzonych znaków!
+/*
+    Zamień znak (jeden) w UTF-8 na ISO-8859-2.
+    UWAGA - funkcja nie działa dla znaków więcej, niż 2-bajtowych oraz nie wykrywa nieprawidłowo wprowadzonych znaków!
+*/
 
     int det_utf = key_code & 0xE0;      // iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
 
     if(det_utf != 0xC0)     // wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
-        return;             // jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
+        return key_code;    // jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
 
     char c_in[5];
     char c_out[5];
@@ -91,7 +95,7 @@ void kbd_utf2iso(int &key_code)
     iconv_close(cd);
 
     // po konwersji zakłada się, że znak w ISO-8859-2 ma jeden bajt (brak sprawdzania poprawności wprowadzanych znaków), zwróć ten znak
-    key_code = c_out[0];
+    return c_out[0];
 }
 
 
@@ -298,7 +302,7 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
                     // gdy to nie bold, pomiń %F...% (o ile to prawidłowy kod bez spacji wewnątrz)
                     else
                     {
-                        for(++j; j < pos_buffer_end && j < pos_buffer_end; ++j)
+                        for( ; j < pos_buffer_end && j < pos_buffer_end; ++j)
                         {
                             if(buffer_str[j] == ' ')
                             {
@@ -382,7 +386,7 @@ void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::st
             }
         }
 
-        // nie dpouść do czytania poza buforem
+        // nie dopuść do czytania poza buforem
         if(i >= pos_buffer_end)
             break;
 

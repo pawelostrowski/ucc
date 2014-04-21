@@ -349,8 +349,8 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
             // kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
             else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < 256)
             {
-                kbd_utf2iso(key_code);      // gdy to UTF-8, to zamień na ISO-8859-2
-                key_code_tmp = key_code;
+//                kbd_utf2iso(key_code);      // gdy to UTF-8, to zamień na ISO-8859-2
+                key_code_tmp = kbd_utf2iso(key_code);   // gdy to UTF-8, to zamień na ISO-8859-2
                 ucc_ga->kbd_buf.insert(kbd_buf_pos, key_code_tmp);
                 ++kbd_buf_pos;
                 ++kbd_buf_max;
