@@ -223,7 +223,8 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			      "\n/nick"
 			      "\n/quit lub /q"
 			      "\n/raw"
-			      "\n/whois";
+			      "\n/whois"
+			      "\n/whowas";
 			      // dopisać resztę poleceń
 
 	}	// HELP
@@ -347,6 +348,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				ucc_ga->msg = "# Nowy nick stały: " + ucc_ga->my_nick;
 			}
+
 		}
 
 	}	// NICK
@@ -367,6 +369,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 				ucc_ga->msg_irc = "QUIT";
 			}
 		}
+
 		// zamknięcie programu po ewentualnym wysłaniu polecenia do IRC
 		ucc_ga->ucc_quit = true;
 
@@ -396,7 +399,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 
 	}	// RAW
 
-	else if(f_command == "WHOIS")
+	else if(f_command == "WHOIS" || f_command == "WHOWAS")
 	{
 		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 		if(ucc_ga->irc_ok)
@@ -407,8 +410,17 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 				ucc_ga->msg = "# Nie podano nicka do sprawdzenia.";
 				return false;
 			}
+
 			// polecenie do IRC
-			ucc_ga->msg_irc = "WHOIS " + f_arg + " " + f_arg;	// 2x nick, aby pokazało idle
+			if(f_command == "WHOIS")	// jeśli WHOIS
+			{
+				ucc_ga->msg_irc = "WHOIS " + f_arg + " " + f_arg;	// 2x nick, aby pokazało idle
+			}
+			else		// jeśli WHOWAS (nie ma innej możliwości, dlatego bez else if)
+			{
+				ucc_ga->msg_irc = "WHOWAS " + f_arg;
+			}
+
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -418,7 +430,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			return false;
 		}
 
-	}	// WHOIS
+	}	// WHOIS || WHOWAS
 
 	// gdy nie znaleziono polecenia
 	else
