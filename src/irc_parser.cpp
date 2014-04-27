@@ -1,9 +1,28 @@
 #include <string>		// std::string
-#include <cstring>		// strdup()
 
 #include "irc_parser.hpp"
-#include "auth.hpp"
 #include "ucc_global.hpp"
+
+
+int find_value_irc(std::string buffer_irc_raw, std::string expr_before, std::string expr_after, std::string &f_value)
+{
+	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
+
+	pos_expr_before = buffer_irc_raw.find(expr_before);	// znajdź pozycję początku szukanego wyrażenia
+	if(pos_expr_before == std::string::npos)
+		return 1;	// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+
+	// znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
+	pos_expr_after = buffer_irc_raw.find(expr_after, pos_expr_before + expr_before.size());
+	if(pos_expr_after == std::string::npos)
+		return 2;	// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
+
+	// wstaw szukaną wartość
+	f_value.clear();	// wyczyść bufor szukanej wartości
+	f_value.insert(0, buffer_irc_raw, pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
+
+	return 0;
+}
 
 
 void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg_irc, std::string &channel, bool &irc_ok)
@@ -39,21 +58,54 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 		pos_raw_start = pos_raw_end + 1;
 
 		// odpowiedz na PING
-		if(find_value(strdup(buffer_irc_raw.c_str()), "PING :", "\n", f_value) == 0)
+		if(find_value_irc(buffer_irc_raw, "PING :", "\n", f_value) == 0)
 		{
 			msg_irc = "PONG :" + f_value;
 		}
 
-		// nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
-		else if(find_value(strdup(buffer_irc_raw.c_str()), "PRIVMSG " + channel + " :", "\n", f_value) == 0)
+		else if(find_value_irc(buffer_irc_raw, "JOIN " + channel + " :", "\n", f_value) == 0)
 		{
 			std::string nick_on_irc;
-			find_value(strdup(buffer_irc_raw.c_str()), ":", "!", nick_on_irc);
+			std::string nick_on_irc_zuo_ip;
+			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wchodzący
+			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
+			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wchodzi do pokoju.\n";
+		}
+
+		else if(find_value_irc(buffer_irc_raw, "PART " + channel, "\n", f_value) == 0)
+		{
+			std::string nick_on_irc;
+			std::string nick_on_irc_zuo_ip;
+			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z pokoju
+			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
+			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z pokoju.";
+			// jeśli jest komunikat w PART, dodaj go
+			if(f_value.size() > 0)
+			{
+				msg += " [" + f_value.erase(0, 2) +"]";		// erase(0, 2) - usuń ' :'
+			}
+			msg += "\n";
+		}
+
+		else if(find_value_irc(buffer_irc_raw, "QUIT :", "\n", f_value) == 0)
+		{
+			std::string nick_on_irc;
+			std::string nick_on_irc_zuo_ip;
+			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z czata
+			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
+			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z czata. [" + f_value + "]\n";
+		}
+
+		// nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
+		else if(find_value_irc(buffer_irc_raw, "PRIVMSG " + channel + " :", "\n", f_value) == 0)
+		{
+			std::string nick_on_irc;
+			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);
 			msg += "<" + nick_on_irc + "> " + f_value + "\n";
 		}
 
 		// wykryj, gdy serwer odpowie ERROR
-		else if(find_value(strdup(buffer_irc_raw.c_str()), "ERROR :", "\n", f_value) == 0)
+		else if(find_value_irc(buffer_irc_raw, "ERROR :", "\n", f_value) == 0)
 		{
 			irc_ok = false;
 			msg += buffer_irc_raw;		// pokaż też komunikat serwera

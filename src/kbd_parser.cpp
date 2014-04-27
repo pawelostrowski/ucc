@@ -153,21 +153,25 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				return false;		// w przypadku błędu wróć z komunikatem w msg
 			}
+
 			if(! http_auth_mlogin(ucc_ga->cookies, ucc_ga->my_nick, ucc_ga->my_password, ucc_ga->msg))
 			{
 				return false;		// w przypadku błędu wróć z komunikatem w msg
 			}
+
 			if(! http_auth_getuo(ucc_ga->cookies, ucc_ga->my_nick, ucc_ga->my_password, ucc_ga->zuousername, ucc_ga->uokey, ucc_ga->msg))
 			{
 				return false;		// w przypadku błędu wróć z komunikatem w msg
 			}
-// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
+
 /*
+			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
 			if(! http_auth_useroverride(ucc_ga->cookies, ucc_ga->my_nick, ucc_ga->msg))
 			{
 				return false;		// w przypadku błędu wróć z komunikatem w msg
 			}
 */
+
 			ucc_ga->irc_ready = true;	// gotowość do połączenia z IRC
 		}
 
@@ -179,6 +183,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				return false;		// w przypadku błędu wróć z komunikatem w msg
 			}
+
 			ucc_ga->msg = "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";
 			ucc_ga->captcha_ready = true;	// można przepisać kod i wysłać na serwer
 		}
@@ -202,6 +207,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				ucc_ga->msg_irc = "QUIT :" + r_args;	// wstaw polecenie przed komunikatem pożegnalnym
 			}
+
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
@@ -243,8 +249,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 
 			// gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
 			ucc_ga->channel_ok = true;	// nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
-			// jeśli nie podano # przed nazwą pokoju, dodaj #
-			if(ucc_ga->channel[0] != '#')
+			if(ucc_ga->channel[0] != '#')	// jeśli nie podano # przed nazwą pokoju, dodaj #
 			{
 				ucc_ga->channel.insert(0, "#");
 			}
@@ -308,6 +313,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 					ucc_ga->msg = "# Nie podano nicka.";
 					return false;
 				}
+
 				// wpisanie /nick bez parametrów, gdy wcześniej był już podany, powoduje wypisanie aktualnego nicka
 				else
 				{
@@ -315,10 +321,12 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 					{
 						ucc_ga->msg = "# Aktualny nick tymczasowy: " + ucc_ga->my_nick;
 					}
+
 					else
 					{
 						ucc_ga->msg = "# Aktualny nick stały: " + ucc_ga->my_nick;
 					}
+
 					return true;
 				}
 			}
@@ -344,6 +352,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				ucc_ga->msg = "# Nowy nick tymczasowy: " + ucc_ga->my_nick;
 			}
+
 			else
 			{
 				ucc_ga->msg = "# Nowy nick stały: " + ucc_ga->my_nick;
@@ -363,11 +372,13 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				ucc_ga->msg_irc = "QUIT :" + r_args;	// wstaw polecenie przed komunikatem pożegnalnym
 			}
+
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
 				ucc_ga->msg_irc = "QUIT";
 			}
+
 		}
 
 		// zamknięcie programu po ewentualnym wysłaniu polecenia do IRC
@@ -386,8 +397,10 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 				ucc_ga->msg = "# Nie podano parametrów.";
 				return false;
 			}
+
 			// polecenie do IRC
 			ucc_ga->msg_irc = r_args;
+
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -416,6 +429,7 @@ bool kbd_parser(ucc_global_args *ucc_ga)
 			{
 				ucc_ga->msg_irc = "WHOIS " + f_arg + " " + f_arg;	// 2x nick, aby pokazało idle
 			}
+
 			else		// jeśli WHOWAS (nie ma innej możliwości, dlatego bez else if)
 			{
 				ucc_ga->msg_irc = "WHOWAS " + f_arg;

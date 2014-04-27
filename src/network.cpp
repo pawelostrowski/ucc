@@ -484,7 +484,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
 	while(data_sent.find("\r") != std::string::npos)
 		data_sent.erase(data_sent.find("\r"), 1);
 
-	data_sent.insert(0, ">");
+	data_sent.insert(0, ">>> ");
 
 	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
 
@@ -574,7 +574,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 
 	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
 
-	file_dbg << "<---new--->";
+//	file_dbg << "<---new--->";
 	file_dbg << buffer_irc_recv;
 
 	file_dbg.close();

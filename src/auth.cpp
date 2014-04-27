@@ -118,7 +118,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 		return false;
 	}
 
-	// nie wolno zapomnieć o zwolnieniu pamięci! (w przypadku błedu w http_get_data() nie trzeba zwalniać pamięci, bo funkcja zrobiła to sama)
+	// nie wolno zapomnieć o zwolnieniu pamięci! (w przypadku błędu w http_get_data() nie trzeba zwalniać pamięci, bo funkcja zrobiła to sama)
 	free(buffer_recv);
 
 	return true;
