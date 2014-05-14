@@ -2,6 +2,7 @@
 
 #include "irc_parser.hpp"
 #include "window_utils.hpp"
+#include "ucc_global.hpp"
 
 
 int find_value_irc(std::string buffer_irc_raw, std::string expr_before, std::string expr_after, std::string &f_value)
@@ -49,7 +50,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string 
 		{
 			pos_raw_start = 0;
 			pos_raw_end = 0;
-			msg_scr = get_time() + "\x3\x1# Błąd w buforze IRC!";
+			msg_scr = get_time() + xRED + "# Błąd w buforze IRC!";
 			return;
 		}
 
@@ -72,7 +73,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string 
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wchodzący
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg_scr += get_time() + "\x3\x2* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wchodzi do pokoju.";
+			msg_scr += get_time() + xGREEN + "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wchodzi do pokoju.";
 		}
 
 		else if(find_value_irc(buffer_irc_raw, "PART " + channel, "\n", f_value) == 0)
@@ -81,7 +82,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string 
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z pokoju
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg_scr += get_time() + "\x3\x6* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z pokoju";
+			msg_scr += get_time() + xCYAN + "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z pokoju";
 			// jeśli jest komunikat w PART, dodaj go
 			if(f_value.size() > 0)
 			{
@@ -96,7 +97,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string 
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z czata
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg_scr += get_time() + "\x3\x3* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z czata [" + f_value + "].";
+			msg_scr += get_time() + xYELLOW + "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z czata [" + f_value + "].";
 		}
 
 		// nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
@@ -117,7 +118,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string 
 		// nieznane lub jeszcze niezaimplementowane rawy wyświetl bez zmian
 		else
 		{
-			msg_scr += get_time() + "\x3\x7" + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1);
+			msg_scr += get_time() + xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1);
 		}
 
 	} while(pos_raw_start < buffer_irc_recv.size());

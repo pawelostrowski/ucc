@@ -6,6 +6,7 @@
 #include "auth.hpp"
 #include "network.hpp"
 #include "window_utils.hpp"
+#include "ucc_global.hpp"
 
 #define FILE_GIF "/tmp/ucc_captcha.gif"
 
@@ -421,7 +422,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + "\x3\x7");
+	buffer_irc_recv.insert(0, get_time() + xWHITE);
 	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -441,7 +442,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 
 	// wyślij: NICK <zuousername>
 	buffer_irc_send = "NICK " + zuousername;
-	buffer_irc_sent = get_time() + "\x3\x3" + buf_iso2utf(buffer_irc_send);	// rozdzielono to w sten sposób, aby można było podejrzeć,
+	buffer_irc_sent = get_time() + xYELLOW + buf_iso2utf(buffer_irc_send);	// rozdzielono to w sten sposób, aby można było podejrzeć,
 										// co zostało wysłane do serwera (inf. do debugowania)
 	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
 	{
@@ -460,7 +461,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + "\x3\x7");
+	buffer_irc_recv.insert(0, get_time() + xWHITE);
 	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -480,7 +481,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 
 	// wyślij: AUTHKEY
 	buffer_irc_send = "AUTHKEY";
-	buffer_irc_sent = get_time() + "\x3\x3" + buffer_irc_send;
+	buffer_irc_sent = get_time() + xYELLOW + buffer_irc_send;
 	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
 	{
 		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
@@ -498,7 +499,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + "\x3\x7");
+	buffer_irc_recv.insert(0, get_time() + xWHITE);
 //	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -555,7 +556,7 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 
 	// wyślij: AUTHKEY <AUTHKEY>
 	buffer_irc_send = "AUTHKEY " + authkey;
-	buffer_irc_sent = get_time() + "\x3\x3" + buffer_irc_send;
+	buffer_irc_sent = get_time() + xYELLOW + buffer_irc_send;
 	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
 	{
 		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
@@ -581,8 +582,8 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, s
 
 	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
 	buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\r\nPROTOCTL ONETNAMESX";
-	buffer_irc_sent = get_time() + "\x3\x3" + "USER * " + uokey + " czat-app.onet.pl :"
-			+ buf_iso2utf(zuousername) + get_time() + "\x3\x3PROTOCTL ONETNAMESX";
+	buffer_irc_sent = get_time() + xYELLOW + "USER * " + uokey + " czat-app.onet.pl :"
+			+ buf_iso2utf(zuousername) + get_time() + xYELLOW + "PROTOCTL ONETNAMESX";
 	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
 	{
 		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)

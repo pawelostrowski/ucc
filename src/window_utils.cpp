@@ -30,15 +30,15 @@ bool check_colors()
 		background_color = -1;
 	}
 
-	init_pair(UCC_RED, COLOR_RED, background_color);
-	init_pair(UCC_GREEN, COLOR_GREEN, background_color);
-	init_pair(UCC_YELLOW, COLOR_YELLOW, background_color);
-	init_pair(UCC_BLUE, COLOR_BLUE, background_color);
-	init_pair(UCC_MAGENTA, COLOR_MAGENTA, background_color);
-	init_pair(UCC_CYAN, COLOR_CYAN, background_color);
-	init_pair(UCC_WHITE, COLOR_WHITE, background_color);
-	init_pair(UCC_TERM, font_color, background_color);
-	init_pair(UCC_BLUE_WHITE, COLOR_BLUE, COLOR_WHITE);
+	init_pair(pRED, COLOR_RED, background_color);
+	init_pair(pGREEN, COLOR_GREEN, background_color);
+	init_pair(pYELLOW, COLOR_YELLOW, background_color);
+	init_pair(pBLUE, COLOR_BLUE, background_color);
+	init_pair(pMAGENTA, COLOR_MAGENTA, background_color);
+	init_pair(pCYAN, COLOR_CYAN, background_color);
+	init_pair(pWHITE, COLOR_WHITE, background_color);
+	init_pair(pTERMC, font_color, background_color);
+	init_pair(pBLUE_WHITE, COLOR_BLUE, COLOR_WHITE);
 
 	return true;
 }
@@ -61,7 +61,7 @@ void wattron_color(WINDOW *win_chat, bool use_colors, short color_p)
 std::string get_time()
 {
 /*
-	Funkcja zwraca lokalny czas w postaci \n\x3\x8[HH:MM:SS] (ze spacją na końcu), gdzie \x3 to umowny kod formatowania koloru, a \x8 to przyjęty
+	Funkcja zwraca lokalny czas w postaci \n\x03\x08[HH:MM:SS] (ze spacją na końcu), gdzie \x03 to umowny kod formatowania koloru, a \x08 to przyjęty
 	w "ucc_global.hpp" kod koloru terminala.
 */
 
@@ -73,7 +73,7 @@ std::string get_time()
 
 	time(&time_g);
 	time_l = localtime(&time_g);
-	strftime(time_hms, 20, "\n\x3\x8[%H:%M:%S] ", time_l);
+	strftime(time_hms, 20, "\n"xTERMC"[%H:%M:%S] ", time_l);
 
 	time_hms_tmp << time_hms;
 	return time_hms_tmp.str();
@@ -443,12 +443,12 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 						// znak % kończy formatowanie, trzeba teraz wyciąć tę część
 						else if(buffer_irc_recv[i] == '%')
 						{
-							buffer_irc_recv.insert(j, "\x04");	// dodaj kod włączenia bolda
+							buffer_irc_recv.insert(j, xBOLD_ON);	// dodaj kod włączenia bolda
 
 							size_t b_off = buffer_irc_recv.find("\n", i);
 							if(b_off != std::string::npos)
 							{
-								buffer_irc_recv.insert(b_off, "\x05");
+								buffer_irc_recv.insert(b_off, xBOLD_OFF);
 							}
 
 							// wytnij z bufora kod formatujący %Fb[...]%
@@ -480,7 +480,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 							i -= i - j + 1;
 
 							// gdy to nie bold, wyłącz go
-							buffer_irc_recv.insert(i + 1, "\x05");
+							buffer_irc_recv.insert(i + 1, xBOLD_OFF);
 
 							break;
 						}
@@ -537,73 +537,73 @@ std::string onet_color_conv(std::string &onet_color)
 
 	if(onet_color == "623c00")		// brązowy
 	{
-		return "\x03\x03";		// zwróć żółty
+		return xYELLOW;
 	}
 
 	else if(onet_color == "c86c00")		// ciemny pomarańczowy
 	{
-		return "\x03\x03";		// zwróć żółty
+		return xYELLOW;
 	}
 
 	else if(onet_color == "ff6500")		// pomarańczowy
 	{
-		return "\x03\x03";		// zwróć żółty
+		return xYELLOW;
 	}
 
 	else if(onet_color == "ff0000")		// czerwony
 	{
-		return "\x03\x01";		// zwróć czerwony
+		return xRED;
 	}
 
 	else if(onet_color == "e40f0f")		// ciemniejszy czerwony
 	{
-		return "\x03\x01";		// zwróć czerwony
+		return xRED;
 	}
 
 	else if(onet_color == "990033")		// bordowy
 	{
-		return "\x03\x01";		// zwróć czerwony
+		return xRED;
 	}
 
 	else if(onet_color == "8800ab")		// fioletowy
 	{
-		return "\x03\x05";		// zwróć magenta
+		return xMAGENTA;
 	}
 
 	else if(onet_color == "ce00ff")		// magenta
 	{
-		return "\x03\x05";		// zwróć magenta
+		return xMAGENTA;
 	}
 
 	else if(onet_color == "0f2ab1")		// granatowy
 	{
-		return "\x03\x04";		// zwróć niebieski
+		return xBLUE;
 	}
 
 	else if(onet_color == "3030ce")		// ciemny niebieski
 	{
-		return "\x03\x04";		// zwróć niebieski
+		return xBLUE;
 	}
 
 	else if(onet_color == "006699")		// cyjan
 	{
-		return "\x03\x06";		// zwróć cyjan
+		return xCYAN;
 	}
 
 	else if(onet_color == "1a866e")		// zielono-cyjanowy
 	{
-		return "\x03\x06";		// zwróć cyjan
+		return xCYAN;
 	}
 
 	else if(onet_color == "008100")		// zielony
 	{
-		return "\x03\x02";		// zwróć zielony
+		return xGREEN;
 	}
 
 	else if(onet_color == "959595")		// szary
 	{
-		return "\x03\x07";		// zwróć biały (na większości terminali wygląda jak jasny szary)
+		return xWHITE;
 	}
 
-	return "\x03\x08";			// gdy żaden z wymienionych, zwróć domyślny kolor terminala
+	return xTERMC;			// gdy żaden z wymienionych
 }

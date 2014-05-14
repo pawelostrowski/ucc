@@ -96,21 +96,20 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 	scrollok(win_chat, TRUE);		// włącz przewijanie w tym oknie
 
 	// wpisz do bufora komunikat powitalny w kolorze zielonym oraz cyjan wraz z godziną na początku każdego wiersza (kolor będzie wtedy, gdy terminal
-	// obsługuje kolory) (kod \x3 to umowny kod kodowania kolorów, a \x2 to kolor zielony, \x6 to kolor cyjan, zgodnie z przyjętym kodowaniem w pliku
-	// "ucc_global.hpp") (.erase(0, 1) - usuń kod \n, na początku nie jest potrzebny)
-	chan_list[0]->win_buf_chan =	get_time().erase(0, 1) + "\x3\x2\x4Ucieszony Chat Client\x5" +	// \x4 to umowny kod włączenia bolda, \x5 - wyłączenia
-					get_time() + "\x3\x2# Aby zalogować się na nick tymczasowy, wpisz:" +
-					get_time() + "\x3\x6/nick nazwa_nicka" +
-					get_time() + "\x3\x6/connect" +
-					get_time() + "\x3\x2# Następnie przepisz kod z obrazka, w tym celu wpisz:" +
-					get_time() + "\x3\x6/captcha kod_z_obrazka" +
-					get_time() + "\x3\x2# Aby zalogować się na nick stały (zarejestrowany), wpisz:" +
-					get_time() + "\x3\x6/nick nazwa_nicka hasło_do_nicka" +
-					get_time() + "\x3\x6/connect" +
-					get_time() + "\x3\x2# Aby zobaczyć dostępne polecenia, wpisz:" +
-					get_time() + "\x3\x6/help" +
-					get_time() + "\x3\x2# Aby zakończyć działanie programu, wpisz:" +
-					get_time() + "\x3\x6/quit lub /q";
+	// obsługuje kolory) (.erase(0, 1) - usuń kod \n, na początku nie jest potrzebny)
+	chan_list[0]->win_buf_chan =	get_time().erase(0, 1) + xGREEN + xBOLD_ON + "Ucieszony Chat Client" + xBOLD_OFF +
+					get_time() + xGREEN + "# Aby zalogować się na nick tymczasowy, wpisz:" +
+					get_time() + xCYAN  + "/nick nazwa_nicka" +
+					get_time() + xCYAN  + "/connect" +
+					get_time() + xGREEN + "# Następnie przepisz kod z obrazka, w tym celu wpisz:" +
+					get_time() + xCYAN  + "/captcha kod_z_obrazka" +
+					get_time() + xGREEN + "# Aby zalogować się na nick stały (zarejestrowany), wpisz:" +
+					get_time() + xCYAN  + "/nick nazwa_nicka hasło_do_nicka" +
+					get_time() + xCYAN  + "/connect" +
+					get_time() + xGREEN + "# Aby zobaczyć dostępne polecenia, wpisz:" +
+					get_time() + xCYAN  + "/help" +
+					get_time() + xGREEN + "# Aby zakończyć działanie programu, wpisz:" +
+					get_time() + xCYAN  + "/quit lub /q";
 
 	// wyświetl zawartość bufora na ekranie
 	wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
@@ -155,7 +154,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-		wattron_color(stdscr, use_colors, UCC_BLUE_WHITE);
+		wattron_color(stdscr, use_colors, pBLUE_WHITE);
 		attron(A_REVERSE);
 		// pasek górny
 		move(0, 0);
