@@ -1,7 +1,7 @@
 #include <string>		// std::string
 
 #include "irc_parser.hpp"
-#include "ucc_global.hpp"
+#include "window_utils.hpp"
 
 
 int find_value_irc(std::string buffer_irc_raw, std::string expr_before, std::string expr_after, std::string &f_value)
@@ -25,17 +25,20 @@ int find_value_irc(std::string buffer_irc_raw, std::string expr_before, std::str
 }
 
 
-void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg_irc, std::string &channel, bool &irc_ok)
+void irc_parser(std::string &buffer_irc_recv, std::string &msg_scr, std::string &msg_irc, std::string &channel, bool &irc_ok)
 {
 	std::string f_value;
 
 	std::string buffer_irc_raw;
 	size_t pos_raw_start = 0, pos_raw_end = 0;
 
-	// zacznij od wyczyszczenia bufora powrotnego oraz bufora IRC
-	msg.clear();
+	// zacznij od wyczyszczenia bufora komunikatu oraz bufora IRC
+	msg_scr.clear();
 	msg_irc.clear();
 
+	buffer_irc_recv = form_from_chat(buffer_irc_recv);
+
+	// obsłuż bufor
 	do
 	{
 		// znajdź koniec wiersza
@@ -46,7 +49,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 		{
 			pos_raw_start = 0;
 			pos_raw_end = 0;
-			msg = "# Błąd w buforze IRC!";
+			msg_scr = get_time() + "\x3\x1# Błąd w buforze IRC!";
 			return;
 		}
 
@@ -69,7 +72,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wchodzący
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wchodzi do pokoju.\n";
+			msg_scr += get_time() + "\x3\x2* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wchodzi do pokoju.";
 		}
 
 		else if(find_value_irc(buffer_irc_raw, "PART " + channel, "\n", f_value) == 0)
@@ -78,13 +81,13 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z pokoju
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z pokoju.";
+			msg_scr += get_time() + "\x3\x6* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z pokoju";
 			// jeśli jest komunikat w PART, dodaj go
 			if(f_value.size() > 0)
 			{
-				msg += " [" + f_value.erase(0, 2) +"]";		// erase(0, 2) - usuń ' :'
+				msg_scr += " [" + f_value.erase(0, 2) +"]";	// erase(0, 2) - usuń ' :'
 			}
-			msg += "\n";
+			msg_scr += ".";
 		}
 
 		else if(find_value_irc(buffer_irc_raw, "QUIT :", "\n", f_value) == 0)
@@ -93,7 +96,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 			std::string nick_on_irc_zuo_ip;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z czata
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
-			msg += "* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z czata. [" + f_value + "]\n";
+			msg_scr += get_time() + "\x3\x3* " + nick_on_irc + " [" + nick_on_irc_zuo_ip + "] wychodzi z czata [" + f_value + "].";
 		}
 
 		// nieeleganckie na razie wycinanie z tekstu (z założeniem, że chodzi o 1 pokój), aby pokazać komunikat usera
@@ -101,20 +104,20 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg, std::string &msg
 		{
 			std::string nick_on_irc;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);
-			msg += "<" + nick_on_irc + "> " + f_value + "\n";
+			msg_scr += get_time() + "<" + nick_on_irc + "> " + f_value;
 		}
 
 		// wykryj, gdy serwer odpowie ERROR
 		else if(find_value_irc(buffer_irc_raw, "ERROR :", "\n", f_value) == 0)
 		{
 			irc_ok = false;
-			msg += buffer_irc_raw;		// pokaż też komunikat serwera
+			msg_scr += get_time() + buffer_irc_raw;		// pokaż też komunikat serwera
 		}
 
 		// nieznane lub jeszcze niezaimplementowane rawy wyświetl bez zmian
 		else
 		{
-			msg += buffer_irc_raw;
+			msg_scr += get_time() + "\x3\x7" + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1);
 		}
 
 	} while(pos_raw_start < buffer_irc_recv.size());

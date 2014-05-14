@@ -12,26 +12,10 @@
 #define UCC_TERM        8	// kolor zależny od ustawień terminala
 #define UCC_BLUE_WHITE  9	// niebieski font, białe tło
 
-// globalne zmienne, używane w całym programie
-struct ucc_global_args
+struct channel_irc
 {
-    bool ucc_quit;
-    bool command_ok;
-    bool captcha_ready;
-    bool irc_ready;
-    bool irc_ok;
-    bool channel_ok;
-    bool command_me;
-    std::string kbd_buf;	// bufor odczytanych znaków z klawiatury
-    std::string msg;		// komunikat do wyświetlenia z którejś z wywoływanych funkcji w main_window() (opcjonalny)
-    std::string msg_irc;	// komunikat (polecenie) do wysłania do IRC po wywołaniu kbd_parser() lub irc_parser() (opcjonalny)
-    std::string my_nick;
-    std::string my_password;
-    std::string cookies;
-    std::string zuousername;
-    std::string uokey;
-    std::string channel;
-    std::string msg_sock;
+        std::string win_buf_chan;
+        std::string channel;
 };
 
 #endif		// UCC_GLOBAL_HPP

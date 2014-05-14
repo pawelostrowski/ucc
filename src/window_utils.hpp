@@ -3,35 +3,24 @@
 
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8
 
-struct wstatus		// okno statusu i debugowania IRC (gdy włączone)
-{
-    std::string win_buffer;
-    std::string channel_name;
-};
-
-struct wchannel		// okna pokoi
-{
-    int channel_index;
-    std::string win_buffer;
-    std::string channel_name;
-    std::string channel_topic;
-    std::string nicks;
-};
-
 bool check_colors();
 
-void wattrset_color(WINDOW *win_active, bool use_colors, short color_p);
+void wattron_color(WINDOW *win_chat, bool use_colors, short color_p);
 
-void get_time(char *time_hms);
+std::string get_time();
 
-int kbd_utf2iso(int key_code);
+std::string buf_utf2iso(std::string &buffer_str);
 
-void kbd_buf_show(std::string kbd_buf, std::string zuousername, int term_y, int term_x, int kbd_buf_pos);
+std::string buf_iso2utf(std::string &buffer_str);
 
-void wprintw_utf(WINDOW *win_active, bool use_colors, short color_p, std::string buffer_str);
+void wprintw_buffer(WINDOW *win_chat, bool use_colors, std::string &buffer_str);
 
-void wprintw_iso2utf(WINDOW *win_active, bool use_colors, short color_p, std::string buffer_str, bool bold_my_nick = false);
+std::string kbd_utf2iso(int key_code);
 
-short onet_color_conv(std::string onet_color);
+void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
+
+std::string form_from_chat(std::string &buffer_irc_recv);
+
+std::string onet_color_conv(std::string &onet_color);
 
 #endif		// WINDOW_UTILS_HPP

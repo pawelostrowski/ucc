@@ -3,6 +3,7 @@
 #include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
 
 #include "network.hpp"
+#include "window_utils.hpp"
 
 #define BUF_SIZE (1500 * sizeof(char))
 
@@ -76,12 +77,14 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	// utwórz gniazdo (socket) oraz połącz się z hostem
 	socketfd = socket_init(host, port, msg_err);
 	if(socketfd == 0)
+	{
 		return NULL;	// zwróć komunikat błędu w msg_err
+	}
 
 	// utwórz dane do wysłania do hosta
 	data_send =  method + " " + stock + " HTTP/1.1\r\n"
 		    "Host: " + host + "\r\n"
-		    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/28.0\r\n"
+		    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0\r\n"
 		    "Accept-Language: pl\r\n";
 
 	if(method == "POST")
@@ -91,13 +94,17 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			     "Content-Length: " + content_length.str() + "\r\n";	// content_length.str()  <--- zamienia liczbę na std::string
 	}
 
-	if(cookies.size() != 0)
+	if(cookies.size() > 0)
+	{
 		data_send += "Cookie:" + cookies + "\r\n";
+	}
 
 	data_send += "Connection: close\r\n\r\n";
 
-	if(content.size() != 0)
+	if(content.size() > 0)
+	{
 		data_send += content;
+	}
 
 	// offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
 	offset_recv = 0;
@@ -323,9 +330,13 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	std::fstream file_dbg;
 
 	if(dbg_first_save)
+	{
 		file_dbg.open(FILE_DBG_HTTP, std::ios::out);
+	}
 	else
+	{
 		file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
+	}
 
 	dbg_first_save = false;			// kolejne zapisy dopisują dane do pliku
 
@@ -371,20 +382,28 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 	exp_start = data_recv.find(gif_str);
 	if(exp_start != std::string::npos)
+	{
 		data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
+	}
 
 	// usuń \r z buforów, aby w pliku nie było go
 	while(data_sent.find("\r") != std::string::npos)
+	{
 		data_sent.erase(data_sent.find("\r"), 1);
+	}
 
 	while(data_recv.find("\r") != std::string::npos)
+	{
 		data_recv.erase(data_recv.find("\r"), 1);
+	}
 
 	// zapisz dane
 	std::string s;
 
 	if(port == 443)
+	{
 		s = "s";
+	}
 
 	file_dbg << "================================================================================\n";
 
@@ -395,14 +414,18 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	file_dbg << data_sent + "\n";
 
 	if(data_sent[data_sent.size() - 1] != '\n')
+	{
 		file_dbg << "\n\n";
+	}
 
 	file_dbg << ">>> RECV:\n\n";
 
 	file_dbg << data_recv + "\n";
 
 	if(data_recv[data_recv.size() - 1] != '\n')
+	{
 		file_dbg << "\n\n";
+	}
 
 	file_dbg.close();
 
@@ -482,7 +505,9 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std
 	std::fstream file_dbg;
 
 	while(data_sent.find("\r") != std::string::npos)
+	{
 		data_sent.erase(data_sent.find("\r"), 1);
+	}
 
 	data_sent.insert(0, ">>> ");
 
@@ -537,7 +562,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 
 	// pobierz dane od hosta
 	bytes_recv = recv(socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
-	buffer_tmp[bytes_recv] = '\0';
+	buffer_tmp[bytes_recv] = '\x00';
 
 	if(bytes_recv == -1)
 	{
@@ -559,13 +584,20 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 	buffer_irc_recv.clear();
 	buffer_irc_recv = std::string(buffer_tmp);
 
-	//usuń \2 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-	while(buffer_irc_recv.find("\2") != std::string::npos)
-		buffer_irc_recv.erase(buffer_irc_recv.find("\2"), 1);
+	// usuń 0x02 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
+	while(buffer_irc_recv.find("\x02") != std::string::npos)
+	{
+		buffer_irc_recv.erase(buffer_irc_recv.find("\x02"), 1);
+	}
 
-	//usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+	// usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
 	while(buffer_irc_recv.find("\r") != std::string::npos)
+	{
 		buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
+	}
+
+	// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
+	buffer_irc_recv = buf_iso2utf(buffer_irc_recv);
 
 /*
 	DBG IRC START
@@ -574,7 +606,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 
 	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
 
-//	file_dbg << "<---new--->";
+		file_dbg << "<---new--->";
 	file_dbg << buffer_irc_recv;
 
 	file_dbg.close();
@@ -584,7 +616,9 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 
 	// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
 	if(buffer_irc_recv_incomplete.size() > 0)
+	{
 		buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
+	}
 
 	// po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
 	buffer_irc_recv_incomplete.clear();
