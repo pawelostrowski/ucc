@@ -160,8 +160,8 @@ std::string msg_connect_irc_err()
 
 
 void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc, std::string &my_nick, std::string &my_password, std::string &cookies,
-		std::string &zuousername, std::string &uokey, bool &captcha_ready, bool &irc_ready, bool &irc_ok, bool &channel_ok, std::string &channel,
-		bool &ucc_quit)
+		std::string &zuousername, std::string &uokey, bool &captcha_ready, bool &irc_ready, bool &irc_ok, bool &channel_ok, bool &ucc_quit,
+		struct channel_irc *chan_parm[], int &chan_nr)
 {
 /*
 	Prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji).
@@ -198,7 +198,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
 //		command_ok = false;	// wpisano tekst do wysłania do aktywnego pokoju
 		msg_scr = get_time() + xBOLD_ON + "<" + buf_iso2utf(zuousername) + "> " + xBOLD_OFF + buf_iso2utf(kbd_buf);
-		msg_irc = "PRIVMSG " + channel + " :" + kbd_buf;
+		msg_irc = "PRIVMSG " + chan_parm[chan_nr]->channel + " :" + kbd_buf;
 		return;		// gdy wpisano zwykły tekst, zakończ
 	}
 
@@ -394,7 +394,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 		if(irc_ok)
 		{
-			find_arg(kbd_buf, channel, pos_arg_start, false);
+			find_arg(kbd_buf, chan_parm[chan_nr]->channel, pos_arg_start, false);
 			if(pos_arg_start == 0)
 			{
 				msg_scr = get_time() + xRED + "# Nie podano pokoju.";
@@ -403,12 +403,15 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 
 			// gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
 			channel_ok = true;	// nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
-			if(channel[0] != '#')	// jeśli nie podano # przed nazwą pokoju, dodaj #
+			if(chan_parm[chan_nr]->channel[0] != '#')	// jeśli nie podano # przed nazwą pokoju, dodaj #
 			{
-				channel.insert(0, "#");
+				chan_parm[chan_nr]->channel.insert(0, "#");
 			}
 
-			msg_irc = "JOIN " + channel;
+			msg_irc = "JOIN " + chan_parm[chan_nr]->channel;
+
+			// w programie kanał koduj w UTF-8
+			chan_parm[chan_nr]->channel = buf_iso2utf(chan_parm[chan_nr]->channel);
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -436,7 +439,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 //			command_me = true;	// polecenie to wymaga, aby komunikat wyświetlić zgodnie z kodowaniem bufora w ISO-8859-2
 			rest_args(kbd_buf, pos_arg_start, r_args);	// pobierz wpisany komunikat dla /me (nie jest niezbędny)
 			msg_scr = get_time() + xMAGENTA + xBOLD_ON + "* " + buf_iso2utf(zuousername) + xBOLD_OFF + xTERMC + " " + buf_iso2utf(r_args);
-			msg_irc = "PRIVMSG " + channel + " :\x01" + "ACTION " + r_args + "\x01";
+			msg_irc = "PRIVMSG " + chan_parm[chan_nr]->channel + " :\x01" + "ACTION " + r_args + "\x01";
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie

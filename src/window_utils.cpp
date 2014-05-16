@@ -228,6 +228,11 @@ void wprintw_buffer(WINDOW *win_chat, bool use_colors, std::string &buffer_str)
 			continue;
 		}
 
+		// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci)
+		getyx(win_chat, cur_y, cur_x);		// zachowaj pozycję kursora
+		clrtoeol();
+		wmove(win_chat, cur_y, cur_x);		// przywróć pozycję kursora
+
 		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
 		wprintw(win_chat, "%c", buffer_str[i]);
 	}

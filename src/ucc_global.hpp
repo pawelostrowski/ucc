@@ -33,8 +33,14 @@
 
 struct channel_irc
 {
-        std::string win_buf_chan;
+        std::string win_buf;
         std::string channel;
+};
+
+struct nick_irc
+{
+	std::string nick;
+	std::string zuo;
 };
 
 #endif		// UCC_GLOBAL_HPP

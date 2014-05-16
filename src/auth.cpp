@@ -49,23 +49,33 @@ bool auth_code(std::string &authkey)
 	}
 
 	for(int i = 0; i < 16; ++i)
+	{
 		ai[i] = f1[ai[i] + i];
+	}
 
 	memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
 
 	for(int i = 0; i < 16; ++i)
+	{
 		ai[i] = (ai[i] + ai1[p1[i]]) % 62;
+	}
 
 	for(int i = 0; i < 16; ++i)
+	{
 		ai[i] = f2[ai[i] + i];
+	}
 
 	memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
 
 	for(int i = 0; i < 16; ++i)
+	{
 		ai[i] = (ai[i] + ai1[p2[i]]) % 62;
+	}
 
 	for(int i = 0; i < 16; ++i)
+	{
 		ai[i] = f3[ai[i] + i];
+	}
 
 	for(int i = 0; i < 16; ++i)
 	{
@@ -85,12 +95,16 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 
 	pos_expr_before = std::string(buffer_recv).find(expr_before);	// znajdź pozycję początku szukanego wyrażenia
 	if(pos_expr_before == std::string::npos)
+	{
 		return 1;	// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
+	}
 
 	// znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
 	pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());
 	if(pos_expr_after == std::string::npos)
+	{
 		return 2;	// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
+	}
 
 	// wstaw szukaną wartość
 	f_value.clear();	// wyczyść bufor szukanej wartości
@@ -329,6 +343,7 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 			my_nick.erase(0, 1);
 		}
 	}
+
 	else
 	{
 		temp_nick = "0";	// stały
@@ -361,10 +376,12 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 		{
 			msg_err = "# Błąd serwera (-2): nieprawidłowy nick lub hasło.";		// tutaj msg_err_pre nie jest wymagany
 		}
+
 		else if(err_code == "-4")	// -4 oznacza nieprawidłowe znaki w nicku tymczasowym
 		{
 			msg_err = "# Błąd serwera (-4): nick zawiera niedozwolone znaki.";	// tutaj msg_err_pre nie jest wymagany
 		}
+
 		else
 		{
 			msg_err = msg_err_pre + "Nieznany błąd serwera, kod błędu: " + err_code;

@@ -1,4 +1,5 @@
 #include <string>		// std::string, setlocale()
+#include <malloc.h>
 #include <cerrno>		// errno
 #include <sys/select.h>		// select()
 
@@ -56,14 +57,15 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 	std::string cookies;
 	std::string zuousername = "Niezalogowany";
 	std::string uokey;
-	std::string channel;
+//	std::string channel;
 
 	std::string msg_scr;
 	std::string msg_irc;
 
-	channel_irc *chan_list[22];
-	chan_list[0] = new channel_irc;
-	chan_list[1] = new channel_irc;
+	struct channel_irc *chan_parm[22] = {};		// wyzeruj od razu tablicę
+
+	chan_parm[0] = new channel_irc;
+	chan_parm[1] = new channel_irc;
 
 	int chan_nr = 0;
 /*
@@ -89,30 +91,30 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 		use_colors = check_colors();
 	}
 
-	// utwórz okno, w którym będą komunikaty serwera oraz inne (np. diagnostyczne)
+	// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, status i debug (gdy włączony)
 	getmaxyx(stdscr, term_y, term_x);	// pobierz wymiary terminala (okna głównego)
 	WINDOW *win_chat;
 	win_chat = newwin(term_y - 3, term_x, 1, 0);
 	scrollok(win_chat, TRUE);		// włącz przewijanie w tym oknie
 
-	// wpisz do bufora komunikat powitalny w kolorze zielonym oraz cyjan wraz z godziną na początku każdego wiersza (kolor będzie wtedy, gdy terminal
-	// obsługuje kolory) (.erase(0, 1) - usuń kod \n, na początku nie jest potrzebny)
-	chan_list[0]->win_buf_chan =	get_time().erase(0, 1) + xGREEN + xBOLD_ON + "Ucieszony Chat Client" + xBOLD_OFF +
-					get_time() + xGREEN + "# Aby zalogować się na nick tymczasowy, wpisz:" +
-					get_time() + xCYAN  + "/nick nazwa_nicka" +
-					get_time() + xCYAN  + "/connect" +
-					get_time() + xGREEN + "# Następnie przepisz kod z obrazka, w tym celu wpisz:" +
-					get_time() + xCYAN  + "/captcha kod_z_obrazka" +
-					get_time() + xGREEN + "# Aby zalogować się na nick stały (zarejestrowany), wpisz:" +
-					get_time() + xCYAN  + "/nick nazwa_nicka hasło_do_nicka" +
-					get_time() + xCYAN  + "/connect" +
-					get_time() + xGREEN + "# Aby zobaczyć dostępne polecenia, wpisz:" +
-					get_time() + xCYAN  + "/help" +
-					get_time() + xGREEN + "# Aby zakończyć działanie programu, wpisz:" +
-					get_time() + xCYAN  + "/quit lub /q";
+	// wpisz do bufora "Status" komunikat powitalny w kolorze zielonym oraz cyjan wraz z godziną na początku każdego wiersza (kolor będzie wtedy,
+	// gdy terminal obsługuje kolory) (.erase(0, 1) - usuń kod \n, na początku nie jest potrzebny)
+	chan_parm[0]->win_buf =	get_time().erase(0, 1) + xGREEN + xBOLD_ON + "Ucieszony Chat Client" + xBOLD_OFF +
+				get_time() + xGREEN + "# Aby zalogować się na nick tymczasowy, wpisz:" +
+				get_time() + xCYAN  + "/nick nazwa_nicka" +
+				get_time() + xCYAN  + "/connect" +
+				get_time() + xGREEN + "# Następnie przepisz kod z obrazka, w tym celu wpisz:" +
+				get_time() + xCYAN  + "/captcha kod_z_obrazka" +
+				get_time() + xGREEN + "# Aby zalogować się na nick stały (zarejestrowany), wpisz:" +
+				get_time() + xCYAN  + "/nick nazwa_nicka hasło_do_nicka" +
+				get_time() + xCYAN  + "/connect" +
+				get_time() + xGREEN + "# Aby zobaczyć dostępne polecenia, wpisz:" +
+				get_time() + xCYAN  + "/help" +
+				get_time() + xGREEN + "# Aby zakończyć działanie programu, wpisz:" +
+				get_time() + xCYAN  + "/quit lub /q";
 
 	// wyświetl zawartość bufora na ekranie
-	wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+	wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 
 	// zapamiętaj aktualną pozycję kursora w oknie diagnostycznym
 //	getyx(win_chat, cur_y, cur_x);
@@ -150,7 +152,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 */
 
 			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
-			wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+			wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -178,10 +180,10 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
 		move(term_y - 2, 0);
 		//pokaż aktualny czas
-		printw("%s", get_time().erase(0, 3).c_str());	// .erase(0, 3) - usuń kody \n\x3\x8 ze stringa (nowy wiersz i formatowanie kolorów)
-		if(channel.size() > 0)
+		printw("%s", get_time().erase(0, 3).c_str());	// .erase(0, 3) - usuń kody \n\x03\x08 ze string (nowy wiersz i formatowanie kolorów)
+		if(chan_parm[chan_nr]->channel.size() > 0)
 		{
-			printw("[%s] ", channel.c_str());
+			printw("[%s] ", chan_parm[chan_nr]->channel.c_str());
 		}
 		printw("kbd+irc: %d, kbd: %d, irc: %d, socketfd_irc: %d", ix + iy, ix, iy, socketfd_irc);
 /*
@@ -208,9 +210,9 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 			{
 				delwin(win_chat);
 				endwin();	// zakończ tryb ncurses
+				delete chan_parm[0];
+				delete chan_parm[1];
 				fclose(stdin);
-				delete chan_list[0];
-				delete chan_list[1];
 				return 3;
 			}
 		}
@@ -269,7 +271,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 			{
 				//wscrl(win_chat, 1);
 				chan_nr = 1;
-				wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+				wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 
 			}
 
@@ -277,25 +279,25 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 			{
 				//wscrl(win_chat, -1);
 				chan_nr = 0;
-				wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+				wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 			}
 
-			else if(key_code == '\n' && kbd_buf.size() > 0)		// Enter (0x0A), wykonaj obsługę bufora tylko, gdy coś w nim jest
+			else if(key_code == '\n' && kbd_buf.size() > 0)		// Enter (0x0A), wykonaj obsługę bufora, ale tylko wtedy, gdy coś w nim jest
 			{
 				// "wyczyść" pole wpisywanego tekstu (aby nie było widać zwłoki, np. podczas pobierania obrazka z kodem do przepisania)
 				move(term_y - 1, zuousername.size() + 3);	// ustaw kursor za nickiem i spacją za nawiasem
 				clrtoeol();
 				refresh();
 
-				// wykonaj obsługę bufora (zidentyfikuj polecenie)
+				// wykonaj obsługę bufora klawiatury (zidentyfikuj polecenie lub zwróć wpisany tekst do wysłania do IRC)
 				kbd_parser(kbd_buf, msg_scr, msg_irc, my_nick, my_password, cookies, zuousername, uokey, captcha_ready, irc_ready,
-					   irc_ok, channel_ok, channel, ucc_quit);
+					   irc_ok, channel_ok, ucc_quit, chan_parm, chan_nr);
 
 				// gdy parser zwrócił jakiś komunikat do wyświetlenia, pokaż go
 				if(msg_scr.size() > 0)
 				{
-					chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego) komunikat z parsera
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora komunikat z parsera
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 				}
 
 				// jeśli w buforze IRC parser zwrócił jakiś komunikat i jeśli połączono z IRC (sprawdzanie nie jest konieczne, ale dodano
@@ -305,8 +307,8 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 					if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_scr))
 					{
 						// w przypadku błędu pokaż co się stało
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 				}
 
@@ -318,67 +320,67 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 					// połącz z serwerem IRC
 					irc_auth_status = irc_auth_1(socketfd_irc, irc_ok, buffer_irc_recv, msg_scr);
 					// pokaż odpowiedź serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_recv;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// w przypadku błędu pokaż, co się stało
 					if(! irc_auth_status)
 					{
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 
 					// wyślij: NICK <zuousername>
 					irc_auth_status = irc_auth_2(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, zuousername, msg_scr);
 					// pokaż, co wysłano do serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_sent;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// pokaż odpowiedź serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_recv;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// w przypadku błędu pokaż, co się stało
 					if(! irc_auth_status)
 					{
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 
 					// wyślij: AUTHKEY
 					irc_auth_status = irc_auth_3(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 					// pokaż, co wysłano do serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_sent;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// pokaż odpowiedź serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_recv;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// w przypadku błędu pokaż, co się stało
 					if(! irc_auth_status)
 					{
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 
 					// wyślij: AUTHKEY <AUTHKEY>
 					irc_auth_status = irc_auth_4(socketfd_irc, irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 					// pokaż, co wysłano do serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_sent;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// w przypadku błędu pokaż, co się stało
 					if(! irc_auth_status)
 					{
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 
 					// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
 					irc_auth_status = irc_auth_5(socketfd_irc, irc_ok, buffer_irc_sent, zuousername, uokey, msg_scr);
 					// pokaż, co wysłano do serwera
-					chan_list[chan_nr]->win_buf_chan += buffer_irc_sent;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					// w przypadku błędu pokaż, co się stało
 					if(! irc_auth_status)
 					{
-						chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-						wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+						chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+						wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 					}
 
 					// od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
@@ -394,8 +396,7 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 						zuousername = "Niezalogowany";
 					}
 
-				}	// if(ucc_ga->irc_ready)
-
+				}	// if(irc_ready)
 
 				// zachowaj pozycję kursora dla kolejnego komunikatu
 //				getyx(win_chat, cur_y, cur_x);
@@ -435,12 +436,12 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 			if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_scr))
 			{
 				// w przypadku błędu pokaż, co się stało
-				chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-				wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+				chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+				wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 			}
 
 			// zinterpretuj odpowiedź
-			irc_parser(buffer_irc_recv, msg_scr, msg_irc, channel, irc_ok);
+			irc_parser(buffer_irc_recv, msg_irc, irc_ok, chan_parm, chan_nr);
 
 			// jeśli był PING, odpowiedz PONG
 			if(msg_irc.size() > 0)
@@ -448,17 +449,21 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 				if(! irc_send(socketfd_irc, irc_ok, msg_irc, msg_scr))
 				{
 					// w przypadku błędu pokaż, co się stało
-					chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-					wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+					chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+					wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 				}
 			}
 
+
+			wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
+/*
 			// pokaż komunikaty serwera
 			if(msg_scr.size() > 0)		// UWAGA! powyżej w PONG też jest msg_scr, zrobić coś z tym!!!!!
 			{
-				chan_list[chan_nr]->win_buf_chan += msg_scr;	// dopisz do bufora (głównego)
-				wprintw_buffer(win_chat, use_colors, chan_list[chan_nr]->win_buf_chan);
+				chan_parm[chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+				wprintw_buffer(win_chat, use_colors, chan_parm[chan_nr]->win_buf);
 			}
+*/
 
 			// zachowaj pozycję kursora dla kolejnego komunikatu
 //			getyx(win_status, cur_y, cur_x);
@@ -489,10 +494,9 @@ int main_window(bool use_colors, bool ucc_dbg_irc)
 
 	delwin(win_chat);
 	endwin();	// zakończ tryb ncurses
+	delete chan_parm[0];
+	delete chan_parm[1];
 	fclose(stdin);
-
-	delete chan_list[0];
-	delete chan_list[1];
 
 	return 0;
 }
