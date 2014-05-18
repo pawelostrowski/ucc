@@ -11,10 +11,13 @@
 #define FILE_GIF "/tmp/ucc_captcha.gif"
 
 
-bool auth_code(std::string &authkey)
+void auth_code(std::string &authkey)
 {
 	if(authkey.size() != 16)	// AUTHKEY musi mieć dokładnie 16 znaków
-		return false;
+	{
+		authkey.clear();	// w przypadku błędu zwróć pusty bufor
+		return;
+	}
 
 	const int f1[] = {29, 43,  7,  5, 52, 58, 30, 59, 26, 35, 35, 49, 45,  4, 22,  4,
 			   0,  7,  4, 30, 51, 39, 16,  6, 32, 13, 40, 44, 14, 58, 27, 41,
@@ -84,8 +87,6 @@ bool auth_code(std::string &authkey)
 		ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
 		authkey[i] = ai[i];	// char na std::string (po jednym znaku)
 	}
-
-	return true;
 }
 
 
@@ -254,7 +255,7 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 	// jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
 	if(err_code == "FALSE")
 	{
-		msg_err = "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
+		msg_err = get_time() + xRED + "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
 		return false;
 	}
 
@@ -564,7 +565,9 @@ bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 	authkey.insert(0, buffer_irc_recv, pos_authkey_start + 1, pos_authkey_end - pos_authkey_start - 1);	// + 1, bo pomijamy dwukropek
 
 	// konwersja AUTHKEY
-	if(! auth_code(authkey))
+	auth_code(authkey);
+
+	if(authkey.size() == 0)
 	{
 		irc_ok = false;
 		msg_err = msg_err_pre + "AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?).";
@@ -610,4 +613,83 @@ bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, s
 	}
 
 	return true;
+}
+
+
+void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	bool irc_auth_status;		// status wykonania którejś z funkcji irc_auth_x()
+
+	std::string buffer_irc_recv;	// bufor odebranych danych z IRC
+	std::string buffer_irc_sent;	// dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
+
+	std::string msg_scr;
+
+	ga.irc_ready = false;      // nie próbuj się znowu łączyć do IRC od zera
+
+	// połącz z serwerem IRC
+	irc_auth_status = irc_auth_1(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, msg_scr);
+	// pokaż odpowiedź serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// w przypadku błędu pokaż, co się stało
+	if(! irc_auth_status)
+	{
+		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	}
+
+	// wyślij: NICK <zuousername>
+	irc_auth_status = irc_auth_2(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, ga.zuousername, msg_scr);
+	// pokaż, co wysłano do serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// pokaż odpowiedź serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// w przypadku błędu pokaż, co się stało
+	if(! irc_auth_status)
+	{
+		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	}
+
+	// wyślij: AUTHKEY
+	irc_auth_status = irc_auth_3(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
+	// pokaż, co wysłano do serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// pokaż odpowiedź serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// w przypadku błędu pokaż, co się stało
+	if(! irc_auth_status)
+	{
+		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	}
+
+	// wyślij: AUTHKEY <AUTHKEY>
+	irc_auth_status = irc_auth_4(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
+	// pokaż, co wysłano do serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// w przypadku błędu pokaż, co się stało
+	if(! irc_auth_status)
+	{
+		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	}
+
+	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
+	irc_auth_status = irc_auth_5(ga.socketfd_irc, ga.irc_ok, buffer_irc_sent, ga.zuousername, ga.uokey, msg_scr);
+	// pokaż, co wysłano do serwera
+	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
+	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	// w przypadku błędu pokaż, co się stało
+	if(! irc_auth_status)
+	{
+		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
+		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	}
 }

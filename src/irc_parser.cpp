@@ -97,7 +97,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_irc, bool &irc_ok
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wchodzący
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
 
-			for(int i = 0; i < 2; ++i)
+			for(int i = 0; i < 1; ++i)
 			{
 				if(chan_parm[i]->channel == f_channel)
 				{
@@ -114,7 +114,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_irc, bool &irc_ok
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);	// pobierz nick wychodzący z pokoju
 			find_value_irc(buffer_irc_raw, "!", " ", nick_on_irc_zuo_ip);	// pobierz ZUO oraz zakodowane IP
 
-			for(int i = 0; i < 2; ++i)
+			for(int i = 0; i < 1; ++i)
 			{
 				if(chan_parm[i]->channel == f_channel)
 				{
@@ -154,7 +154,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_irc, bool &irc_ok
 			std::string nick_on_irc;
 			find_value_irc(buffer_irc_raw, ":", "!", nick_on_irc);
 
-			for(int i = 0; i < 2; ++i)
+			for(int i = 0; i < 1; ++i)
 			{
 				if(chan_parm[i]->channel == f_channel)
 				{
@@ -179,7 +179,7 @@ void irc_parser(std::string &buffer_irc_recv, std::string &msg_irc, bool &irc_ok
 			// jeśli raw dotyczy konkretnego pokoju, to go tam wrzuć
 			if(f_channel.size() > 0 && buffer_irc_raw.find(f_channel) != std::string::npos)
 			{
-				for(int i = 0; i < 2; ++i)
+				for(int i = 0; i < 1; ++i)
 				{
 					if(chan_parm[i]->channel == f_channel)
 					{

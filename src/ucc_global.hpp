@@ -31,16 +31,49 @@
 #define xUNDERLINE_ON	"\x13"
 #define xUNDERLINE_OFF	"\x14"
 
-struct channel_irc
+// maksymalna liczba kanałów wraz z kanałem "Status" oraz "Debug"
+#define CHAT_CHAN_MAX	20
+#define ALL_CHAN	CHAT_CHAN_MAX + 2
+
+// struktura zmiennych używanych w całym programie (wybnych)
+struct global_args
 {
-        std::string win_buf;
-        std::string channel;
+	WINDOW *win_chat;
+
+	bool use_colors;
+
+	bool ucc_quit;
+
+	int socketfd_irc;
+
+	bool captcha_ready;
+	bool irc_ready;
+	bool irc_ok;
+
+	int chan_nr;
+
+	std::string my_nick;
+	std::string my_password;
+	std::string cookies;
+	std::string zuousername;
+	std::string uokey;
 };
 
+// struktura kanału
+struct channel_irc
+{
+	bool channel_ok;	// czy to kanał czata i czy można w nim pisać (czy np. nie wyrzucono z pokoju, mimo, że jest on pokazywany)
+
+	std::string win_buf;
+	std::string channel;
+};
+
+// struktura nicka (każdego na czacie, nie własnego, który jest w global_args)
 struct nick_irc
 {
 	std::string nick;
 	std::string zuo;
+//	bool index_chan[CHAT_CHAN_MAX];
 };
 
 #endif		// UCC_GLOBAL_HPP

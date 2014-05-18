@@ -1,7 +1,7 @@
 #ifndef AUTH_HPP
 #define AUTH_HPP
 
-bool auth_code(std::string &authkey);
+void auth_code(std::string &authkey);
 
 // szuka wartości pomiędzy wyrażeniem początkowym i końcowym
 int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value);
@@ -29,5 +29,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &buffer_irc_sent, std::string &msg_err);
 
 bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, std::string &zuousername, std::string &uokey, std::string &msg_err);
+
+void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 #endif		// AUTH_HPP

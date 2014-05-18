@@ -126,46 +126,49 @@ std::string buf_iso2utf(std::string &buffer_str)
 
 void wprintw_buffer(WINDOW *win_chat, bool use_colors, std::string &buffer_str)
 {
-	int term_y, term_x;	// to nie są te same zmienne co w "main_window.cpp", tam dotyczą one stdscr, a tutaj okna "wirtualnego"
-	int cur_y, cur_x;
+	int wterm_y, wterm_x;		// wymiary okna "wirtualnego"
+//	static int wcur_y = 0, wcur_x = 0;	// aktualna pozycja kursora w oknie "wirtualnym"
 
-	size_t pos_buf_start;
+	int clr_y, clr_x;		// pozycja kursora używana podczas "czyszczenia" ekranu
+
+	size_t pos_buf_str_start;
 	int rows = 1;
+
+	int buffer_str_len = buffer_str.size();
 
 	// zacznij od początku okna "wirtualnego"
 	wmove(win_chat, 0, 0);
 
-	// pobierz wymiary terminala (tutaj chodzi o Y)
-	getmaxyx(win_chat, term_y, term_x);
+	// pobierz wymiary okna "wirtualnego" (tutaj chodzi o Y)
+	getmaxyx(win_chat, wterm_y, wterm_x);
 
 	// wykryj początek, od którego należy zacząć wyświetlać zawartość bufora (na podstawie kodu \n)
-	pos_buf_start = buffer_str.rfind("\n");
+	pos_buf_str_start = buffer_str.rfind("\n");
 
-	if(pos_buf_start != std::string::npos)
+	if(pos_buf_str_start != std::string::npos)
 	{
 		// zakończ szukanie, gdy pozycja zejdzie do zera lub liczba znalezionych wierszy zrówna się z liczbą wierszy okna "wirtualnego"
-		while(pos_buf_start != std::string::npos && pos_buf_start > 0 && rows < term_y)
+		while(pos_buf_str_start != std::string::npos && pos_buf_str_start > 0 && rows < wterm_y)
 		{
-			pos_buf_start = buffer_str.rfind("\n", pos_buf_start - 1);	// - 1, aby pominąć kod \n
+			pos_buf_str_start = buffer_str.rfind("\n", pos_buf_str_start - 1);	// - 1, aby pominąć kod \n
 			++rows;
 		}
 	}
 
-	// jeśli nie wykryto żadnego kodu \n lub na początku bufora, ustal początek na 0 (taka sytuacja może mieć miejsce, gdy nie całe okno "wirtualne"
-	// jest zapełnione)
-	if(pos_buf_start == std::string::npos)
+	// jeśli nie wykryto żadnego kodu \n lub nie wykryto go na początku bufora (np. przy pustym buforze), ustal początek wyświetlania na 0
+	if(pos_buf_str_start == std::string::npos)
 	{
-		pos_buf_start = 0;
+		pos_buf_str_start = 0;
 	}
 
 	// jeśli na początku wyświetlanej części bufora jest kod \n, pomiń go, aby nie tworzyć pustego wiersza
-	if(buffer_str[pos_buf_start] == '\n')
+	if(buffer_str[pos_buf_str_start] == '\n')
 	{
-		++pos_buf_start;
+		++pos_buf_str_start;
 	}
 
 	// wypisywanie w pętli
-	for(int i = static_cast<int>(pos_buf_start); i < static_cast<int>(buffer_str.size()); ++i)
+	for(int i = pos_buf_str_start; i < buffer_str_len; ++i)
 	{
 		// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem)
 		if(buffer_str[i] == '\r')
@@ -177,10 +180,10 @@ void wprintw_buffer(WINDOW *win_chat, bool use_colors, std::string &buffer_str)
 		if(buffer_str[i] == '\x03')
 		{
 			// nie czytaj poza bufor
-			if(i + 1 < static_cast<int>(buffer_str.size()))
+			if(i + 1 < buffer_str_len)
 			{
 				++i;	// przejdź na kod koloru
-				wattron_color(win_chat, use_colors, static_cast<short>(buffer_str[i]));
+				wattron_color(win_chat, use_colors, buffer_str[i]);
 			}
 
 			continue;	// kodu koloru nie wyświetlaj jako ASCII, rozpocznij od początku pętlę wyświetlającą
@@ -228,29 +231,40 @@ void wprintw_buffer(WINDOW *win_chat, bool use_colors, std::string &buffer_str)
 			continue;
 		}
 
-		// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci)
-		getyx(win_chat, cur_y, cur_x);		// zachowaj pozycję kursora
-		clrtoeol();
-		wmove(win_chat, cur_y, cur_x);		// przywróć pozycję kursora
+		// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów)
+		if(buffer_str[i] == '\n')
+		{
+			getyx(win_chat, clr_y, clr_x);		// zachowaj pozycję kursora
+			clrtoeol();
+			wmove(win_chat, clr_y, clr_x);		// przywróć pozycję kursora
+		}
 
 		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
 		wprintw(win_chat, "%c", buffer_str[i]);
 	}
 
-	// pobierz aktualną pozycję kursora (tutaj chodzi o Y), aby wyczyścić potem do końca ekran i nie wyjść poza niego
-	getyx(win_chat, cur_y, cur_x);
-
 	// wyczyść pozostałą część ekranu
-	while(cur_y < term_y)
+	getyx(win_chat, clr_y, clr_x);	// potrzebna jest pozycja Y, aby wiedzieć, kiedy koniec okna "wirtualnego"
+	while(clr_y < wterm_y)
 	{
 		wclrtoeol(win_chat);
-		++cur_y;
-		wmove(win_chat, cur_y, 0);
+		++clr_y;
+		wmove(win_chat, clr_y, 0);
 	}
 
 	// odśwież okno (w takiej kolejności, czyli najpierw główne, aby wszystko wyświetliło się prawidłowo)
 	refresh();
 	wrefresh(win_chat);
+}
+
+
+void add_buffer(struct channel_irc *chan_parm[], int chan_nr)
+{
+/*
+	Dodaj string do bufora oraz wyświetl jego zawartość wraz z dodaniem przed wyrażeniem aktualnego czasu.
+*/
+
+
 }
 
 
@@ -299,7 +313,7 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 {
 	static int x = 0;
 	static int term_x_len = 0;
-	static int kbd_buf_len = term_x;
+	static int kbd_buf_len_prev = term_x;
 	static int kbd_buf_rest = 0;
 	int cut_left = 0;
 	int cut_right = 0;
@@ -314,13 +328,13 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 	term_x_len = term_x;
 
 	// Backspace powoduje przesuwanie się tekstu z lewej do kursora, gdy ta część jest niewidoczna
-	if(static_cast<int>(kbd_buf.size()) < kbd_buf_len && x > 0 && static_cast<int>(kbd_buf.size()) - kbd_buf_pos == kbd_buf_rest)
+	if(static_cast<int>(kbd_buf.size()) < kbd_buf_len_prev && x > 0 && static_cast<int>(kbd_buf.size()) - kbd_buf_pos == kbd_buf_rest)
 	{
 		--x;
 	}
 
 	// zachowaj rozmiar bufora dla wyżej wymienionego sprawdzania
-	kbd_buf_len = kbd_buf.size();
+	kbd_buf_len_prev = kbd_buf.size();
 
 	// zapamiętaj, ile po kursorze zostało w buforze, aby powyższe przesuwanie z lewej do kursora nie działało dla Delete
 	kbd_buf_rest = kbd_buf.size() - kbd_buf_pos;
@@ -420,8 +434,10 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 {
 	int j;
 
+	int buffer_irc_recv_len = buffer_irc_recv.size();
+
 	// wykryj formatowanie fontów, kolorów i emotek, a następnie odpowiednio je skonwertuj
-	for(int i = 0; i < static_cast<int>(buffer_irc_recv.size()); ++i)
+	for(int i = 0; i < buffer_irc_recv_len; ++i)
 	{
 		// znak % rozpoczyna formatowanie
 		if(buffer_irc_recv[i] == '%')
@@ -430,14 +446,14 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 			++i;		// kolejny znak
 
 			// wykryj fonty, jednocześnie sprawdzając, czy nie koniec bufora
-			if(i < static_cast<int>(buffer_irc_recv.size()) && buffer_irc_recv[i] == 'F')
+			if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'F')
 			{
 				++i;
 
 				// wykryj bold, jednocześnie sprawdzając, czy nie koniec bufora
-				if(i < static_cast<int>(buffer_irc_recv.size()) && buffer_irc_recv[i] == 'b')
+				if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'b')
 				{
-					for(++i; i < static_cast<int>(buffer_irc_recv.size()); ++i)
+					for(++i; i < buffer_irc_recv_len; ++i)
 					{
 						// spacja wewnątrz formatowania przerywa przetwarzanie
 						if(buffer_irc_recv[i] == ' ')
@@ -470,7 +486,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 				// jeśli nie bold, to trzeba wyciąć (jeśli są) 'i' lub nazwę fontu
 				else
 				{
-					for(++i; i < static_cast<int>(buffer_irc_recv.size()); ++i)
+					for(++i; i < buffer_irc_recv_len; ++i)
 					{
 						// spacja wewnątrz formatowania przerywa przetwarzanie
 						if(buffer_irc_recv[i] == ' ')
@@ -495,12 +511,12 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 			}
 
 			// wykryj kolory, jednocześnie sprawdzając, czy nie koniec bufora
-			else if(i < static_cast<int>(buffer_irc_recv.size()) && buffer_irc_recv[i] == 'C')
+			else if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'C')
 			{
 				std::string onet_color;
 
 				// wczytaj kolor
-				for(++i; i < static_cast<int>(buffer_irc_recv.size()); ++i)
+				for(++i; i < buffer_irc_recv_len; ++i)
 				{
 					// spacja wewnątrz formatowania przerywa przetwarzanie
 					if(buffer_irc_recv[i] == ' ')
@@ -522,7 +538,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 			}
 
 			// wykryj emotki, jednocześnie sprawdzając, czy nie koniec bufora
-			else if(i < static_cast<int>(buffer_irc_recv.size()) && buffer_irc_recv[i] == 'I')
+			else if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'I')
 			{
 
 			}
@@ -611,4 +627,19 @@ std::string onet_color_conv(std::string &onet_color)
 	}
 
 	return xTERMC;			// gdy żaden z wymienionych
+}
+
+void del_all_chan(struct channel_irc *chan_parm[])
+{
+/*
+	Usuń wszystkie aktywne kanały (zwolnij pamięć przez nie zajmowaną). Funkcja używana przed zakończeniem działania programu.
+*/
+
+	for(int i = 0; i < ALL_CHAN; ++i)
+	{
+		if(chan_parm[i])
+		{
+			delete chan_parm[i];
+		}
+	}
 }
