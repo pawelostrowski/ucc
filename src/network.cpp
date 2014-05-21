@@ -1,6 +1,7 @@
 #include <sstream>		// std::string, std::stringstream
 #include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
 #include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
+#include <unistd.h>		// close() - socket
 
 #include "network.hpp"
 #include "window_utils.hpp"
@@ -491,7 +492,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 }
 
 
-bool irc_send(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_send, std::string &msg_err)
+bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std::string &msg_err)
 {
 	int bytes_sent;
 
@@ -625,10 +626,12 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 
 	// wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
 	pos_incomplete = buffer_irc_recv.rfind("\n");	// \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej
+
 	if(pos_incomplete != buffer_irc_recv.size() - 1)	// - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
 	{
 		// zachowaj ostatni niepełny wiersz
 		buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+
 		// oraz usuń go z głównego bufora
 		buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
 	}

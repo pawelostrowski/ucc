@@ -2,6 +2,7 @@
 
 #include "kbd_parser.hpp"
 #include "window_utils.hpp"
+#include "network.hpp"
 #include "auth.hpp"
 #include "ucc_global.hpp"
 
@@ -153,26 +154,24 @@ bool rest_args(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest)
 }
 
 
-std::string msg_connect_irc_err()
+void msg_connect_irc_err(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	return get_time() + xRED + "# Najpierw zaloguj się.";
+	add_show_win_buf(ga, chan_parm, xRED "# Najpierw zaloguj się.");
 }
 
 
-void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc, struct channel_irc *chan_parm[], struct global_args &ga)
+void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf)
 {
 /*
 	Prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji).
 */
 
-	// domyślnie nie zwracaj komunikatów (dodanie komunikatu następuje w obsłudze poleceń)
-	msg_scr.clear();
-	msg_irc.clear();
+	std::string msg_err;
 
 	// zapobiega wykonywaniu się reszty kodu, gdy w buforze nic nie ma
 	if(kbd_buf.size() == 0)
 	{
-		msg_scr = get_time() + xRED + "# Błąd bufora klawiatury (bufor jest pusty)!";
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd bufora klawiatury (bufor jest pusty)!");
 		return;
 	}
 
@@ -182,21 +181,29 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		// jeśli brak połączenia z IRC, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 		if(! ga.irc_ok)
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
 		// jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 		else if(! chan_parm[ga.chan_nr]->channel_ok)
 		{
-			msg_scr = get_time() + xRED + "# Nie jesteś w aktywnym pokoju.";
+			add_show_win_buf(ga, chan_parm, xRED "# Nie jesteś w aktywnym pokoju.");
 			return;
 		}
 
-		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu oraz polecenie do wysłania do IRC
-//		command_ok = false;	// wpisano tekst do wysłania do aktywnego pokoju
-		msg_scr = get_time() + xBOLD_ON + "<" + buf_iso2utf(ga.zuousername) + "> " + xBOLD_OFF + buf_iso2utf(kbd_buf);
-		msg_irc = "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :" + kbd_buf;
+		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu
+				// tymczasowo funkcją form_from_chat() przekonwertować %% zanim nie zostanie napisana funkcja form_to_chat()
+				std::string kbd_buf_tmp = form_from_chat(kbd_buf);
+		add_show_win_buf(ga, chan_parm, xBOLD_ON "<" + buf_iso2utf(ga.zuousername) + "> " xBOLD_OFF + buf_iso2utf(kbd_buf_tmp));
+
+		// wyślij też komunikat do serwera IRC
+		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :" + kbd_buf, msg_err))
+		{
+			// w przypadku błędu pokaż co się stało
+			add_show_win_buf(ga, chan_parm, msg_err);
+		}
+
 		return;		// gdy wpisano zwykły tekst, zakończ
 	}
 
@@ -219,13 +226,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 	// wykryj błędnie wpisane polecenie
 	if(f_command_status == 1)
 	{
-		msg_scr = get_time() + xRED + "# Polecenie błędne, sam znak / nie jest poleceniem.";
+		add_show_win_buf(ga, chan_parm, xRED "# Polecenie błędne, sam znak / nie jest poleceniem.");
 		return;
 	}
 
 	else if(f_command_status == 2)
 	{
-		msg_scr = get_time() + xRED + "# Polecenie błędne, po znaku / nie może być spacji.";
+		add_show_win_buf(ga, chan_parm, xRED "# Polecenie błędne, po znaku / nie może być spacji.");
 		return;
 	}
 
@@ -237,13 +244,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 	{
 		if(ga.irc_ok)
 		{
-			msg_scr = get_time() + xRED + "# Już zalogowano się.";
+			add_show_win_buf(ga, chan_parm, xRED "# Już zalogowano się.");
 			return;
 		}
 
 		if(! ga.captcha_ready)
 		{
-			msg_scr = get_time() + xRED + "# Najpierw wpisz /connect";
+			add_show_win_buf(ga, chan_parm, xRED "# Najpierw wpisz /connect");
 			return;
 		}
 
@@ -251,25 +258,27 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		find_arg(kbd_buf, captcha, pos_arg_start, false);
 		if(pos_arg_start == 0)
 		{
-			msg_scr = get_time() + xRED + "# Nie podano kodu, spróbuj jeszcze raz.";
+			add_show_win_buf(ga, chan_parm, xRED "# Nie podano kodu, spróbuj jeszcze raz.");
 			return;
 		}
 
 		if(captcha.size() != 6)
 		{
-			msg_scr = get_time() + xRED + "# Kod musi mieć 6 znaków, spróbuj jeszcze raz.";
+			add_show_win_buf(ga, chan_parm, xRED "# Kod musi mieć 6 znaków, spróbuj jeszcze raz.");
 			return;
 		}
 
 		// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
 		ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
-		if(! http_auth_checkcode(ga.cookies, captcha, msg_scr))
+		if(! http_auth_checkcode(ga.cookies, captcha, msg_err))
 		{
-			return;		// w przypadku błędu wróć z komunikatem w msg_scr
+			add_show_win_buf(ga, chan_parm, msg_err);
+			return;
 		}
-		if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_scr))
+		if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_err))
 		{
-			return;		// w przypadku błędu wróć z komunikatem w msg_scr
+			add_show_win_buf(ga, chan_parm, msg_err);
+			return;
 		}
 
 		ga.irc_ready = true;	// gotowość do połączenia z IRC
@@ -280,45 +289,50 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 	{
 		if(ga.irc_ok)
 		{
-			msg_scr = get_time() + xRED + "# Już zalogowano się.";
+			add_show_win_buf(ga, chan_parm, xRED "# Już zalogowano się.");
 			return;
 		}
 
 		if(ga.my_nick.size() == 0)
 		{
-			msg_scr = get_time() + xRED + "# Nie wpisano nicka.";
+			add_show_win_buf(ga, chan_parm, xRED "# Nie wpisano nicka.");
 			return;
 		}
 
 		// gdy wpisano nick, rozpocznij łączenie
-		if(! http_auth_init(ga.cookies, msg_scr))
+		if(! http_auth_init(ga.cookies, msg_err))
 		{
-			return;		// w przypadku błędu wróć z komunikatem w msg_scr
+			add_show_win_buf(ga, chan_parm, msg_err);
+			return;
 		}
 
 		// gdy wpisano hasło, wykonaj część dla nicka stałego
 		if(ga.my_password.size() != 0)
 		{
-			if(! http_auth_getsk(ga.cookies, msg_scr))
+			if(! http_auth_getsk(ga.cookies, msg_err))
 			{
-				return;		// w przypadku błędu wróć z komunikatem w msg_scr
+				add_show_win_buf(ga, chan_parm, msg_err);
+				return;
 			}
 
-			if(! http_auth_mlogin(ga.cookies, ga.my_nick, ga.my_password, msg_scr))
+			if(! http_auth_mlogin(ga.cookies, ga.my_nick, ga.my_password, msg_err))
 			{
-				return;		// w przypadku błędu wróć z komunikatem w msg_scr
+				add_show_win_buf(ga, chan_parm, msg_err);
+				return;
 			}
 
-			if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_scr))
+			if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_err))
 			{
-				return;		// w przypadku błędu wróć z komunikatem w msg_scr
+				add_show_win_buf(ga, chan_parm, msg_err);
+				return;
 			}
 
 /*
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! http_auth_useroverride(cookies, my_nick, msg_scr))
+			if(! http_auth_useroverride(ga.cookies, ga.my_nick, msg_err))
 			{
-				return;		// w przypadku błędu wróć z komunikatem w msg_scr
+				add_show_win_buf(ga, chan_parm, msg_err);
+				return;
 			}
 */
 
@@ -329,23 +343,24 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		else
 		{
 			// pobierz captcha
-			if(! http_auth_getcaptcha(ga.cookies, msg_scr))
+			if(! http_auth_getcaptcha(ga.cookies, msg_err))
 			{
-				return;		// w przypadku błędu wróć z komunikatem w msg_scr
+				add_show_win_buf(ga, chan_parm, msg_err);
+				return;
 			}
 
-			msg_scr = get_time() + xGREEN + "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka";
+			add_show_win_buf(ga, chan_parm, xGREEN "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka");
 			ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
 		}
 
 	}	// CONNECT
 
-	else if(f_command == "DISCONNECT")
+	else if(f_command == "DISCONNECT" || f_command == "D")
 	{
 		// jeśli nie ma połączenia z IRC, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
 		if(! ga.irc_ok)
 		{
-			msg_scr = get_time() + xRED + "# Nie zalogowano się.";
+			add_show_win_buf(ga, chan_parm, xRED "# Nie zalogowano się.");
 			return;
 		}
 
@@ -355,13 +370,21 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			// jeśli podano argument (tekst pożegnalny), wstaw go
 			if(rest_args(kbd_buf, pos_arg_start, r_args))
 			{
-				msg_irc = "QUIT :" + r_args;	// wstaw polecenie przed komunikatem pożegnalnym
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT :" + r_args, msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
 
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
-				msg_irc = "QUIT";
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT", msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
 		}
 
@@ -369,20 +392,23 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 
 	else if(f_command == "HELP")
 	{
-		msg_scr =	get_time() + xGREEN + "# Dostępne polecenia (w kolejności alfabetycznej):" +
-				get_time() + xCYAN  + "/captcha" +
-				get_time() + xCYAN  + "/connect" +
-				get_time() + xCYAN  + "/disconnect" +
-				get_time() + xCYAN  + "/help" +
-				get_time() + xCYAN  + "/join lub /j" +
-				get_time() + xCYAN  + "/me" +
-				get_time() + xCYAN  + "/nick" +
-				get_time() + xCYAN  + "/quit lub /q" +
-				get_time() + xCYAN  + "/raw" +
-				get_time() + xCYAN  + "/vhost" +
-				get_time() + xCYAN  + "/whois" +
-				get_time() + xCYAN  + "/whowas";
-				// dopisać resztę poleceń
+		add_show_win_buf(ga, chan_parm,	xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
+						xCYAN  "/captcha\n"
+						xCYAN  "/connect\n"
+						xCYAN  "/disconnect lub /d\n"
+						xCYAN  "/help\n"
+						xCYAN  "/join lub /j\n"
+						xCYAN  "/me\n"
+						xCYAN  "/nick\n"
+						xCYAN  "/part lub /p\n"
+						xCYAN  "/priv"
+						xCYAN  "/quit lub /q\n"
+						xCYAN  "/raw\n"
+						xCYAN  "/vhost\n"
+						xCYAN  "/whois\n"
+						xCYAN  "/whowas");
+						// dopisać resztę poleceń
+
 		return;
 
 	}	// HELP
@@ -392,30 +418,30 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 		if(ga.irc_ok)
 		{
-			find_arg(kbd_buf, chan_parm[ga.chan_nr]->channel, pos_arg_start, false);
+			find_arg(kbd_buf, f_arg, pos_arg_start, false);
 			if(pos_arg_start == 0)
 			{
-				msg_scr = get_time() + xRED + "# Nie podano pokoju.";
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano pokoju.");
 				return;
 			}
 
-			// gdy wpisano pokój, przygotuj komunikat do wysłania na serwer
-			chan_parm[ga.chan_nr]->channel_ok = true;	// nad tym jeszcze popracować, bo wpisanie pokoju wcale nie oznacza, że serwer go zaakceptuje
-			if(chan_parm[ga.chan_nr]->channel[0] != '#')	// jeśli nie podano # przed nazwą pokoju, dodaj #
+			// jeśli nie podano # przed nazwą pokoju, dodaj #, ale jeśli jest ^, to nie dodawaj (aby można było wejść na priv)
+			if(f_arg[0] != '#' && f_arg[0] != '^')
 			{
-				chan_parm[ga.chan_nr]->channel.insert(0, "#");
+				f_arg.insert(0, "#");
 			}
 
-			msg_irc = "JOIN " + chan_parm[ga.chan_nr]->channel;
-
-			// w programie kanał koduj w UTF-8
-			chan_parm[ga.chan_nr]->channel = buf_iso2utf(chan_parm[ga.chan_nr]->channel);
+			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + f_arg, msg_err))
+			{
+				// w przypadku błędu pokaż co się stało
+				add_show_win_buf(ga, chan_parm, msg_err);
+			}
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
 		else
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
@@ -429,21 +455,29 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			// jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 			if(! chan_parm[ga.chan_nr]->channel_ok)
 			{
-				msg_scr = get_time() + xRED + "# Nie jesteś w aktywnym pokoju.";
+				add_show_win_buf(ga, chan_parm, xRED "# Nie jesteś w aktywnym pokoju.");
 				return;
 			}
 
-			// jeśli jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w oknie terminala oraz polecenie dla IRC
-//			command_me = true;	// polecenie to wymaga, aby komunikat wyświetlić zgodnie z kodowaniem bufora w ISO-8859-2
 			rest_args(kbd_buf, pos_arg_start, r_args);	// pobierz wpisany komunikat dla /me (nie jest niezbędny)
-			msg_scr = get_time() + xMAGENTA + xBOLD_ON + "* " + buf_iso2utf(ga.zuousername) + xBOLD_OFF + xTERMC + " " + buf_iso2utf(r_args);
-			msg_irc = "PRIVMSG " + chan_parm[ga.chan_nr]->channel + " :\x01" + "ACTION " + r_args + "\x01";
+
+			// jeśli jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w oknie terminala
+			add_show_win_buf(ga, chan_parm, xMAGENTA "" xBOLD_ON "* " + buf_iso2utf(ga.zuousername) + xBOLD_OFF "" xTERMC " "
+							+ buf_iso2utf(r_args));
+
+			// wyślij też komunikat do serwera IRC
+			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel)
+								   + " :\x01" + "ACTION " + r_args + "\x01", msg_err))
+			{
+				// w przypadku błędu pokaż co się stało
+				add_show_win_buf(ga, chan_parm, msg_err);
+			}
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
 		else
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
@@ -454,7 +488,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 		// po połączeniu z IRC nie można zmienić nicka
 		if(ga.irc_ok)
 		{
-			msg_scr = get_time() + xRED + "# Po zalogowaniu się nie można zmienić nicka.";
+			add_show_win_buf(ga, chan_parm, xRED "# Po zalogowaniu się nie można zmienić nicka.");
 			return;
 		}
 
@@ -466,7 +500,7 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			{
 				if(ga.my_nick.size() == 0)
 				{
-					msg_scr = get_time() + xRED + "# Nie podano nicka.";
+					add_show_win_buf(ga, chan_parm, xRED "# Nie podano nicka.");
 					return;
 				}
 
@@ -475,12 +509,12 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 				{
 					if(ga.my_password.size() == 0)
 					{
-						msg_scr = get_time() + xGREEN + "# Aktualny nick tymczasowy: " + buf_iso2utf(ga.my_nick);
+						add_show_win_buf(ga, chan_parm, xGREEN "# Aktualny nick tymczasowy: " + buf_iso2utf(ga.my_nick));
 					}
 
 					else
 					{
-						msg_scr = get_time() + xGREEN + "# Aktualny nick stały: " + buf_iso2utf(ga.my_nick);
+						add_show_win_buf(ga, chan_parm, xGREEN "# Aktualny nick stały: " + buf_iso2utf(ga.my_nick));
 					}
 
 					return;
@@ -489,13 +523,13 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 
 			else if(f_arg.size() < 3)
 			{
-				msg_scr = get_time() + xRED + "# Nick jest za krótki (minimalnie 3 znaki).";
+				add_show_win_buf(ga, chan_parm, xRED "# Nick jest za krótki (minimalnie 3 znaki).");
 				return;
 			}
 
 			else if(f_arg.size() > 32)
 			{
-				msg_scr = get_time() + xRED + "# Nick jest za długi (maksymalnie 32 znaki).";
+				add_show_win_buf(ga, chan_parm, xRED "# Nick jest za długi (maksymalnie 32 znaki).");
 				return;
 			}
 
@@ -504,37 +538,124 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 
 			// przepisz nick do zmiennej
 			ga.my_nick = f_arg;
+
+			// wyświetl wpisany nick
 			if(ga.my_password.size() == 0)
 			{
-				msg_scr = get_time() + xGREEN + "# Nowy nick tymczasowy: " + buf_iso2utf(ga.my_nick);
+				add_show_win_buf(ga, chan_parm, xGREEN "# Nowy nick tymczasowy: " + buf_iso2utf(ga.my_nick));
 			}
 
 			else
 			{
-				msg_scr = get_time() + xGREEN + "# Nowy nick stały: " + buf_iso2utf(ga.my_nick);
+				add_show_win_buf(ga, chan_parm, xGREEN "# Nowy nick stały: " + buf_iso2utf(ga.my_nick));
 			}
-
 		}
 
 	}	// NICK
+
+	else if(f_command == "PART" || f_command == "P")
+	{
+		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+		if(ga.irc_ok)
+		{
+			// wyślij polecenie, gdy to aktywny pokój czata, a nie "Status" lub "Debug"
+			if(chan_parm[ga.chan_nr]->channel_ok)
+			{
+				// jeśli podano powód wyjścia, wyślij go
+				if(rest_args(kbd_buf, pos_arg_start, r_args))
+				{
+					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel)
+										  + " :" + r_args, msg_err))
+					{
+						// w przypadku błędu pokaż co się stało
+						add_show_win_buf(ga, chan_parm, msg_err);
+					}
+				}
+
+				// w przeciwnym razie wyślij samo polecenie
+				else
+				{
+					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel), msg_err))
+					{
+						// w przypadku błędu pokaż co się stało
+						add_show_win_buf(ga, chan_parm, msg_err);
+					}
+				}
+			}
+
+			// w przeciwnym razie pokaż ostrzeżenie
+			else
+			{
+				add_show_win_buf(ga, chan_parm, xRED "# Nie jesteś w aktywnym pokoju czata.");
+				return;
+			}
+		}
+
+		// jeśli nie połączono z IRC, pokaż ostrzeżenie
+		else
+		{
+			msg_connect_irc_err(ga, chan_parm);
+			return;
+		}
+
+	}	// PART
+
+	else if(f_command == "PRIV")
+	{
+		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+		if(ga.irc_ok)
+		{
+			// pobierz nick, który zapraszamy do rozmowy prywatnej
+			find_arg(kbd_buf, f_arg, pos_arg_start, false);
+
+			// jeśli nie wpisano nicka, pokaż ostrzeżenie
+			if(pos_arg_start == 0)
+			{
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano nicka zapraszanego do rozmowy prywatnej.");
+				return;
+			}
+
+			// wyślij polecenie do IRC
+			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIV " + f_arg, msg_err))
+			{
+				// w przypadku błędu pokaż co się stało
+				add_show_win_buf(ga, chan_parm, msg_err);
+			}
+		}
+
+		// jeśli nie połączono z IRC, pokaż ostrzeżenie
+		else
+		{
+			msg_connect_irc_err(ga, chan_parm);
+			return;
+		}
+
+	}	// PRIV
 
 	else if(f_command == "QUIT" || f_command == "Q")
 	{
 		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 		if(ga.irc_ok)
 		{
-			// jeśli podano argument (tekst pożegnalny), wstaw go
+			// jeśli podano powód wyjścia, wyślij go
 			if(rest_args(kbd_buf, pos_arg_start, r_args))
 			{
-				msg_irc = "QUIT :" + r_args;	// wstaw polecenie przed komunikatem pożegnalnym
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT :" + r_args, msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
 
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
-				msg_irc = "QUIT";
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT", msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
-
 		}
 
 		// zamknięcie programu po ewentualnym wysłaniu polecenia do IRC
@@ -550,19 +671,22 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			// jeśli nie podano parametrów, pokaż ostrzeżenie
 			if(! rest_args(kbd_buf, pos_arg_start, r_args))
 			{
-				msg_scr = get_time() + xRED + "# Nie podano parametrów.";
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano parametrów.");
 				return;
 			}
 
 			// polecenie do IRC
-			msg_irc = r_args;
-
+			if(! irc_send(ga.socketfd_irc, ga.irc_ok, r_args, msg_err))
+			{
+				// w przypadku błędu pokaż co się stało
+				add_show_win_buf(ga, chan_parm, msg_err);
+			}
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
 		else
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
@@ -577,30 +701,35 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			find_arg(kbd_buf, f_arg, pos_arg_start, false);
 			if(pos_arg_start == 0)
 			{
-				msg_scr = get_time() + xRED + "# Nie podano parametrów (nicka i hasła do VHost).";
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano parametrów (nicka i hasła do VHost).");
 				return;
 			}
 
+			std::string tmp_irc;
+
 			// jeśli podano pierwszy argument (nick), przepisz go
-			msg_irc = "VHOST " + f_arg + " ";
+			tmp_irc = "VHOST " + f_arg + " ";
 
 			// wykryj wpisanie hasła, jeśli nie wpisano go, pokaż ostrzeżenie
 			find_arg(kbd_buf, f_arg, pos_arg_start, false);
 			if(pos_arg_start == 0)
 			{
-				msg_scr = get_time() + xRED + "# Nie podano hasła do VHost.";
-				msg_irc.clear();	// brak hasła, dlatego wyczyść bufor IRC, aby nie wysłać nic na serwer
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano hasła do VHost.");
 				return;
 			}
 
 			// jeśli podano drugi argument (hasło), dopisz je
-			msg_irc += f_arg;
+			if(! irc_send(ga.socketfd_irc, ga.irc_ok, tmp_irc + f_arg, msg_err))
+			{
+				// w przypadku błędu pokaż co się stało
+				add_show_win_buf(ga, chan_parm, msg_err);
+			}
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
 		else
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
@@ -614,27 +743,34 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 			find_arg(kbd_buf, f_arg, pos_arg_start, false);
 			if(pos_arg_start == 0)
 			{
-				msg_scr = get_time() + xRED + "# Nie podano nicka do sprawdzenia.";
+				add_show_win_buf(ga, chan_parm, xRED "# Nie podano nicka do sprawdzenia.");
 				return;
 			}
 
 			// polecenie do IRC
 			if(f_command == "WHOIS")	// jeśli WHOIS
 			{
-				msg_irc = "WHOIS " + f_arg + " " + f_arg;	// 2x nick, aby pokazało idle
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "WHOIS " + f_arg + " " + f_arg, msg_err))	// 2x nick, aby pokazało idle
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
 
 			else		// jeśli WHOWAS (nie ma innej możliwości, dlatego bez else if)
 			{
-				msg_irc = "WHOWAS " + f_arg;
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "WHOWAS " + f_arg, msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
 			}
-
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
 		else
 		{
-			msg_scr = msg_connect_irc_err();
+			msg_connect_irc_err(ga, chan_parm);
 			return;
 		}
 
@@ -644,7 +780,6 @@ void kbd_parser(std::string &kbd_buf, std::string &msg_scr, std::string &msg_irc
 	else
 	{
 		// tutaj pokaż oryginalnie wpisane polecenie z uwzględnieniem przekodowania na UTF-8
-		msg_scr = get_time() + xRED + "# Nieznane polecenie: /" + buf_iso2utf(f_command_org);
+		add_show_win_buf(ga, chan_parm, xRED "# Nieznane polecenie: /" + buf_iso2utf(f_command_org));
 	}
-
 }

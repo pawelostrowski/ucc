@@ -630,66 +630,54 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// połącz z serwerem IRC
 	irc_auth_status = irc_auth_1(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, msg_scr);
 	// pokaż odpowiedź serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
-		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
-		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+		add_show_win_buf(ga, chan_parm, msg_scr);
 	}
 
 	// wyślij: NICK <zuousername>
 	irc_auth_status = irc_auth_2(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, ga.zuousername, msg_scr);
 	// pokaż, co wysłano do serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// pokaż odpowiedź serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
-		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
-		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+		add_show_win_buf(ga, chan_parm, msg_scr);
 	}
 
 	// wyślij: AUTHKEY
 	irc_auth_status = irc_auth_3(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 	// pokaż, co wysłano do serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// pokaż odpowiedź serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_recv;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
-		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
-		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+		add_show_win_buf(ga, chan_parm, msg_scr);
 	}
 
 	// wyślij: AUTHKEY <AUTHKEY>
 	irc_auth_status = irc_auth_4(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 	// pokaż, co wysłano do serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
-		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
-		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+		add_show_win_buf(ga, chan_parm, msg_scr);
 	}
 
 	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
 	irc_auth_status = irc_auth_5(ga.socketfd_irc, ga.irc_ok, buffer_irc_sent, ga.zuousername, ga.uokey, msg_scr);
 	// pokaż, co wysłano do serwera
-	chan_parm[ga.chan_nr]->win_buf += buffer_irc_sent;		// dopisz do bufora
-	wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
-		chan_parm[ga.chan_nr]->win_buf += msg_scr;		// dopisz do bufora
-		wprintw_buffer(ga.win_chat, ga.use_colors, chan_parm[ga.chan_nr]->win_buf);
+		add_show_win_buf(ga, chan_parm, msg_scr);
 	}
 }
