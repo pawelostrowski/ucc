@@ -121,10 +121,8 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 		// pobierz parametry RAW, aby wykryć dalej, jaki to rodzaj RAW
 		get_raw_parm(buffer_irc_raw, raw_parm);
 
-
-
 /*
-	Zależnie od rodzaju RAWa, wywołaj odpowiednią funkcję.
+	Zależnie od rodzaju RAW, wywołaj odpowiednią funkcję.
 */
 		if(raw_parm[0] == "ERROR")
 		{
@@ -174,7 +172,6 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 		// nieznany lub niezaimplementowany jeszcze RAW
 		else
 		{
-			// RAW 353 zamiast pokoju ma '=' (być może inne też)
 			if(raw_parm[3] == "=")
 			{
 				add_show_chan(ga, chan_parm, raw_parm[4], xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1));	// usuń \n
@@ -198,7 +195,6 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 /*
 	Poniżej obsługa RAW ERROR i PING, które występują w odpowiedzi serwera są na pierwszej pozycji (w kolejności alfabetycznej).
 */
-
 
 /*
 	ERROR
@@ -232,10 +228,10 @@ void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	Poniżej obsługa RAW z nazwami, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności alfabetycznej).
 */
 
-
 /*
 	INVITE
 	:Kernel_Panic!78259658@87edcc.6bc2d5.9f815e.0d56cc INVITE ucc_test :^cf1f1551082
+	:ucieszony86!50256503@87edcc.6bc2d5.ee917f.54dae7 INVITE ucc_test :#ucc
 */
 void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
@@ -345,7 +341,8 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	:zagubiona_miedzy_wierszami!80541395@87edcc.6f9b99.6bd006.aee4fc MODE zagubiona_miedzy_wierszami +W
 	:ChanServ!service@service.onet MODE #Towarzyski +b *!12345678@*
 	:ChanServ!service@service.onet MODE #ucc +h ucc_test
-	:ChanServ!service@service.onet MODE #scc +qo Merovingian Merovingian
+	:ChanServ!service@service.onet MODE #ucc +qo ucieszony86 ucieszony86
+	:ChanServ!service@service.onet MODE #ucc +eh *!76995189@* ucc_test
 	:NickServ!service@service.onet MODE ucc_test +r
 */
 // na razie bez rewelacji, pokazuj tylko zmiany kamerki oraz bany/owna/sopa/opa, potem dopisać dodawanie flag do list nicków, gdy już będą w programie
@@ -515,7 +512,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	}
 
 	// niezaimplementowane RAW z MODE wyświetl bez z mian (z wyjątkiem zmian busy)
-	if(raw_parm[3][1] != 'b' && raw_parm[2][0] != '#' && ! flags_tmp)
+	if(raw_parm[3][1] != 'b' && raw_parm[2][0] == '#' && ! flags_tmp)
 	{
 		add_show_chan(ga, chan_parm, raw_parm[2], xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1));	// usuń \n
 	}

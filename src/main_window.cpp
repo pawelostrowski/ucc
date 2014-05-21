@@ -289,6 +289,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					}
 				}
 
+/*
 				else if(key_code == '0')	// 0 jest traktowane jak 10
 				{
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
@@ -303,6 +304,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					//ga.chan_nr = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
 					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
 				}
+*/
 			}
 
 			// Enter (0x0A) - wykonaj obsługę bufora klawiatury, ale tylko wtedy, gdy coś w nim jest
@@ -344,7 +346,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			}
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
-			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < 400)
+			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
 			{
 				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2 (chodzi o polskie znaki)
 				kbd_buf.insert(kbd_buf_pos, kbd_utf2iso(key_code));

@@ -32,8 +32,8 @@
 #define xUNDERLINE_OFF	"\x14"
 #define xNORMAL		"\x17"		// przywraca ustawienia domyślne (atrybuty normalne, czyli brak kolorów, bolda, itd.)
 
-// maksymalna liczba kanałów wraz z kanałem "Status" oraz "Debug"
-#define CHAN_MAX	20 + 2		// kanały czata + "Status" i "Debug"
+// maksymalna liczba kanałów (dodano zapas) wraz z kanałem "Status" oraz "Debug"
+#define CHAN_MAX	30 + 2		// kanały czata + "Status" i "Debug"
 
 // nadanie numerów w tablicy kanałom: "Status" i "Debug"
 #define CHAN_STATUS	0
