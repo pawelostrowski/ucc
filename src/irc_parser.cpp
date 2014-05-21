@@ -235,8 +235,17 @@ void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
+	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
+	{
+		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
 			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
+	}
+
+	else
+	{
+		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
+			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do pokoju " + raw_parm[3] + " Aby wejść, wpisz /join " + raw_parm[3]);
+	}
 }
 
 
@@ -272,6 +281,7 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// w przeciwnym razie wyświetl komunikat dla wejścia do pokoju
 	else
 	{
+/*
 		// jeśli to ja wchodzę do pokoju, komunikat będzie inny, niż jeśli ktoś wchodzi
 		if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
 		{
@@ -280,9 +290,10 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 		else
 		{
+*/
 			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_raw(buffer_irc_raw, ":", "!")
 					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
-		}
+//		}
 	}
 }
 

@@ -401,7 +401,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 						xCYAN  "/me\n"
 						xCYAN  "/nick\n"
 						xCYAN  "/part lub /p\n"
-						xCYAN  "/priv"
+						xCYAN  "/priv\n"
 						xCYAN  "/quit lub /q\n"
 						xCYAN  "/raw\n"
 						xCYAN  "/vhost\n"

@@ -289,7 +289,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					}
 				}
 
-/*
 				else if(key_code == '0')	// 0 jest traktowane jak 10
 				{
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
@@ -304,7 +303,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					//ga.chan_nr = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
 					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
 				}
-*/
 			}
 
 			// Enter (0x0A) - wykonaj obsługę bufora klawiatury, ale tylko wtedy, gdy coś w nim jest
