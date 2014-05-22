@@ -543,7 +543,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 	if(chan_join.size() > 0)
 	{
-		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + chan_join, msg_err))
+		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + buf_utf2iso(chan_join), msg_err))
 		{
 			// w przypadku błędu pokaż, co się stało
 			add_show_win_buf(ga, chan_parm, msg_err);

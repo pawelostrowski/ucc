@@ -36,6 +36,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
+	std::string topic_bar;		// bufor pomocniczy tematu, aby nie wyjść poza szerokość terminala, gdy temat jest za długi
+	int top_excess;
 	bool chan_act_ok = false;
 	short act_color;
 /*
@@ -64,16 +66,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 /*
 	Koniec ustalania globalnych zmiennych.
 */
-
-	// tablica kanałów
-	struct channel_irc *chan_parm[CHAN_MAX] = {};		// wyzeruj od razu tablicę
-
-	// PRZENIEŚĆ DO TWORZENIA KANAŁU
-	// kanał "Status" zawsze pod numerem 0 w tablicy i zawsze istnieje w programie (nie mylić z włączaniem go kombinacją Alt+1)
-	chan_parm[CHAN_STATUS] = new channel_irc;
-	chan_parm[ga.chan_nr]->channel_ok = false;	// w kanale "Status" nie można pisać tak jak w zwykłym pokoju czata
-	chan_parm[ga.chan_nr]->channel = "Status";	// nazwa kanału "Status"
-	chan_parm[ga.chan_nr]->chan_act = 0;
 
 	struct timeval tv;		// struktura dla select(), aby ustawić czas wychodzenia z oczekiwania na klawiaturę lub socket, aby pokazać czas
 
@@ -105,9 +97,18 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
 	scrollok(ga.win_chat, TRUE);		// włącz przewijanie w tym oknie
 
-	// wpisz do bufora "Status" komunikat powitalny w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
-	add_show_win_buf(ga, chan_parm,	xGREEN "" xBOLD_ON "Ucieszony Chat Client" xBOLD_OFF "\n"
-					xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
+	// tablica kanałów
+	struct channel_irc *chan_parm[CHAN_MAX] = {};		// wyzeruj od razu tablicę
+
+	// kanał "Status" zawsze pod numerem 0 w tablicy (bo jest tworzony jako pierwszy, a kanały są tworzone w taki sposób, że wybierany jest najniższy
+	// wolny indeks) i zawsze istnieje w programie (nie mylić z włączaniem go kombinacją Alt+1)
+	new_chan(ga, chan_parm, "Status", false);
+
+	// Na górnym pasku wyświetl napis
+	chan_parm[CHAN_STATUS]->topic = "Ucieszony Chat Client - wersja rozwojowa";
+
+	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
+	add_show_win_buf(ga, chan_parm,	xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
 					xCYAN  "/nick nazwa_nicka\n"
 					xCYAN  "/connect\n"
 					xGREEN "# Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
@@ -160,7 +161,30 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 /*
 	Informacje na pasku górnym.
 */
-		//move(0, 0);
+		move(0, 0);
+
+		// temat pokoju (jeśli to kanał czata, dopisz "Temat: "
+		topic_bar.clear();
+		if(chan_parm[ga.chan_nr]->channel_ok)
+		{
+			topic_bar = "Temat: ";
+		}
+
+		// przygotuj cały bufor
+		topic_bar += chan_parm[ga.chan_nr]->topic;
+
+		// wyświetl, uwzględniając szerokość terminala (wyświetl tyle, ile się zmieści)
+		top_excess = 0;
+		for(int i = 0; i < static_cast<int>(topic_bar.size()) && i < term_x + top_excess; ++i)
+		{
+			// wykryj znaki wielobajtowe w UTF-8 (konkretnie 2B), aby zniwelować szerokość wyświetlania
+			if((topic_bar[i] & 0xe0) == 0xc0)
+			{
+				++top_excess;
+			}
+
+			printw("%c", topic_bar[i]);
+		}
 /*
 	Koniec informacji na pasku górnym.
 */
@@ -351,7 +375,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			// Alt Left
 			else if(key_code == 0x1b)
 			{
-				key_code = getch();	// lewy Alt zawsze generuje też kod klawisza, z którym został wciśnięty, dlatego pobierz ten kod
+				// lewy Alt generuje też kod klawisza, z którym został wciśnięty (dla poniższych sprawdzeń), dlatego pobierz ten kod
+				key_code = getch();
 
 				if(key_code >= '1' && key_code <= '9')
 				{
@@ -375,6 +400,46 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				{
 					//ga.chan_nr = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
 					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
+				}
+			}
+
+			// Alt Left + Arrow Left
+			else if(key_code == 0x21e)
+			{
+				for(int i = 0; i < CHAN_MAX; ++i)
+				{
+					--ga.chan_nr;
+
+					if(ga.chan_nr < 0)
+					{
+						ga.chan_nr = CHAN_MAX - 1;
+					}
+
+					if(chan_parm[ga.chan_nr])
+					{
+						win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+						break;
+					}
+				}
+			}
+
+			// Alt Left + Arrow Right
+			else if(key_code == 0x22d)
+			{
+				for(int i = 0; i < CHAN_MAX; ++i)
+				{
+					++ga.chan_nr;
+
+					if(ga.chan_nr == CHAN_MAX)
+					{
+						ga.chan_nr = 0;
+					}
+
+					if(chan_parm[ga.chan_nr])
+					{
+						win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+						break;
+					}
 				}
 			}
 

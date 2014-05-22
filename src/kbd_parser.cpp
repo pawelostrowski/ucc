@@ -284,7 +284,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 	}	// CAPTCHA
 
-	else if(f_command == "CONNECT")
+	else if(f_command == "CONNECT" || f_command == "C")
 	{
 		if(ga.irc_ok)
 		{
@@ -387,7 +387,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	{
 		add_show_win_buf(ga, chan_parm,	xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
 						xCYAN  "/captcha\n"
-						xCYAN  "/connect\n"
+						xCYAN  "/connect lub /c\n"
 						xCYAN  "/disconnect lub /d\n"
 						xCYAN  "/help\n"
 						xCYAN  "/join lub /j\n"

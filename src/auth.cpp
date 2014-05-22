@@ -444,7 +444,7 @@ bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + xWHITE);
+	buffer_irc_recv.insert(0, xWHITE);
 	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -483,7 +483,7 @@ bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + xWHITE);
+	buffer_irc_recv.insert(0, xWHITE);
 	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -521,7 +521,7 @@ bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, s
 		return false;
 	}
 
-	buffer_irc_recv.insert(0, get_time() + xWHITE);
+	buffer_irc_recv.insert(0, xWHITE);
 //	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
 
 	return true;
@@ -644,7 +644,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyślij: NICK <zuousername>
 	irc_auth_status = irc_auth_2(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, ga.zuousername, msg_scr);
 	// pokaż, co wysłano do serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
+//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// pokaż odpowiedź serwera
 	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
 	// w przypadku błędu pokaż, co się stało
@@ -656,7 +656,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyślij: AUTHKEY
 	irc_auth_status = irc_auth_3(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 	// pokaż, co wysłano do serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
+//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// pokaż odpowiedź serwera
 	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
 	// w przypadku błędu pokaż, co się stało
@@ -668,7 +668,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyślij: AUTHKEY <AUTHKEY>
 	irc_auth_status = irc_auth_4(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
 	// pokaż, co wysłano do serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
+//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{
@@ -678,7 +678,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
 	irc_auth_status = irc_auth_5(ga.socketfd_irc, ga.irc_ok, buffer_irc_sent, ga.zuousername, ga.uokey, msg_scr);
 	// pokaż, co wysłano do serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
+//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
 	// w przypadku błędu pokaż, co się stało
 	if(! irc_auth_status)
 	{

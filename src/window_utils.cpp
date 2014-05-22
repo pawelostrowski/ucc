@@ -343,9 +343,8 @@ std::string kbd_utf2iso(int key_code)
 
 	std::string key_code_tmp;	// tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
 
-	int det_utf = key_code & 0xE0;		// iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
-
-	if(det_utf != 0xC0)		// wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
+	// iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
+	if((key_code & 0xe0) != 0xc0)		// wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
 	{
 		key_code_tmp = key_code;
 		return key_code_tmp;	// jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
@@ -733,9 +732,9 @@ void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 			// wyczyść okno
 			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
-		}
 
-		return;		// zakończ
+			return;		// zakończ
+		}
 	}
 
 	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo tutaj nie będzie tworzony kanał "Debug" (tworzony jest wyżej)
