@@ -27,6 +27,8 @@ std::string form_from_chat(std::string &buffer_irc_recv);
 
 std::string onet_color_conv(std::string &onet_color);
 
+void add_act_chan(struct channel_irc *chan_parm[], std::string chan_name, int act_type);
+
 void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool chan_ok = false);
 
 void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[]);
@@ -35,6 +37,6 @@ void del_all_chan(struct channel_irc *chan_parm[]);
 
 void add_show_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str);
 
-void destroy_my_password(std::string &my_password);
+void destroy_my_password(struct global_args &ga);
 
 #endif		// WINDOW_UTILS_HPP

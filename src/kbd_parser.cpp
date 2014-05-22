@@ -78,7 +78,7 @@ void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, b
 	}
 
 	// pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza niego)
-	while(kbd_buf[pos_arg_start] == ' ' && pos_arg_start < kbd_buf.size())
+	while(pos_arg_start < kbd_buf.size() && kbd_buf[pos_arg_start] == ' ')
 	{
 		++pos_arg_start;	// kolejny znak w buforze
 	}
@@ -135,7 +135,7 @@ bool rest_args(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest)
 	}
 
 	// znajdź miejsce, od którego zaczynają się znaki różne od spacji
-	while(kbd_buf[pos_arg_start] == ' ' && pos_arg_start < kbd_buf.size())
+	while(pos_arg_start < kbd_buf.size() && kbd_buf[pos_arg_start] == ' ')
 	{
 		++pos_arg_start;
 	}
@@ -270,14 +270,13 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 		// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
 		ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
-		if(! http_auth_checkcode(ga.cookies, captcha, msg_err))
+		if(! http_auth_checkcode(ga, chan_parm, captcha))
 		{
-			add_show_win_buf(ga, chan_parm, msg_err);
 			return;
 		}
-		if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_err))
+
+		if(! http_auth_getuokey(ga, chan_parm))
 		{
-			add_show_win_buf(ga, chan_parm, msg_err);
 			return;
 		}
 
@@ -300,38 +299,33 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		}
 
 		// gdy wpisano nick, rozpocznij łączenie
-		if(! http_auth_init(ga.cookies, msg_err))
+		if(! http_auth_init(ga, chan_parm))
 		{
-			add_show_win_buf(ga, chan_parm, msg_err);
 			return;
 		}
 
 		// gdy wpisano hasło, wykonaj część dla nicka stałego
 		if(ga.my_password.size() != 0)
 		{
-			if(! http_auth_getsk(ga.cookies, msg_err))
+			if(! http_auth_getsk(ga, chan_parm))
 			{
-				add_show_win_buf(ga, chan_parm, msg_err);
 				return;
 			}
 
-			if(! http_auth_mlogin(ga.cookies, ga.my_nick, ga.my_password, msg_err))
+			if(! http_auth_mlogin(ga, chan_parm))
 			{
-				add_show_win_buf(ga, chan_parm, msg_err);
 				return;
 			}
 
-			if(! http_auth_getuo(ga.cookies, ga.my_nick, ga.my_password, ga.zuousername, ga.uokey, msg_err))
+			if(! http_auth_getuokey(ga, chan_parm))
 			{
-				add_show_win_buf(ga, chan_parm, msg_err);
 				return;
 			}
 
 /*
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! http_auth_useroverride(ga.cookies, ga.my_nick, msg_err))
+			if(! http_auth_useroverride(ga))
 			{
-				add_show_win_buf(ga, chan_parm, msg_err);
 				return;
 			}
 */
@@ -343,9 +337,8 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		else
 		{
 			// pobierz captcha
-			if(! http_auth_getcaptcha(ga.cookies, msg_err))
+			if(! http_auth_getcaptcha(ga, chan_parm))
 			{
-				add_show_win_buf(ga, chan_parm, msg_err);
 				return;
 			}
 
@@ -399,6 +392,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 						xCYAN  "/help\n"
 						xCYAN  "/join lub /j\n"
 						xCYAN  "/me\n"
+						xCYAN  "/names lub /n\n"
 						xCYAN  "/nick\n"
 						xCYAN  "/part lub /p\n"
 						xCYAN  "/priv\n"
@@ -483,6 +477,59 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 	}	// ME
 
+	else if(f_command == "NAMES" || f_command == "N")
+	{
+		// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+		if(ga.irc_ok)
+		{
+			// /names może działać z parametrem lub bez (wtedy dotyczy aktywnego pokoju)
+			find_arg(kbd_buf, f_arg, pos_arg_start, false);
+
+			// gdy podano pokój do sprawdzenia
+			if(pos_arg_start)
+			{
+				// jeśli nie podano # przed nazwą pokoju, dodaj #
+				if(f_arg[0] != '#')
+				{
+					f_arg.insert(0, "#");
+				}
+
+				// wyślij komunikat do serwera IRC
+				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "NAMES " + f_arg, msg_err))
+				{
+					// w przypadku błędu pokaż co się stało
+					add_show_win_buf(ga, chan_parm, msg_err);
+				}
+			}
+
+			// gdy nie podano sprawdź, czy pokój jest aktywny (bo /names dla "Status" lub "Debug" nie ma sensu)
+			else
+			{
+				if(chan_parm[ga.chan_nr]->channel_ok)
+				{
+					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "NAMES " + buf_utf2iso(chan_parm[ga.chan_nr]->channel), msg_err))
+					{
+						// w przypadku błędu pokaż co się stało
+						add_show_win_buf(ga, chan_parm, msg_err);
+					}
+				}
+
+				else
+				{
+					add_show_win_buf(ga, chan_parm, xRED "# To nie jest aktywny pokój czata.");
+				}
+			}
+		}
+
+		// jeśli nie połączono z IRC, pokaż ostrzeżenie
+		else
+		{
+			msg_connect_irc_err(ga, chan_parm);
+			return;
+		}
+
+	}	// NAMES
+
 	else if(f_command == "NICK")
 	{
 		// po połączeniu z IRC nie można zmienić nicka
@@ -496,6 +543,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		else
 		{
 			find_arg(kbd_buf, f_arg, pos_arg_start, false);
+
 			if(pos_arg_start == 0)
 			{
 				if(ga.my_nick.size() == 0)

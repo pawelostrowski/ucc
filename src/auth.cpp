@@ -115,7 +115,7 @@ int find_value(char *buffer_recv, std::string expr_before, std::string expr_afte
 }
 
 
-bool http_auth_init(std::string &cookies, std::string &msg_err)
+bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn).
@@ -123,15 +123,16 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err_pre = "# http_auth_init: ";
+	std::string msg_err;
 
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
-	cookies.clear();
+	ga.cookies.clear();
 
-	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "", cookies, true, offset_recv, msg_err_pre, msg_err);
+	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
+					ga.cookies, true, offset_recv, msg_err, "[init]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# init: " + msg_err);
 		return false;
 	}
 
@@ -142,7 +143,7 @@ bool http_auth_init(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
+bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka.
@@ -153,12 +154,12 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 	char *buffer_gif_ptr;
 	int system_status;
 	std::stringstream system_status_str;
-	std::string msg_err_pre = "# http_auth_getcaptcha: ";
+	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", cookies, true, offset_recv, msg_err_pre, msg_err);
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "[getCaptcha]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# getCaptcha: " + msg_err);
 		return false;
 	}
 
@@ -166,7 +167,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 	buffer_gif_ptr = strstr(buffer_recv, "GIF");
 	if(buffer_gif_ptr == NULL)
 	{
-		msg_err = msg_err_pre + "Nie udało się pobrać obrazka z kodem do przepisania.";
+		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
 		free(buffer_recv);
 		return false;
 	}
@@ -175,7 +176,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 	std::ofstream file_gif(FILE_GIF, std::ios::binary);
 	if(file_gif == NULL)
 	{
-		msg_err = msg_err_pre + "Nie udało się zapisać obrazka z kodem do przepisania ("FILE_GIF"), sprawdź uprawnienia do zapisu.";
+		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się zapisać obrazka z kodem do przepisania ("FILE_GIF"), sprawdź uprawnienia do zapisu.");
 		free(buffer_recv);
 		return false;
 	}
@@ -193,7 +194,7 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 	if(system_status != 0)
 	{
 		system_status_str << system_status;
-		msg_err = "Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + system_status_str.str();
+		add_show_win_buf(ga, chan_parm, xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + system_status_str.str());
 		return false;
 	}
 
@@ -201,21 +202,21 @@ bool http_auth_getcaptcha(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_getsk(std::string &cookies, std::string &msg_err)
+bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
-	W przypadku stałego nicka nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać,
+	W przypadku nicka stałego nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać,
 	pobierając z serwera mały obrazek.
 */
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err_pre = "# http_auth_getsk: ";
+	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", cookies, true, offset_recv, msg_err_pre, msg_err);
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "[getSk]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# getSk: " + msg_err);
 		return false;
 	}
 
@@ -225,19 +226,19 @@ bool http_auth_getsk(std::string &cookies, std::string &msg_err)
 }
 
 
-bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string &msg_err)
+bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[], std::string &captcha)
 {
 	long offset_recv;
 	char *buffer_recv;
 	std::string err_code;
-	std::string msg_err_pre = "# http_auth_checkcode: ";
+	std::string msg_err;
 
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 				    "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-				     cookies, false, offset_recv, msg_err_pre, msg_err);
+				     ga.cookies, false, offset_recv, msg_err, "[checkCode]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# checkCode: " + msg_err);
 		return false;
 	}
 
@@ -245,7 +246,7 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 	// czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
 	if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
 	{
-		msg_err = msg_err_pre + "Serwer nie zwrócił err_code.";
+		add_show_win_buf(ga, chan_parm, xRED "# checkCode: Serwer nie zwrócił err_code.");
 		free(buffer_recv);
 		return false;
 	}
@@ -255,14 +256,14 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 	// jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
 	if(err_code == "FALSE")
 	{
-		msg_err = get_time() + xRED + "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect";  // tutaj msg_err_pre nie jest wymagany
+		add_show_win_buf(ga, chan_parm, xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect");
 		return false;
 	}
 
 	// brak TRUE oznacza błąd w odpowiedzi serwera
 	if(err_code != "TRUE")
 	{
-		msg_err = msg_err_pre + "Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code;
+		add_show_win_buf(ga, chan_parm, xRED "# checkCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
 		return false;
 	}
 
@@ -270,7 +271,7 @@ bool http_auth_checkcode(std::string &cookies, std::string &captcha, std::string
 }
 
 
-bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_password, std::string &msg_err)
+bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid).
@@ -278,14 +279,14 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err_pre = "# http_auth_mlogin: ";
+	std::string msg_err;
 
 	buffer_recv = http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
-				    "r=&url=&login=" + my_nick + "&haslo=" + my_password + "&app_id=20&ssl=1&ok=1",
-				     cookies, true, offset_recv, msg_err_pre, msg_err);
+				    "r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
+				     ga.cookies, true, offset_recv, msg_err, "[mLogin]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# mLogin: " + msg_err);
 		return false;
 	}
 
@@ -295,7 +296,7 @@ bool http_auth_mlogin(std::string &cookies, std::string my_nick, std::string my_
 }
 
 
-bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::string &msg_err)
+bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku),
@@ -304,17 +305,17 @@ bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::stri
 
 	long offset_recv;
 	char *buffer_recv;
-	std::stringstream my_nick_length;
-	std::string msg_err_pre = "# http_auth_useroverride: ";
+	std::stringstream my_nick_len;
+	std::string msg_err;
 
-	my_nick_length << my_nick.size();
+	my_nick_len << ga.my_nick.size();
 
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick + "\";}",
-				     cookies, false, offset_recv, msg_err_pre, msg_err);
+				    "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_len.str() + ":\"" + ga.my_nick + "\";}",
+				     ga.cookies, false, offset_recv, msg_err, "[userOverride]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# userOverride: " + msg_err);
 		return false;
 	}
 
@@ -324,48 +325,51 @@ bool http_auth_useroverride(std::string &cookies, std::string my_nick, std::stri
 }
 
 
-bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_password, std::string &zuousername, std::string &uokey, std::string &msg_err)
+bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	long offset_recv;
 	char *buffer_recv;
-	std::stringstream my_nick_length;
-	std::string temp_nick;
+	std::stringstream my_nick_len;
+	std::string my_nick_c, nick_i;
 	std::string err_code;
-	std::string msg_err_pre = "# http_auth_getuo: ";
+	std::string msg_err;
+
+	// wykonaj "kopię" nicka, aby nie modyfikować go z punktu widzenia użytkownika (gdy trzeba usunąć ~)
+	my_nick_c = ga.my_nick;
 
 	// wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła)
-	if(my_password.size() == 0)
+	if(ga.my_password.size() == 0)
 	{
-		temp_nick = "1";	// tymczasowy
+		nick_i = "1";	// tymczasowy
 		// jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje,
 		//  mimo iż potem taki nick zwraca po zalogowaniu się
-		if(my_nick[0] == '~')
+		if(my_nick_c[0] == '~')
 		{
-			my_nick.erase(0, 1);
+			my_nick_c.erase(0, 1);
 		}
 	}
 
 	else
 	{
-		temp_nick = "0";	// stały
+		nick_i = "0";	// stały
 	}
 
-	my_nick_length << my_nick.size();
+	my_nick_len << my_nick_c.size();
 
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_length.str() + ":\"" + my_nick
-				     + "\";s:8:\"tempNick\";i:" + temp_nick + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
-				     cookies, false, offset_recv, msg_err_pre, msg_err);
+				    "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_len.str() + ":\"" + my_nick_c
+				     + "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
+				     ga.cookies, false, offset_recv, msg_err, "[getUoKey]");
 	if(buffer_recv == NULL)
 	{
-		msg_err = msg_err_pre + msg_err;
+		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: " + msg_err);
 		return false;
 	}
 
 	// pobierz kod błędu
 	if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
 	{
-		msg_err = msg_err_pre + "Serwer nie zwrócił err_code.";
+		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił err_code.");
 		free(buffer_recv);
 		return false;
 	}
@@ -375,17 +379,17 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 	{
 		if(err_code == "-2")		// -2 oznacza nieprawidłowy nick (stały) lub hasło
 		{
-			msg_err = "# Błąd serwera (-2): nieprawidłowy nick lub hasło.";		// tutaj msg_err_pre nie jest wymagany
+			add_show_win_buf(ga, chan_parm, xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.");
 		}
 
 		else if(err_code == "-4")	// -4 oznacza nieprawidłowe znaki w nicku tymczasowym
 		{
-			msg_err = "# Błąd serwera (-4): nick zawiera niedozwolone znaki.";	// tutaj msg_err_pre nie jest wymagany
+			add_show_win_buf(ga, chan_parm, xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.");
 		}
 
 		else
 		{
-			msg_err = msg_err_pre + "Nieznany błąd serwera, kod błędu: " + err_code;
+			add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
 		}
 
 		free(buffer_recv);
@@ -393,17 +397,17 @@ bool http_auth_getuo(std::string &cookies, std::string my_nick, std::string my_p
 	}
 
 	// pobierz uoKey
-	if(find_value(buffer_recv, "<uoKey>", "</uoKey>", uokey) != 0)
+	if(find_value(buffer_recv, "<uoKey>", "</uoKey>", ga.uokey) != 0)
 	{
-		msg_err = msg_err_pre + "Serwer nie zwrócił uoKey.";
+		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił uoKey.");
 		free(buffer_recv);
 		return false;
 	}
 
 	// pobierz zuoUsername (nick, który zwrócił serwer)
-	if(find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", zuousername) != 0)
+	if(find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", ga.zuousername) != 0)
 	{
-		msg_err = msg_err_pre + "Serwer nie zwrócił zuoUsername.";
+		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił zuoUsername.");
 		free(buffer_recv);
 		return false;
 	}

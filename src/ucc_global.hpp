@@ -10,7 +10,10 @@
 #define pCYAN		6
 #define pWHITE		7
 #define pTERMC		8	// kolor zależny od ustawień terminala
-#define pBLUE_WHITE	9	// niebieski font, białe tło
+#define pWHITE_BLUE	9	// biały font, niebieskie tło
+
+#define pCYAN_BLUE	10	// cyjan font, niebieskie tło
+#define pMAGENTA_BLUE	11	// magenta font, niebieskie tło
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xRED		"\x03\x01"
@@ -37,7 +40,7 @@
 
 // nadanie numerów w tablicy kanałom: "Status" i "Debug"
 #define CHAN_STATUS	0
-#define CHAN_DEBUG_IRC	CHAN_MAX	// - 1, bo liczymy od zera
+#define CHAN_DEBUG_IRC	CHAN_MAX
 
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
@@ -57,8 +60,6 @@ struct global_args
 
 	int chan_nr;
 
-	std::string msg_err;
-
 	std::string my_nick;
 	std::string my_password;
 	std::string zuousername;
@@ -71,8 +72,11 @@ struct channel_irc
 {
 	bool channel_ok;	// czy to kanał czata i czy można w nim pisać (czy np. nie wyrzucono z pokoju, mimo, że jest on pokazywany)
 
+	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
+
 	std::string win_buf;
 	std::string channel;
+	std::string topic;
 };
 
 // struktura nicka (każdego na czacie, ale nie własnego, który jest w global_args)

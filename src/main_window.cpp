@@ -36,6 +36,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
+	bool chan_act_ok = false;
+	short act_color;
 /*
 	Koniec zmiennych.
 */
@@ -71,6 +73,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	chan_parm[CHAN_STATUS] = new channel_irc;
 	chan_parm[ga.chan_nr]->channel_ok = false;	// w kanale "Status" nie można pisać tak jak w zwykłym pokoju czata
 	chan_parm[ga.chan_nr]->channel = "Status";	// nazwa kanału "Status"
+	chan_parm[ga.chan_nr]->chan_act = 0;
 
 	struct timeval tv;		// struktura dla select(), aby ustawić czas wychodzenia z oczekiwania na klawiaturę lub socket, aby pokazać czas
 
@@ -117,14 +120,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
 					xCYAN  "/quit lub /q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
 
-/*
-	Tymczasowe wskaźniki pomocnicze, usunąć po testach.
-*/
-	int ix = 0, iy = 0;
-/*
-	Koniec wskaźników pomocniczych.
-*/
-
 	// pętla główna programu
 	while(! ga.ucc_quit)
 	{
@@ -146,8 +141,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-		wattron_color(stdscr, ga.use_colors, pBLUE_WHITE);
-		attron(A_REVERSE);
+		wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
 
 		// pasek górny
 		move(0, 0);
@@ -164,21 +158,100 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		}
 
 /*
-		Tymczasowo pokazuj informacje pomocnicze, usunąć po testach (poza pokazywaniem czasu).
+	Informacje na pasku górnym.
 */
-		// wyświetl wymiary terminala
-		move(0, 0);
-		printw("term: %dx%d", term_x, term_y);
+		//move(0, 0);
+/*
+	Koniec informacji na pasku górnym.
+*/
 
+/*
+	Informacje na pasku dolnym.
+*/
 		move(term_y - 2, 0);
+
 		//pokaż aktualny czas
 		printw("%s", get_time().erase(0, 1).c_str());	// .erase(0, 1) - usuń kod \x17 (na paskach kody nie są obsługiwane)
-		// nr kanału i jego nazwa
-		printw("[%d: %s] ", ga.chan_nr + 1, chan_parm[ga.chan_nr]->channel.c_str());
 
-		printw("kbd+irc: %d, kbd: %d, irc: %d, socketfd_irc: %d", ix + iy, ix, iy, ga.socketfd_irc);
+		// nr kanału i jego nazwa
+		printw("[%d:%s] ", ga.chan_nr + 1, chan_parm[ga.chan_nr]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
+
+		// w aktywnym pokoju skasuj flagi aktywności
+		chan_parm[ga.chan_nr]->chan_act = 0;
+
+		// wyświetl aktywność kanałów
+		for(int i = 0; i < CHAN_MAX; ++i)
+		{
+			if(chan_parm[i])
+			{
+				// wykryj aktywność 3
+				if(chan_parm[i]->chan_act == 3)
+				{
+					act_color = pMAGENTA_BLUE;
+				}
+
+				// wykryj aktywność 2
+				else if(chan_parm[i]->chan_act == 2)
+				{
+					act_color = pWHITE_BLUE;
+				}
+
+				// wykryj aktywność 1
+				else if(chan_parm[i]->chan_act == 1)
+				{
+					act_color = pCYAN_BLUE;
+				}
+
+				// gdy była aktywność, wyświetl wynik
+				if(chan_parm[i]->chan_act > 0 && chan_parm[i]->chan_act <= 3)
+				{
+					if(! chan_act_ok)
+					{
+						printw("[Aktywność: ");
+
+						// numer pokoju w kolorze
+						wattron_color(stdscr, ga.use_colors, act_color);
+
+						if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
+						{
+							wattron(stdscr, A_BOLD);
+						}
+
+						printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
+
+						chan_act_ok = true;	// gdy napisano "Aktywność: ", nie dopisuj tego ponownie
+					}
+
+					else
+					{
+						printw(",");
+
+						// numer pokoju w kolorze
+						wattron_color(stdscr, ga.use_colors, act_color);
+
+						if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
+						{
+							wattron(stdscr, A_BOLD);
+						}
+
+						printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
+					}
+
+					// przywróć domyślny kolor paska bez bolda
+					wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
+					wattroff(stdscr, A_BOLD);
+				}
+			}
+		}
+
+		if(chan_act_ok)
+		{
+			printw("] ");
+		}
+
+		chan_act_ok = false;
 /*
-		Koniec informacji tymczasowych.
+	Koniec informacji na pasku dolnym.
 */
 
 		// wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
@@ -202,7 +275,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				delwin(ga.win_chat);
 				endwin();	// zakończ tryb ncurses
 				del_all_chan(chan_parm);
-				destroy_my_password(ga.my_password);
+				destroy_my_password(ga);
 				fclose(stdin);
 
 				return 3;
@@ -362,8 +435,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			}
 */
 
-			++ix;
-
 		}	// if(FD_ISSET(0, &readfds_tmp))
 
 		// gniazdo (socket), sprawdzaj tylko, gdy socket jest aktywny
@@ -381,8 +452,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				ga.socketfd_irc = 0;
 				ga.zuousername = "Niezalogowany";
 			}
-
-			++iy;
 		}
 
 	}	// while(! ga.ucc_quit)
@@ -398,7 +467,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	delwin(ga.win_chat);
 	endwin();	// zakończ tryb ncurses
 	del_all_chan(chan_parm);
-	destroy_my_password(ga.my_password);
+	destroy_my_password(ga);
 	fclose(stdin);
 
 	return 0;

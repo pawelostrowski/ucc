@@ -77,12 +77,13 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 	std::string buffer_irc_raw;
 	size_t pos_raw_start = 0, pos_raw_end = 0;
 	std::string raw_parm[6];
+	std::string msg_err;
 
 	// pobierz odpowiedź z serwera
-	if(! irc_recv(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, ga.msg_err))
+	if(! irc_recv(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, msg_err))
 	{
 		// w przypadku błędu pokaż, co się stało
-		add_show_win_buf(ga, chan_parm, ga.msg_err);
+		add_show_win_buf(ga, chan_parm, msg_err);
 	}
 
 	// jeśli serwer się rozłączył, zakończ, bo bufor wtedy będzie najprawdopodobniej pusty
@@ -216,10 +217,12 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 */
 void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PONG :" + raw_parm[1], ga.msg_err))
+	std::string msg_err;
+
+	if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PONG :" + raw_parm[1], msg_err))
 	{
 		// w przypadku błędu pokaż, co się stało
-		add_show_win_buf(ga, chan_parm, ga.msg_err);
+		add_show_win_buf(ga, chan_parm, msg_err);
 	}
 }
 
@@ -244,7 +247,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	else
 	{
 		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
-			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do pokoju " + raw_parm[3] + " Aby wejść, wpisz /join " + raw_parm[3]);
+			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[3]);
 	}
 }
 
@@ -281,20 +284,12 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// w przeciwnym razie wyświetl komunikat dla wejścia do pokoju
 	else
 	{
-/*
-		// jeśli to ja wchodzę do pokoju, komunikat będzie inny, niż jeśli ktoś wchodzi
-		if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* Wchodzisz do pokoju " + raw_parm[2]);
-		}
-
-		else
-		{
-*/
 			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_raw(buffer_irc_raw, ":", "!")
 					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
-//		}
 	}
+
+	// aktywność typu 1
+	add_act_chan(chan_parm, raw_parm[2], 1);
 }
 
 
@@ -305,43 +300,34 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	std::string buf_tmp;
+	std::string reason;
 
-	std::string reason = get_value_raw(buffer_irc_raw, raw_parm[3] + " :", "\n");
+	// jeśli podano powód, pobierz go z bufora (w raw_parm[4] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
+	if(raw_parm[4].size() > 0)
+	{
+		reason = " [Powód: " + get_value_raw(buffer_irc_raw, raw_parm[3] + " :", "\n") + "]";
+	}
 
 	// jeśli to mnie wyrzucono, pokaż inny komunikat
 	if(raw_parm[3] == ga.zuousername)
 	{
-		buf_tmp = xRED "* Zostajesz wyrzucony z pokoju " + raw_parm[2] + " przez " + get_value_raw(buffer_irc_raw, ":", "!")
-				+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "]";
-
-		// jeśli podano powód, dodaj go w nawiasie kwadratowym
-		if(reason.size() > 0)
-		{
-			buf_tmp += " [Powód: " + reason + "]";
-		}
-
-		// usuń też kanał z programu
+		// usuń kanał z programu
 		del_chan_chat(ga, chan_parm);
 
 		// powód wyrzucenia pokaż w kanale "Status"
-		add_show_win_buf(ga, chan_parm, buf_tmp);
+		add_show_win_buf(ga, chan_parm, xRED "* Zostajesz wyrzucony z pokoju " + raw_parm[2] + " przez "
+						+ get_value_raw(buffer_irc_raw, ":", "!") + reason);
 	}
 
 	else
 	{
-		buf_tmp = xRED "* " + raw_parm[3] + " zostaje wyrzucony z pokoju " + raw_parm[2] + " przez " + get_value_raw(buffer_irc_raw, ":", "!")
-				+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "]";
-
-		// jeśli podano powód, dodaj go w nawiasie kwadratowym
-		if(reason.size() > 0)
-		{
-			buf_tmp += " [Powód: " + reason + "]";
-		}
-
 		// wyświetl powód wyrzucenia w kanale, w którym wyrzucono nick
-		add_show_chan(ga, chan_parm, raw_parm[2], buf_tmp);
+		add_show_chan(ga, chan_parm, raw_parm[2], xRED "* " + raw_parm[3] + " zostaje wyrzucony z pokoju " + raw_parm[2] + " przez "
+						+ get_value_raw(buffer_irc_raw, ":", "!") + reason);
 	}
+
+	// aktywność typu 1
+	add_act_chan(chan_parm, raw_parm[2], 1);
 }
 
 
@@ -351,181 +337,185 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	:Kernel_Panic!78259658@87edcc.6bc2d5.9f815e.0d56cc MODE Kernel_Panic :+b
 	:zagubiona_miedzy_wierszami!80541395@87edcc.6f9b99.6bd006.aee4fc MODE zagubiona_miedzy_wierszami +W
 	:ChanServ!service@service.onet MODE #Towarzyski +b *!12345678@*
+	:ChanServ!service@service.onet MODE #Suwałki +b *!*@87edcc.6bc2d5.ee917f.54dae7
 	:ChanServ!service@service.onet MODE #ucc +h ucc_test
 	:ChanServ!service@service.onet MODE #ucc +qo ucieszony86 ucieszony86
+	:cf1f1.onet MODE #Suwałki +oq ucieszony86 ucieszony86
 	:ChanServ!service@service.onet MODE #ucc +eh *!76995189@* ucc_test
 	:NickServ!service@service.onet MODE ucc_test +r
 */
-// na razie bez rewelacji, pokazuj tylko zmiany kamerki oraz bany/owna/sopa/opa, potem dopisać dodawanie flag do list nicków, gdy już będą w programie
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	std::string chan_join;
 
-	// parametr czwarty musi istnieć i mieć przynajmniej dwa znaki, aby dalsze sprawdzanie miało sens
-	if(raw_parm[3].size() < 2)
+	std::string nick_mode;
+
+	// jeśli to typowy nick w stylu ChanServ!service@service.onet, to pobierz część przed !
+	if(raw_parm[0].find("!") != std::string::npos)
 	{
-		return;
+		nick_mode = get_value_raw(buffer_irc_raw, ":", "!");
 	}
 
-	bool flags_tmp = false;
-
-	if(raw_parm[3][1] == 'W')
+	// w przeciwnym razie (np. cf1f1.onet) pobierz całą część
+	else
 	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza publiczną kamerkę.");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza publiczną kamerkę.");
-
-			flags_tmp = true;
-		}
+		nick_mode = raw_parm[0];
 	}
 
-	if(raw_parm[3][1] == 'V')
+	for(int i = 1; i < static_cast<int>(raw_parm[3].size()); ++i)	// od 1, bo pomijamy +/-
 	{
-		if(raw_parm[3][0] == '+')
+		if(raw_parm[3][i] == 'W')
 		{
-			add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza prywatną kamerkę.");
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza publiczną kamerkę.");
+			}
 
-			flags_tmp = true;
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza publiczną kamerkę.");
+			}
 		}
 
-		else if(raw_parm[3][0] == '-')
+		else if(raw_parm[3][i] == 'V')
 		{
-			add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza prywatną kamerkę.");
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza prywatną kamerkę.");
+			}
 
-			flags_tmp = true;
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza prywatną kamerkę.");
+			}
 		}
-	}
 
-	// wykrycie bana można rozpoznać po # w trzecim parametrze RAW
-	if(raw_parm[3][1] == 'b' && raw_parm[2][0] == '#')
+		// wykrycie bana można rozpoznać po # w trzecim parametrze RAW
+		else if(raw_parm[3][i] == 'b' && raw_parm[2][0] == '#')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[i + 3] + " otrzymuje bana w pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[i + 3] + " nie posiada już bana w pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'q')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " jest teraz właścicielem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " nie jest już właścicielem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'o')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " jest teraz superoperatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " nie jest już superoperatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'h')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " jest teraz operatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " nie jest już operatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'e')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[i + 3] + " posiada teraz wyjątek od bana w pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[i + 3] + " nie posiada już wyjątku od bana w pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'v')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xBLUE "* " + raw_parm[i + 3] + " jest teraz gościem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xBLUE "* " + raw_parm[i + 3] + " nie jest już gościem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		else if(raw_parm[3][i] == 'X')
+		{
+			if(raw_parm[3][0] == '+')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " jest teraz moderatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+
+			else if(raw_parm[3][0] == '-')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[i + 3] + " nie jest już moderatorem pokoju "
+											+ raw_parm[2] + " (ustawia " + nick_mode + ")");
+			}
+		}
+
+		// niezaimplementowane RAW z MODE wyświetl bez z mian (z wyjątkiem zmian busy)
+		else
+		{
+			if(raw_parm[3][i] != 'b' && raw_parm[2][0] == '#')
+			{
+				add_show_chan(ga, chan_parm, raw_parm[2], xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1));	// usuń \n
+			}
+		}
+
+	}	// for(int i = 1; i < static_cast<int>(raw_parm[3].size()); ++i)
+
+	// pokaż aktywność pokoju (to trzeba jeszcze dopracować)
+	if(raw_parm[3][1] != 'b' && raw_parm[2][0] == '#')
 	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[4] + " dostaje bana w pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xTERMC "* " + raw_parm[4] + " nie ma już bana w pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	if(raw_parm[3][1] == 'q')
-	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " jest teraz właścicielem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " nie jest już właścicielem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	if(raw_parm[3].size() > 2 && raw_parm[3][2] == 'q')	// flaga 'q' może też być na kolejnej pozycji (gdy serwer zwróci 'oq', zamiast 'qo')
-	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[5] + " jest teraz właścicielem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[5] + " nie jest już właścicielem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	if(raw_parm[3][1] == 'o')
-	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " jest teraz superoperatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " nie jest już superoperatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	if(raw_parm[3].size() > 2 && raw_parm[3][2] == 'o')	// analogicznie jak z 'q'
-	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[5] + " jest teraz superoperatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[5] + " nie jest już superoperatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	if(raw_parm[3][1] == 'h')
-	{
-		if(raw_parm[3][0] == '+')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " jest teraz operatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-
-		else if(raw_parm[3][0] == '-')
-		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " nie jest już operatorem pokoju " + raw_parm[2]
-					+ " (ustawia " + get_value_raw(buffer_irc_raw, ":", "!") + " [" + get_value_raw(buffer_irc_raw, "!", " ") + "])");
-
-			flags_tmp = true;
-		}
-	}
-
-	// niezaimplementowane RAW z MODE wyświetl bez z mian (z wyjątkiem zmian busy)
-	if(raw_parm[3][1] != 'b' && raw_parm[2][0] == '#' && ! flags_tmp)
-	{
-		add_show_chan(ga, chan_parm, raw_parm[2], xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1));	// usuń \n
+		// aktywność typu 1
+		add_act_chan(chan_parm, raw_parm[2], 1);
 	}
 
 	// jeśli wylogowaliśmy się, ale nie zamknęliśmy programu i były otwarte jakieś pokoje, wejdź do nich ponownie po zalogowaniu,
@@ -549,12 +539,14 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 	}
 
+	std::string msg_err;
+
 	if(chan_join.size() > 0)
 	{
-		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + chan_join, ga.msg_err))
+		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + chan_join, msg_err))
 		{
 			// w przypadku błędu pokaż, co się stało
-			add_show_win_buf(ga, chan_parm, ga.msg_err);
+			add_show_win_buf(ga, chan_parm, msg_err);
 		}
 	}
 }
@@ -567,27 +559,52 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	:ucc_test!76995189@87edcc.6bc2d5.9f815e.0d56cc PART ^cf1f3561508
 	:ucc_test!76995189@87edcc.6bc2d5.9f815e.0d56cc PART ^cf1f1552723 :Koniec rozmowy
 */
-// gdy już będzie zapis logów, zmienić komunikaty, gdy opuszczam pokój lub priv, aby w logu ładnie wyglądało
 void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	std::string buf_tmp = xCYAN "* " + get_value_raw(buffer_irc_raw, ":", "!")
-				+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wychodzi z pokoju " + raw_parm[2];
+	std::string reason;
 
-	std::string reason = get_value_raw(buffer_irc_raw, "PART " + raw_parm[2] + " :", "\n");		// pobierz powód wyjścia (jeśli jest)
-
-	// jeśli podano powód, dodaj go w nawiasie kwadratowym
-	if(reason.size() > 0)
+	// jeśli podano powód, pobierz go z bufora (w raw_parm[3] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
+	if(raw_parm[3].size() > 0)
 	{
-		buf_tmp += " [" + reason + "]";
+		reason = " [Powód: " + get_value_raw(buffer_irc_raw, raw_parm[2] + " :", "\n") + "]";
 	}
 
-	add_show_chan(ga, chan_parm, raw_parm[2], buf_tmp);
+	// jeśli jest ^ (rozmowa prywatna), wyświetl odpowiedni komunikat
+	if(raw_parm[2].size() > 0 && raw_parm[2][0] == '^')
+	{
+		if(reason.size() == 0)
+		{
+			reason = ".";
+		}
+
+		//jeśli to ja opuszczam rozmowę prywatną, komunikat będzie inny, niż jeśli to ktoś opuszcza
+		if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
+		{
+			add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* Opuszczasz rozmowę prywatną" + reason);
+		}
+
+		else
+		{
+			add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_raw(buffer_irc_raw, ":", "!")
+					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] opuszcza rozmowę prywatną" + reason);
+		}
+	}
+
+	// w przeciwnym razie wyświetl komunikat dla wyjścia z pokoju
+	else
+	{
+		add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_raw(buffer_irc_raw, ":", "!")
+				+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wychodzi z pokoju " + raw_parm[2] + reason);
+	}
 
 	// jeśli to ja wychodzę, usuń kanał z programu
 	if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
 	{
 		del_chan_chat(ga, chan_parm);
 	}
+
+	// aktywność typu 1
+	add_act_chan(chan_parm, raw_parm[2], 1);
 }
 
 
@@ -598,13 +615,22 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	std::string form_start, form_end;
-	size_t nick_call = buffer_irc_raw.find(ga.my_nick);
+	size_t nick_call = buffer_irc_raw.find(ga.zuousername);
 
 	// jeśli ktoś mnie woła, pogrub jego nick i wyświetl w żółtym kolorze
 	if(nick_call != std::string::npos)
 	{
 		form_start = xYELLOW "" xBOLD_ON;
 		form_end = xTERMC "" xBOLD_OFF;
+
+		// gdy ktoś mnie woła, pokaż aktywność typu 3
+		add_act_chan(chan_parm, raw_parm[2], 3);
+	}
+
+	else
+	{
+		// gdy ktoś pisze, ale mnie nie woła, pokaż aktywność typu 2
+		add_act_chan(chan_parm, raw_parm[2], 2);
 	}
 
 	add_show_chan(ga, chan_parm, raw_parm[2], form_start + "<" + get_value_raw(buffer_irc_raw, ":", "!") + "> " + form_end

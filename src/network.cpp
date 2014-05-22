@@ -101,7 +101,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 
 char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                    long &offset_recv, std::string &msg_err_pre, std::string &msg_err)
+                    long &offset_recv, std::string &msg_err, std::string msg_dbg_http)
 {
 	if(method != "GET" && method != "POST")
 	{
@@ -283,19 +283,19 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 		if(bytes_sent <= -1)
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
+			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL].";
 			return NULL;
 		}
 		if(bytes_sent == 0)
 		{
 			close(socketfd);
-			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]";
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie [SSL].";
 			return NULL;
 		}
 		if(bytes_sent != static_cast<int>(data_send.size()))
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL].";
 			return NULL;
 		}
 
@@ -307,7 +307,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
+					msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL].";
 					return NULL;
 				}
 			}
@@ -317,7 +317,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 				buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
+					msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL].";
 					return NULL;
 				}
 			}
@@ -327,7 +327,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL]";
+				msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL].";
 				return NULL;
 			}
 
@@ -337,7 +337,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 				{
 					close(socketfd);
 					free(buffer_recv);
-					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]";
+					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL].";
 					return NULL;
 				}
 			}
@@ -450,7 +450,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 	file_dbg << "================================================================================\n";
 
-	file_dbg << msg_err_pre + "\n\n\n";
+	file_dbg << msg_dbg_http + "\n\n\n";
 
 	file_dbg << ">>> SENT (http" + s + "://" + host + stock + "):\n\n";
 
@@ -503,6 +503,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std:
 	DBG IRC START
 */
 	std::string data_sent = buffer_irc_send;
+	data_sent = buf_iso2utf(data_sent);	// zapis w UTF-8
 	std::fstream file_dbg;
 
 	while(data_sent.find("\r") != std::string::npos)
@@ -528,7 +529,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std:
 	{
 		close(socketfd_irc);
 		irc_ok = false;
-		msg_err = "# Nie udało się wysłać danych do serwera, rozłączono. [IRC]";
+		msg_err = "# Nie udało się wysłać danych do serwera, rozłączono [IRC].";
 		return false;
 	}
 
@@ -536,7 +537,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std:
 	{
 		close(socketfd_irc);
 		irc_ok = false;
-		msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie. [IRC]";
+		msg_err = "# Podczas próby wysłania danych serwer zakończył połączenie [IRC].";
 		return false;
 	}
 
@@ -544,7 +545,7 @@ bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std:
 	{
 		close(socketfd_irc);
 		irc_ok = false;
-		msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono. [IRC]";
+		msg_err = "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC].";
 		return false;
 	}
 
@@ -569,7 +570,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 	{
 		close(socketfd_irc);
 		irc_ok = false;
-		msg_err = "# Nie udało się pobrać danych z serwera, rozłączono. [IRC]";
+		msg_err = "# Nie udało się pobrać danych z serwera, rozłączono [IRC].";
 		return false;
 	}
 
@@ -577,7 +578,7 @@ bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std
 	{
 		close(socketfd_irc);
 		irc_ok = false;
-		msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie. [IRC]";
+		msg_err = "# Podczas próby pobrania danych serwer zakończył połączenie [IRC].";
 		return false;
 	}
 

@@ -38,7 +38,9 @@ bool check_colors()
 	init_pair(pCYAN, COLOR_CYAN, background_color);
 	init_pair(pWHITE, COLOR_WHITE, background_color);
 	init_pair(pTERMC, font_color, background_color);
-	init_pair(pBLUE_WHITE, COLOR_BLUE, COLOR_WHITE);
+	init_pair(pWHITE_BLUE, COLOR_WHITE, COLOR_BLUE);
+	init_pair(pCYAN_BLUE, COLOR_CYAN, COLOR_BLUE);
+	init_pair(pMAGENTA_BLUE, COLOR_MAGENTA, COLOR_BLUE);
 
 	return true;
 }
@@ -694,6 +696,24 @@ std::string onet_color_conv(std::string &onet_color)
 }
 
 
+void add_act_chan(struct channel_irc *chan_parm[], std::string chan_name, int act_type)
+{
+	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo w kanale "Debug" nie będzie wyświetlania aktywności
+	{
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		{
+			// nie zmieniaj aktywności na "niższą"
+			if(chan_parm[i]->chan_act < act_type)
+			{
+				chan_parm[i]->chan_act = act_type;
+			}
+
+			break;
+		}
+	}
+}
+
+
 void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool chan_ok)
 {
 	// kanał "Debug" zawsze pod ostatnim numerem
@@ -707,6 +727,9 @@ void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
 			chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";	// nazwa kanału "Debug"
 			chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można wysyłać wiadomości jak w kanale czata
+
+			// zacznij od braku aktywności kanału
+			chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;
 
 			// wyczyść okno
 			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
@@ -730,6 +753,9 @@ void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_parm[ga.chan_nr] = new channel_irc;
 			chan_parm[ga.chan_nr]->channel = chan_name;
 			chan_parm[ga.chan_nr]->channel_ok = chan_ok;	// true dla kanałów czata, false dla "Status"
+
+			// zacznij od braku aktywności kanału
+			chan_parm[ga.chan_nr]->chan_act = 0;
 
 			// wyczyść okno
 			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
@@ -828,12 +854,10 @@ void add_show_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 }
 
 
-void destroy_my_password(std::string &my_password)
+void destroy_my_password(struct global_args &ga)
 {
-	int my_password_len = my_password.size();
-
-	for(int i = 0; i < my_password_len; ++i)
+	for(int i = 0; i < static_cast<int>(ga.my_password.size()); ++i)
 	{
-		my_password[i] = '*';
+		ga.my_password[i] = '*';
 	}
 }
