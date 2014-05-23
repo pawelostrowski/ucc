@@ -1,9 +1,8 @@
 #include <sstream>		// std::string, std::stringstream
-#include <cstring>		// memcpy(), strlen()
 #include <ctime>		// czas
-#include <iconv.h>		// konwersja kodowania znaków
 
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "ucc_global.hpp"
 
 
@@ -79,50 +78,6 @@ std::string get_time()
 
 	time_hms_tmp << time_hms;
 	return time_hms_tmp.str();
-}
-
-
-std::string buf_utf2iso(std::string &buffer_str)
-{
-	char c_in[buffer_str.size() + 1];	// + 1 dla NULL
-	char c_out[buffer_str.size() + 1];	// + 1 dla NULL
-
-	memcpy(c_in, buffer_str.c_str(), buffer_str.size());
-	c_in[buffer_str.size()] = '\x00';
-
-	char *c_in_ptr = c_in;
-	size_t c_in_len = buffer_str.size() + 1;
-	char *c_out_ptr = c_out;
-	size_t c_out_len = buffer_str.size() + 1;
-
-	iconv_t cd = iconv_open("ISO-8859-2", "UTF-8");
-	iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
-	*c_out_ptr = '\x00';
-	iconv_close(cd);
-
-	return std::string(c_out);
-}
-
-
-std::string buf_iso2utf(std::string &buffer_str)
-{
-	char c_in[buffer_str.size() + 1];	// + 1 dla NULL
-	char c_out[buffer_str.size() * 6 + 1];	// przyjęto najgorszy możliwy przypadek, gdzie są same 6-bajtowe znaki po konwersji w UTF-8 + kod NULL
-
-	memcpy(c_in, buffer_str.c_str(), buffer_str.size());
-	c_in[buffer_str.size()] = '\x00';
-
-	char *c_in_ptr = c_in;
-	size_t c_in_len = buffer_str.size() + 1;
-	char *c_out_ptr = c_out;
-	size_t c_out_len = buffer_str.size() * 6 + 1;
-
-	iconv_t cd = iconv_open("UTF-8", "ISO-8859-2");
-	iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
-	*c_out_ptr = '\x00';
-	iconv_close(cd);
-
-	return std::string(c_out);
 }
 
 
@@ -338,44 +293,74 @@ std::string kbd_utf2iso(int key_code)
 {
 /*
 	Zamień znak (jeden) w UTF-8 na ISO-8859-2.
-	UWAGA - funkcja nie działa dla znaków więcej, niż 2-bajtowych oraz nie wykrywa nieprawidłowo wprowadzonych znaków!
 */
+
+	int utf_i = 0;
 
 	std::string key_code_tmp;	// tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
 
-	// iloczyn bitowy 11100000b do wykrycia 0xC0, oznaczającego znak w UTF-8
-	if((key_code & 0xe0) != 0xc0)		// wykrycie 0xC0 oznacza, że mamy znak UTF-8 dwubajtowy
+	key_code_tmp = key_code;	// wpisz do bufora tymczasowego pierwszy bajt znaku
+
+	// iloczyn bitowy 0xE0 (11100000b) do wykrycia 0xC0, oznaczającego 2-bajtowy znak w UTF-8
+	if((key_code & 0xE0) == 0xC0)
 	{
-		key_code_tmp = key_code;
-		return key_code_tmp;	// jeśli to nie UTF-8, wróć bez zmian we wprowadzonym kodzie
+		utf_i = 1;
 	}
 
-	char c_in[5];
-	char c_out[5];
+	// iloczyn bitowy 0xF0 (11110000b) do wykrycia 0xE0, oznaczającego 3-bajtowy znak w UTF-8
+	else if((key_code & 0xF0) == 0xE0)
+	{
+		utf_i = 2;
+	}
 
-	// wpisz bajt wejściowy oraz drugi bajt znaku
-	c_in[0] = key_code;
-	c_in[1] = getch();
-	c_in[2] = '\x00';		// NULL na końcu
+	// iloczyn bitowy 0xF8 (11111000b) do wykrycia 0xF0, oznaczającego 4-bajtowy znak w UTF-8
+	else if((key_code & 0xF8) == 0xF0)
+	{
+		utf_i = 3;
+	}
 
-	// dokonaj konwersji znaku (dwubajtowego) z UTF-8 na ISO-8859-2
-	char *c_in_ptr = c_in;
-	size_t c_in_len = strlen(c_in) + 1;
-	char *c_out_ptr = c_out;
-	size_t c_out_len = sizeof(c_out);
+	// iloczyn bitowy 0xFC (11111100b) do wykrycia 0xF8, oznaczającego 5-bajtowy znak w UTF-8
+	else if((key_code & 0xFC) == 0xF8)
+	{
+		utf_i = 4;
+	}
 
-	iconv_t cd = iconv_open("ISO-8859-2", "UTF-8");
-	iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
-	iconv_close(cd);
+	// iloczyn bitowy 0xFE (11111110b) do wykrycia 0xFC, oznaczającego 6-bajtowy znak w UTF-8
+	else if((key_code & 0xFE) == 0xFC)
+	{
+		utf_i = 5;
+	}
 
-	// po konwersji zakłada się, że znak w ISO-8859-2 ma jeden bajt (brak sprawdzania poprawności wprowadzanych znaków), zwróć ten znak
-	key_code_tmp = c_out[0];
+	// gdy to 1-bajtowy znak nie wymagający konwersji
+	else
+	{
+		return key_code_tmp;	// zwróć kod bez zmian
+	}
+
+	// dla znaków wielobajtowych w pętli pobierz resztę bajtów
+	for(int i = 0; i < utf_i; ++i)
+	{
+		key_code_tmp += getch();
+	}
+
+	// dokonaj konwersji z UTF-8 na ISO-8859-2
+	key_code_tmp = buf_utf2iso(key_code_tmp);
+
+	// gdy przekonwertowany znak nie istnieje (nie ma odpowiednika), co najczęściej da zerową ilość bajtów, zwróć w kodzie ASCII znak zapytania
+	if(key_code_tmp.size() != 1)
+	{
+		return "?";	// zwrócenie zerowej liczby bajtów spowodowałoby wywalenie się programu ze względu na pisanie poza bufor klawiatury
+	}
+
+	// natomiast gdy konwersja się udała, zwróć przekonwertowany znak w ISO-8859-2
 	return key_code_tmp;
 }
 
 
 void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos)
 {
+	// należy zauważyć, że operujemy na kopii bufora (brak referencji), bo funkcja ta modyfikuje (kopię) przed wyświetleniem
+
 	static int x = 0;
 	static int term_x_len = 0;
 	static int kbd_buf_len_prev = term_x;
@@ -441,26 +426,9 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 		}
 	}
 
-	// konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8
-	char c_in[kbd_buf.size() + zuousername.size() + 1 + 3];	// bufor + nick (+ 1 na NULL, + 3, bo nick objęty jest nawiasem oraz spacją za nawiasem)
-	char c_out[(kbd_buf.size() + zuousername.size()) * 6 + 1 + 3];	// przyjęto najgorszy możliwy przypadek, gdzie są same 6-bajtowe znaki
-
-	c_in[0] = '<';		// początek nawiasu przed nickiem
-	memcpy(c_in + 1, zuousername.c_str(), zuousername.size());	// dopisz nick z czata
-	c_in[zuousername.size() + 1] = '>';	// koniec nawiasu
-	c_in[zuousername.size() + 2] = ' ';	// spacja za nawiasem
-	memcpy(c_in + zuousername.size() + 3, kbd_buf.c_str(), kbd_buf.size());		// dopisz bufor klawiatury
-	c_in[kbd_buf.size() + zuousername.size() + 3] = '\x00';		// NULL na końcu
-
-	char *c_in_ptr = c_in;
-	size_t c_in_len = kbd_buf.size() + zuousername.size() + 1 + 3;
-	char *c_out_ptr = c_out;
-	size_t c_out_len = (kbd_buf.size() + zuousername.size()) * 6 + 1 + 3;
-
-	iconv_t cd = iconv_open("UTF-8", "ISO-8859-2");
-	iconv(cd, &c_in_ptr, &c_in_len, &c_out_ptr, &c_out_len);
-	*c_out_ptr = '\x00';
-	iconv_close(cd);
+	// konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8, aby prawidłowo wyświetlić w terminalu z kodowaniem UTF-8
+	kbd_buf.insert(0, "<" + zuousername + "> ");	// dodaj nick
+	kbd_buf = buf_iso2utf(kbd_buf);
 
 	// normalne atrybuty fontu
 	attrset(A_NORMAL);
@@ -469,10 +437,10 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 	move(term_y - 1, 0);
 
 	// wyświetl nick (z czata, nie ustawiony przez /nick) oraz zawartość przekonwertowanego bufora (w pętli ze względu na tabulator)
-	for(int i = 0; i < static_cast<int>(strlen(c_out)); ++i)
+	for(int i = 0; i < static_cast<int>(kbd_buf.size()); ++i)
 	{
-		// kod tabulatora wyświetl jako t o odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
-		if(c_out[i] == '\t')
+		// kod tabulatora wyświetl jako t w odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
+		if(kbd_buf[i] == '\t')
 		{
 			attrset(A_REVERSE);	// odwróć kolor tła
 			printw("t");
@@ -481,7 +449,7 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 		}
 
 		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-		printw("%c", c_out[i]);
+		printw("%c", kbd_buf[i]);
 	}
 
 	// pozostałe znaki w wierszu wykasuj

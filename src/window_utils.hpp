@@ -9,10 +9,6 @@ void wattron_color(WINDOW *win_chat, bool use_colors, short color_p);
 
 std::string get_time();
 
-std::string buf_utf2iso(std::string &buffer_str);
-
-std::string buf_iso2utf(std::string &buffer_str);
-
 void win_buf_common(struct global_args &ga, std::string &buffer_str, int pos_buf_str_start);
 
 void win_buf_refresh(struct global_args &ga, std::string &buffer_str);

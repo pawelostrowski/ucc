@@ -4,7 +4,8 @@
 #include <unistd.h>		// close() - socket
 
 #include "network.hpp"
-#include "window_utils.hpp"
+//#include "window_utils.hpp"
+#include "enc_str.hpp"
 
 #define BUF_SIZE (1500 * sizeof(char))
 

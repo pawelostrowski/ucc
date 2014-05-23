@@ -5,10 +5,13 @@
 
 #include "main_window.hpp"
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
 #include "auth.hpp"
 #include "ucc_global.hpp"
+
+#include <sstream>
 
 
 int main_window(bool use_colors_main, bool ucc_dbg_irc)
@@ -57,7 +60,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	ga.irc_ready = false;		// gotowość do połączenia z czatem, po połączeniu jest ustawiany na false
 	ga.irc_ok = false;		// stan połączenia z czatem
 
-	ga.zuousername = "Niezalogowany";
+	ga.zuousername = NICK_NOT_LOGGED;
 
 	ga.chan_nr = CHAN_STATUS;	// zacznij od kanału "Status" (zerowy element w tablicy kanałów)
 
@@ -177,8 +180,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		top_excess = 0;
 		for(int i = 0; i < static_cast<int>(topic_bar.size()) && i < term_x + top_excess; ++i)
 		{
-			// wykryj znaki wielobajtowe w UTF-8 (konkretnie 2B), aby zniwelować szerokość wyświetlania
-			if((topic_bar[i] & 0xe0) == 0xc0)
+			// wykryj znaki wielobajtowe w UTF-8 (konkretnie 2-bajtowe, wersja uproszczona, zakładająca, że nie będzie innych znaków),
+			// aby zniwelować szerokość wyświetlania
+			if((topic_bar[i] & 0xE0) == 0xC0)
 			{
 				++top_excess;
 			}
@@ -282,7 +286,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		// oraz ustaw kursor w obecnie przetwarzany znak
 		kbd_buf_show(kbd_buf, ga.zuousername, term_y, term_x, kbd_buf_pos);
 
-		// czekaj na aktywność klawiatury lub gniazda (socket)
+/*
+	Czekaj na aktywność klawiatury lub gniazda (socket).
+*/
 		if(select(ga.socketfd_irc + 1, &readfds_tmp, NULL, NULL, &tv) == -1)
 		{
 			// sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu
@@ -372,7 +378,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			{
 			}
 
-			// Alt Left
+			// Alt Left + (...)
 			else if(key_code == 0x1b)
 			{
 				// lewy Alt generuje też kod klawisza, z którym został wciśnięty (dla poniższych sprawdzeń), dlatego pobierz ten kod
@@ -466,11 +472,11 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 						FD_SET(ga.socketfd_irc, &readfds);		// gniazdo IRC (socket)
 					}
 
-					// gdy połączenie do IRC nie powiedzie się, wyzeruj socket i ustaw z powrotem nick w pasku wpisywania na Niezalogowany
+					// gdy połączenie do IRC nie powiedzie się, wyzeruj socket oraz przywróć nick na pasku na domyślny
 					else
 					{
 						ga.socketfd_irc = 0;
-						ga.zuousername = "Niezalogowany";
+						ga.zuousername = NICK_NOT_LOGGED;
 					}
 
 				}	// if(irc_ready)
@@ -484,7 +490,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
 			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
 			{
-				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2 (chodzi o polskie znaki)
+				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2
 				kbd_buf.insert(kbd_buf_pos, kbd_utf2iso(key_code));
 				++kbd_buf_pos;
 				++kbd_buf_max;
@@ -508,14 +514,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			// pobierz dane z serwera oraz zinterpretuj odpowiedź (obsłuż otrzymane dane)
 			irc_parser(ga, chan_parm);
 
-			// gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select(), wyzeruj socket oraz ustaw z powrotem nick
-			// w pasku wpisywania na Niezalogowany
+			// gdy serwer zakończy połączenie, usuń socketfd_irc z zestawu select(), wyzeruj socket oraz przywróć nick z czata na domyślny
 			if(! ga.irc_ok)
 			{
 				FD_CLR(ga.socketfd_irc, &readfds);
 				close(ga.socketfd_irc);
 				ga.socketfd_irc = 0;
-				ga.zuousername = "Niezalogowany";
+				ga.zuousername = NICK_NOT_LOGGED;
 			}
 		}
 

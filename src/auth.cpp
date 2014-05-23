@@ -6,6 +6,7 @@
 #include "auth.hpp"
 #include "network.hpp"
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "ucc_global.hpp"
 
 #define FILE_GIF "/tmp/ucc_captcha.gif"

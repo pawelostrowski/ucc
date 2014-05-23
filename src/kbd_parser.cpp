@@ -2,6 +2,7 @@
 
 #include "kbd_parser.hpp"
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "network.hpp"
 #include "auth.hpp"
 #include "ucc_global.hpp"

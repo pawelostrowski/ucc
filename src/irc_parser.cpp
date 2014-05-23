@@ -2,6 +2,7 @@
 
 #include "irc_parser.hpp"
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "network.hpp"
 #include "ucc_global.hpp"
 
@@ -34,20 +35,20 @@ std::string get_value_raw(std::string &buffer_irc_raw, std::string expr_before, 
 void get_raw_parm(std::string &buffer_irc_raw, std::string *raw_parm)
 {
 /*
-	Pobierz 6 pierwszych wartości między spacjami z RAW.
+	Pobierz 7 pierwszych wartości między spacjami z RAW (lub mniej, jeśli tyle nie ma w buforze).
 */
 
 	int buffer_irc_raw_len = buffer_irc_raw.size() - 1;	// bez kodu \n (musi być zawsze na końcu bufora)
 	int raw_nr = 0;
 
 	// wyczyść tablice
-	for(int i = 0; i < 6; ++i)	// 6 tablic
+	for(int i = 0; i < 7; ++i)	// 7 tablic
 	{
 		raw_parm[i].clear();	// 'i' odwołuje się do wskaźnika tablicy
 	}
 
 	// pobierz kolejne wartości do tablic
-	for(int i = 0; i < buffer_irc_raw_len && raw_nr < 6; ++i)
+	for(int i = 0; i < buffer_irc_raw_len && raw_nr < 7; ++i)
 	{
 		if(buffer_irc_raw[i] == ' ')
 		{
@@ -61,7 +62,7 @@ void get_raw_parm(std::string &buffer_irc_raw, std::string *raw_parm)
 	}
 
 	// jeśli w zwróconych wartościach jest dwukropek na początku, to go usuń
-	for(int i = 0; i < 6 && raw_parm[i].size() > 0; ++i)
+	for(int i = 0; i < 7 && raw_parm[i].size() > 0; ++i)
 	{
 		if(raw_parm[i][0] == ':')
 		{
@@ -76,7 +77,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 	std::string buffer_irc_recv;
 	std::string buffer_irc_raw;
 	size_t pos_raw_start = 0, pos_raw_end = 0;
-	std::string raw_parm[6];
+	std::string raw_parm[7];
 	std::string msg_err;
 
 	// pobierz odpowiedź z serwera
