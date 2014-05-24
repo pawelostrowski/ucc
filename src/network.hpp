@@ -11,8 +11,8 @@ int socket_init(std::string host, short port, std::string &msg_err);
 char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
 		    long &offset_recv, std::string &msg_err, std::string msg_dbg_http);
 
-bool irc_send(int &socketfd_irc, bool &irc_ok, std::string buffer_irc_send, std::string &msg_err);
+void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send);
 
-bool irc_recv(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err);
+void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_recv);
 
 #endif		// NETWORK_HPP

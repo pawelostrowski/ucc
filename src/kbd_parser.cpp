@@ -1,6 +1,5 @@
-#include <sstream>		// std::string, std::stringstream, .find(), .insert(), .size()
+#include <string>		// std::string
 
-#include "kbd_parser.hpp"
 #include "window_utils.hpp"
 #include "enc_str.hpp"
 #include "network.hpp"
@@ -167,8 +166,6 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	Prosty interpreter wpisywanych poleceń (zaczynających się od / na pierwszej pozycji).
 */
 
-	std::string msg_err;
-
 	// zapobiega wykonywaniu się reszty kodu, gdy w buforze nic nie ma
 	if(kbd_buf.size() == 0)
 	{
@@ -194,16 +191,10 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		}
 
 		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu
-				// tymczasowo funkcją form_from_chat() przekonwertować %% zanim nie zostanie napisana funkcja form_to_chat()
-				std::string kbd_buf_tmp = form_from_chat(kbd_buf);
-		add_show_win_buf(ga, chan_parm, xBOLD_ON "<" + buf_iso2utf(ga.zuousername) + "> " xBOLD_OFF + buf_iso2utf(kbd_buf_tmp));
+		add_show_win_buf(ga, chan_parm, xBOLD_ON "<" + buf_iso2utf(ga.zuousername) + "> " xBOLD_OFF + buf_iso2utf(kbd_buf));
 
 		// wyślij też komunikat do serwera IRC
-		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :" + kbd_buf, msg_err))
-		{
-			// w przypadku błędu pokaż co się stało
-			add_show_win_buf(ga, chan_parm, msg_err);
-		}
+		irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :" + kbd_buf);
 
 		return;		// gdy wpisano zwykły tekst, zakończ
 	}
@@ -219,7 +210,6 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	std::string f_arg;			// kolejne argumenty podane za poleceniem
 	std::string r_args;			// pozostałe argumentu lub argument od pozycji w pos_arg_start zwracane w rest_args()
 	std::string captcha, err_code;
-	std::stringstream http_status_str;	// użyty pośrednio do zamiany int na std::string
 
 	// pobierz wpisane polecenie
 	f_command_status = find_command(kbd_buf, f_command, f_command_org, pos_arg_start);
@@ -364,21 +354,13 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			// jeśli podano argument (tekst pożegnalny), wstaw go
 			if(rest_args(kbd_buf, pos_arg_start, r_args))
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT :" + r_args, msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "QUIT :" + r_args);
 			}
 
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT", msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "QUIT");
 			}
 		}
 
@@ -426,11 +408,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				f_arg.insert(0, "#");
 			}
 
-			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + f_arg, msg_err))
-			{
-				// w przypadku błędu pokaż co się stało
-				add_show_win_buf(ga, chan_parm, msg_err);
-			}
+			irc_send(ga, chan_parm, "JOIN " + f_arg);
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -461,12 +439,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 							+ buf_iso2utf(r_args));
 
 			// wyślij też komunikat do serwera IRC
-			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel)
-								   + " :\x01" + "ACTION " + r_args + "\x01", msg_err))
-			{
-				// w przypadku błędu pokaż co się stało
-				add_show_win_buf(ga, chan_parm, msg_err);
-			}
+			irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :\x01" + "ACTION " + r_args + "\x01");
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -496,11 +469,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				}
 
 				// wyślij komunikat do serwera IRC
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "NAMES " + f_arg, msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "NAMES " + f_arg);
 			}
 
 			// gdy nie podano sprawdź, czy pokój jest aktywny (bo /names dla "Status" lub "Debug" nie ma sensu)
@@ -508,11 +477,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			{
 				if(chan_parm[ga.chan_nr]->channel_ok)
 				{
-					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "NAMES " + buf_utf2iso(chan_parm[ga.chan_nr]->channel), msg_err))
-					{
-						// w przypadku błędu pokaż co się stało
-						add_show_win_buf(ga, chan_parm, msg_err);
-					}
+					irc_send(ga, chan_parm, "NAMES " + buf_utf2iso(chan_parm[ga.chan_nr]->channel));
 				}
 
 				else
@@ -613,22 +578,13 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				// jeśli podano powód wyjścia, wyślij go
 				if(rest_args(kbd_buf, pos_arg_start, r_args))
 				{
-					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel)
-										  + " :" + r_args, msg_err))
-					{
-						// w przypadku błędu pokaż co się stało
-						add_show_win_buf(ga, chan_parm, msg_err);
-					}
+					irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel) + " :" + r_args);
 				}
 
 				// w przeciwnym razie wyślij samo polecenie
 				else
 				{
-					if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel), msg_err))
-					{
-						// w przypadku błędu pokaż co się stało
-						add_show_win_buf(ga, chan_parm, msg_err);
-					}
+					irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.chan_nr]->channel));
 				}
 			}
 
@@ -665,11 +621,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			}
 
 			// wyślij polecenie do IRC
-			if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PRIV " + f_arg, msg_err))
-			{
-				// w przypadku błędu pokaż co się stało
-				add_show_win_buf(ga, chan_parm, msg_err);
-			}
+			irc_send(ga, chan_parm, "PRIV " + f_arg);
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -689,21 +641,13 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			// jeśli podano powód wyjścia, wyślij go
 			if(rest_args(kbd_buf, pos_arg_start, r_args))
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT :" + r_args, msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "QUIT :" + r_args);
 			}
 
 			// jeśli nie podano argumentu, wyślij samo polecenie
 			else
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "QUIT", msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "QUIT");
 			}
 		}
 
@@ -725,11 +669,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			}
 
 			// polecenie do IRC
-			if(! irc_send(ga.socketfd_irc, ga.irc_ok, r_args, msg_err))
-			{
-				// w przypadku błędu pokaż co się stało
-				add_show_win_buf(ga, chan_parm, msg_err);
-			}
+			irc_send(ga, chan_parm, r_args);
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -768,11 +708,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			}
 
 			// jeśli podano drugi argument (hasło), dopisz je
-			if(! irc_send(ga.socketfd_irc, ga.irc_ok, tmp_irc + f_arg, msg_err))
-			{
-				// w przypadku błędu pokaż co się stało
-				add_show_win_buf(ga, chan_parm, msg_err);
-			}
+			irc_send(ga, chan_parm, tmp_irc + f_arg);
 		}
 
 		// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -799,20 +735,12 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			// polecenie do IRC
 			if(f_command == "WHOIS")	// jeśli WHOIS
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "WHOIS " + f_arg + " " + f_arg, msg_err))	// 2x nick, aby pokazało idle
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "WHOIS " + f_arg + " " + f_arg);	// 2x nick, aby pokazało idle
 			}
 
 			else		// jeśli WHOWAS (nie ma innej możliwości, dlatego bez else if)
 			{
-				if(! irc_send(ga.socketfd_irc, ga.irc_ok, "WHOWAS " + f_arg, msg_err))
-				{
-					// w przypadku błędu pokaż co się stało
-					add_show_win_buf(ga, chan_parm, msg_err);
-				}
+				irc_send(ga, chan_parm, "WHOWAS " + f_arg);
 			}
 		}
 

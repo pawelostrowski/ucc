@@ -11,8 +11,6 @@
 #include "auth.hpp"
 #include "ucc_global.hpp"
 
-#include <sstream>
-
 
 int main_window(bool use_colors_main, bool ucc_dbg_irc)
 {
@@ -464,7 +462,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				if(ga.irc_ready)
 				{
 					// zaloguj do czata
-					irc_auth_all(ga, chan_parm);
+					irc_auth(ga, chan_parm);
 
 					// od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
 					if(ga.irc_ok)
@@ -475,7 +473,12 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					// gdy połączenie do IRC nie powiedzie się, wyzeruj socket oraz przywróć nick na pasku na domyślny
 					else
 					{
-						ga.socketfd_irc = 0;
+						if(ga.socketfd_irc > 0)
+						{
+							close(ga.socketfd_irc);
+							ga.socketfd_irc = 0;
+						}
+
 						ga.zuousername = NICK_NOT_LOGGED;
 					}
 
@@ -491,7 +494,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
 			{
 				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2
-				kbd_buf.insert(kbd_buf_pos, kbd_utf2iso(key_code));
+				kbd_buf.insert(kbd_buf_pos, key_utf2iso(key_code));
 				++kbd_buf_pos;
 				++kbd_buf_max;
 			}
@@ -518,8 +521,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			if(! ga.irc_ok)
 			{
 				FD_CLR(ga.socketfd_irc, &readfds);
-				close(ga.socketfd_irc);
-				ga.socketfd_irc = 0;
+
+				if(ga.socketfd_irc > 0)
+				{
+					close(ga.socketfd_irc);
+					ga.socketfd_irc = 0;
+				}
+
 				ga.zuousername = NICK_NOT_LOGGED;
 			}
 		}
@@ -529,7 +537,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 /*
 	Kończenie działania programu.
 */
-	if(ga.socketfd_irc > 0)	// jeśli podczas zamykania programu gniazdo IRC (socket) jest nadal otwarte (co nie powinno się zdarzyć), zamknij je
+	if(ga.socketfd_irc > 0)	// jeśli podczas zamykania programu gniazdo IRC (socket) jest nadal otwarte, zamknij je
 	{
 		close(ga.socketfd_irc);
 	}

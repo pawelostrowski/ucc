@@ -2,33 +2,39 @@
 
 #include "irc_parser.hpp"
 #include "window_utils.hpp"
+#include "form_conv.hpp"
 #include "enc_str.hpp"
 #include "network.hpp"
+#include "auth.hpp"
 #include "ucc_global.hpp"
 
 
-std::string get_value_raw(std::string &buffer_irc_raw, std::string expr_before, std::string expr_after)
+std::string get_value_from_buf(std::string buffer_str, std::string expr_before, std::string expr_after)
 {
+/*
+	Znajdź i pobierz wartość pomiędzy wyrażeniem początkowym i końcowym.
+*/
+
 	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
-	std::string value_raw;
+	std::string f_value_from_buf;
 
 	// znajdź pozycję początku szukanego wyrażenia
-	pos_expr_before = buffer_irc_raw.find(expr_before);
+	pos_expr_before = buffer_str.find(expr_before);
 
 	if(pos_expr_before != std::string::npos)
 	{
 		// znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
-		pos_expr_after = buffer_irc_raw.find(expr_after, pos_expr_before + expr_before.size());
+		pos_expr_after = buffer_str.find(expr_after, pos_expr_before + expr_before.size());
 
 		if(pos_expr_after != std::string::npos)
 		{
 			// wstaw szukaną wartość
-			value_raw.clear();	// wyczyść bufor szukanej wartości
-			value_raw.insert(0, buffer_irc_raw, pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
+			f_value_from_buf.insert(0, buffer_str, pos_expr_before + expr_before.size(),
+						pos_expr_after - pos_expr_before - expr_before.size());
 		}
 	}
 
-	return value_raw;	// zwróć szukaną wartość między wyrażeniami lub pusty bufor, gdy nie znaleziono początku lub końca
+	return f_value_from_buf;	// zwróć szukaną wartość między wyrażeniami lub pusty bufor, gdy nie znaleziono początku lub końca
 }
 
 
@@ -77,17 +83,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 	std::string buffer_irc_recv;
 	std::string buffer_irc_raw;
 	size_t pos_raw_start = 0, pos_raw_end = 0;
+
 	std::string raw_parm[7];
-	std::string msg_err;
+	int raw_numeric;
+	std::string raw_numeric_str;
+	bool raw_unknown;
 
 	// pobierz odpowiedź z serwera
-	if(! irc_recv(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, msg_err))
-	{
-		// w przypadku błędu pokaż, co się stało
-		add_show_win_buf(ga, chan_parm, msg_err);
-	}
+	irc_recv(ga, chan_parm, buffer_irc_recv);
 
-	// jeśli serwer się rozłączył, zakończ, bo bufor wtedy będzie najprawdopodobniej pusty
+	// w przypadku błędu podczas pobierania danych zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -113,7 +118,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			return;		// POPRAWIĆ TO WYCHODZENIE!!!
 		}
 
-		// wstaw aktualnie obsługiwany wiersz (raw)
+		// wstaw aktualnie obsługiwany wiersz (RAW)
 		buffer_irc_raw.clear();
 		buffer_irc_raw.insert(0, buffer_irc_recv, pos_raw_start, pos_raw_end - pos_raw_start + 1);
 
@@ -123,9 +128,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 		// pobierz parametry RAW, aby wykryć dalej, jaki to rodzaj RAW
 		get_raw_parm(buffer_irc_raw, raw_parm);
 
+		// dla RAW numerycznych zamień string na int
+		raw_numeric_str = "0";			// zabezpieczenie się przed próbą zabronionej konwersji znaków innych niż cyfry na początku
+		raw_numeric_str += raw_parm[1];		// dołącz parametr drugi
+		raw_numeric = std::stol(raw_numeric_str);	// std::string na int
+
 /*
-	Zależnie od rodzaju RAW, wywołaj odpowiednią funkcję.
+	Zależnie od rodzaju RAW wywołaj odpowiednią funkcję.
 */
+		raw_unknown = false;
+
 		if(raw_parm[0] == "ERROR")
 		{
 			raw_error(ga, chan_parm, buffer_irc_raw);
@@ -171,8 +183,118 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_quit(ga, chan_parm, buffer_irc_raw);
 		}
 
-		// nieznany lub niezaimplementowany jeszcze RAW
+		else if(raw_parm[1] == "TOPIC")
+		{
+			raw_topic(ga, chan_parm, raw_parm, buffer_irc_raw);
+		}
+
+		// RAW numeryczne zwykłe (nie z NOTICE)
+		else if(raw_numeric)
+		{
+			switch(raw_numeric)
+			{
+			case 001:
+				raw_001();
+				break;
+
+			case 002:
+				raw_002();
+				break;
+
+			case 003:
+				raw_003();
+				break;
+
+			case 004:
+				raw_004();
+				break;
+
+			case 005:
+				raw_005();
+				break;
+
+			case 251:
+				raw_251();
+				break;
+
+			case 252:
+				raw_252();
+				break;
+
+			case 253:
+				raw_253();
+				break;
+
+			case 254:
+				raw_254();
+				break;
+
+			case 255:
+				raw_255();
+				break;
+
+			case 265:
+				raw_265();
+				break;
+
+			case 266:
+				raw_266();
+				break;
+
+			case 332:
+				raw_332(ga, chan_parm, raw_parm, buffer_irc_raw);
+				break;
+
+			case 366:
+				raw_366();
+				break;
+
+			case 372:
+				raw_372(ga, buffer_irc_raw);
+				break;
+
+			case 375:
+				raw_375(ga);
+				break;
+
+			case 376:
+				raw_376(ga, chan_parm);
+				break;
+
+			case 801:
+				raw_801(ga, chan_parm, raw_parm);
+				break;
+
+			// nieznany lub niezaimplementowany jeszcze RAW numeryczny
+			default:
+				raw_unknown = true;
+			}
+
+		}	// else if(raw_num)
+
+		// NOTICE ma specjalne znaczenie, bo może również zawierać RAW numeryczny
+		else if(raw_parm[1] == "NOTICE")
+		{
+			if(raw_parm[2] == "Auth")
+			{
+				raw_notice_auth(ga, chan_parm, buffer_irc_raw);
+			}
+
+			// nieznany lub niezaimplementowany jeszcze RAW NOTICE
+			else
+			{
+				raw_unknown = true;
+			}
+		}
+
+		// nieznany lub niezaimplementowany jeszcze RAW literowy
 		else
+		{
+			raw_unknown = true;
+		}
+
+		// jeśli były nieznane lub niezaimplementowane RAW (każdego typu), to je wyświetl
+		if(raw_unknown)
 		{
 			if(raw_parm[3] == "=")
 			{
@@ -208,7 +330,7 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 	ga.irc_ok = false;
 
 	// wyświetl komunikat
-	add_show_win_buf(ga, chan_parm, xYELLOW "* " + get_value_raw(buffer_irc_raw, "ERROR :", "\n") + "\n" xRED "# Rozłączono.");
+	add_show_win_buf(ga, chan_parm, xYELLOW "* " + get_value_from_buf(buffer_irc_raw, "ERROR :", "\n") + "\n" xRED "# Rozłączono.");
 }
 
 
@@ -218,13 +340,8 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 */
 void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	std::string msg_err;
-
-	if(! irc_send(ga.socketfd_irc, ga.irc_ok, "PONG :" + raw_parm[1], msg_err))
-	{
-		// w przypadku błędu pokaż, co się stało
-		add_show_win_buf(ga, chan_parm, msg_err);
-	}
+	// odpowiedz PONG na PING
+	irc_send(ga, chan_parm, "PONG :" + raw_parm[1]);
 }
 
 
@@ -241,14 +358,15 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 {
 	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
 	{
-		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
-			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
+		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] zaprasza do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
 	}
 
 	else
 	{
-		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_raw(buffer_irc_raw, ":", "!")
-			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] zaprasza do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[3]);
+		add_show_win_buf(ga, chan_parm, xYELLOW "" xBOLD_ON "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] zaprasza do pokoju " + raw_parm[3]
+			+ ", aby wejść, wpisz /join " + raw_parm[3]);
 	}
 }
 
@@ -261,7 +379,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	// jeśli to ja wchodzę, utwórz nowy kanał
-	if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
+	if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
 	{
 		new_chan(ga, chan_parm, raw_parm[2], true);
 	}
@@ -270,23 +388,23 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	if(raw_parm[2].size() > 0 && raw_parm[2][0] == '^')
 	{
 		// jeśli to ja dołączam do rozmowy prywatnej, komunikat będzie inny, niż jeśli to ktoś dołącza
-		if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
+		if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
 		{
 			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* Dołączasz do rozmowy prywatnej.");
 		}
 
 		else
 		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] dołącza do rozmowy prywatnej.");
+			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+					+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] dołącza do rozmowy prywatnej.");
 		}
 	}
 
 	// w przeciwnym razie wyświetl komunikat dla wejścia do pokoju
 	else
 	{
-			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
+			add_show_chan(ga, chan_parm, raw_parm[2], xGREEN "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+					+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
 	}
 
 	// aktywność typu 1
@@ -306,7 +424,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// jeśli podano powód, pobierz go z bufora (w raw_parm[4] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
 	if(raw_parm[4].size() > 0)
 	{
-		reason = " [Powód: " + get_value_raw(buffer_irc_raw, raw_parm[3] + " :", "\n") + "]";
+		reason = " [Powód: " + get_value_from_buf(buffer_irc_raw, raw_parm[3] + " :", "\n") + "]";
 	}
 
 	// jeśli to mnie wyrzucono, pokaż inny komunikat
@@ -317,14 +435,14 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 		// powód wyrzucenia pokaż w kanale "Status"
 		add_show_win_buf(ga, chan_parm, xRED "* Zostajesz wyrzucony z pokoju " + raw_parm[2] + " przez "
-						+ get_value_raw(buffer_irc_raw, ":", "!") + reason);
+						+ get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
 	}
 
 	else
 	{
 		// wyświetl powód wyrzucenia w kanale, w którym wyrzucono nick
 		add_show_chan(ga, chan_parm, raw_parm[2], xRED "* " + raw_parm[3] + " zostaje wyrzucony z pokoju " + raw_parm[2] + " przez "
-						+ get_value_raw(buffer_irc_raw, ":", "!") + reason);
+						+ get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
 	}
 
 	// aktywność typu 1
@@ -354,7 +472,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// jeśli to typowy nick w stylu ChanServ!service@service.onet, to pobierz część przed !
 	if(raw_parm[0].find("!") != std::string::npos)
 	{
-		nick_mode = get_value_raw(buffer_irc_raw, ":", "!");
+		nick_mode = get_value_from_buf(buffer_irc_raw, ":", "!");
 	}
 
 	// w przeciwnym razie (np. cf1f1.onet) pobierz całą część
@@ -369,14 +487,14 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		{
 			if(raw_parm[3][0] == '+')
 			{
-				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza publiczną kamerkę.");
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] włącza publiczną kamerkę.");
 			}
 
 			else if(raw_parm[3][0] == '-')
 			{
-				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza publiczną kamerkę.");
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wyłącza publiczną kamerkę.");
 			}
 		}
 
@@ -384,14 +502,14 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		{
 			if(raw_parm[3][0] == '+')
 			{
-				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] włącza prywatną kamerkę.");
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] włącza prywatną kamerkę.");
 			}
 
 			else if(raw_parm[3][0] == '-')
 			{
-				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_raw(buffer_irc_raw, ":", "!")
-						+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wyłącza prywatną kamerkę.");
+				add_show_win_buf(ga, chan_parm, xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+						+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wyłącza prywatną kamerkę.");
 			}
 		}
 
@@ -544,11 +662,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 	if(chan_join.size() > 0)
 	{
-		if(! irc_send(ga.socketfd_irc, ga.irc_ok, "JOIN " + buf_utf2iso(chan_join), msg_err))
-		{
-			// w przypadku błędu pokaż, co się stało
-			add_show_win_buf(ga, chan_parm, msg_err);
-		}
+		irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chan_join));
 	}
 }
 
@@ -567,7 +681,7 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// jeśli podano powód, pobierz go z bufora (w raw_parm[3] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
 	if(raw_parm[3].size() > 0)
 	{
-		reason = " [Powód: " + get_value_raw(buffer_irc_raw, raw_parm[2] + " :", "\n") + "]";
+		reason = " [Powód: " + get_value_from_buf(buffer_irc_raw, raw_parm[2] + " :", "\n") + "]";
 	}
 
 	// jeśli jest ^ (rozmowa prywatna), wyświetl odpowiedni komunikat
@@ -579,27 +693,27 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 
 		//jeśli to ja opuszczam rozmowę prywatną, komunikat będzie inny, niż jeśli to ktoś opuszcza
-		if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
+		if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
 		{
 			add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* Opuszczasz rozmowę prywatną" + reason);
 		}
 
 		else
 		{
-			add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_raw(buffer_irc_raw, ":", "!")
-					+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] opuszcza rozmowę prywatną" + reason);
+			add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+					+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] opuszcza rozmowę prywatną" + reason);
 		}
 	}
 
 	// w przeciwnym razie wyświetl komunikat dla wyjścia z pokoju
 	else
 	{
-		add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_raw(buffer_irc_raw, ":", "!")
-				+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wychodzi z pokoju " + raw_parm[2] + reason);
+		add_show_chan(ga, chan_parm, raw_parm[2], xCYAN "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wychodzi z pokoju " + raw_parm[2] + reason);
 	}
 
 	// jeśli to ja wychodzę, usuń kanał z programu
-	if(get_value_raw(buffer_irc_raw, ":", "!") == ga.zuousername)
+	if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
 	{
 		del_chan_chat(ga, chan_parm);
 	}
@@ -634,8 +748,8 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::s
 		add_act_chan(chan_parm, raw_parm[2], 2);
 	}
 
-	add_show_chan(ga, chan_parm, raw_parm[2], form_start + "<" + get_value_raw(buffer_irc_raw, ":", "!") + "> " + form_end
-					+ get_value_raw(buffer_irc_raw, raw_parm[2] + " :", "\n"));
+	add_show_chan(ga, chan_parm, raw_parm[2], form_start + "<" + get_value_from_buf(buffer_irc_raw, ":", "!") + "> " + form_end
+					+ get_value_from_buf(buffer_irc_raw, raw_parm[2] + " :", "\n"));
 }
 
 
@@ -646,11 +760,266 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::s
 */
 void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw)
 {
-	add_show_win_buf(ga, chan_parm, xYELLOW "* " + get_value_raw(buffer_irc_raw, ":", "!")
-			+ " [" + get_value_raw(buffer_irc_raw, "!", " ") + "] wychodzi z czata [" + get_value_raw(buffer_irc_raw, "QUIT :", "\n") + "]");
+	add_show_win_buf(ga, chan_parm, xYELLOW "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wychodzi z czata [" + get_value_from_buf(buffer_irc_raw, "QUIT :", "\n") + "]");
 }
 
 
 /*
-	RAWy z liczbami, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności numerycznej).
+	TOPIC
+	:ucc_test!76995189@87edcc.30c29e.b9c507.d5c6b7 TOPIC #ucc :nowy temat
 */
+void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	add_show_win_buf(ga, chan_parm, xMAGENTA "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] ustawia nowy temat pokoju " + raw_parm[2]
+			+ " (" + get_value_from_buf(buffer_irc_raw, raw_parm[2] + " :", "\n") + ")");
+
+	// wpisz temat również do bufora tematu kanału, aby wyświetlić go na górnym pasku (reszta jest identyczna jak w obsłudze RAW 332,
+	// trzeba tylko przestawić parametry w raw_parm)
+	raw_parm[3] = raw_parm[2];	// przesuń nazwę pokoju, reszta parametrów w raw_parm dla raw_332() nie jest istotna
+	raw_332(ga, chan_parm, raw_parm, buffer_irc_raw);
+}
+
+
+/*
+	Poniżej obsługa RAW z liczbami, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności numerycznej).
+*/
+
+/*
+	001
+	:cf1f2.onet 001 ucc_test :Welcome to the OnetCzat IRC Network ucc_test!76995189@acvy210.neoplus.adsl.tpnet.pl
+*/
+void raw_001()
+{
+}
+
+
+/*
+	002
+	:cf1f2.onet 002 ucc_test :Your host is cf1f2.onet, running version InspIRCd-1.1
+*/
+void raw_002()
+{
+}
+
+
+/*
+	003
+	:cf1f2.onet 003 ucc_test :This server was created 02:35:04 Feb 16 2011
+*/
+void raw_003()
+{
+}
+
+
+/*
+	004
+	:cf1f2.onet 004 ucc_test cf1f2.onet InspIRCd-1.1 BOQRVWbinoqrswx DFIKMRVXYabcehiklmnopqrstuv FIXYabcehkloqv
+*/
+void raw_004()
+{
+}
+
+
+/*
+	005
+	:cf1f2.onet 005 ucc_test WALLCHOPS WALLVOICES MODES=19 CHANTYPES=^# PREFIX=(qaohXYv)`&@%!=+ MAP MAXCHANNELS=20 MAXBANS=60 VBANLIST NICKLEN=32 CASEMAPPING=rfc1459 STATUSMSG=@%+ CHARSET=ascii :are supported by this server
+	:cf1f2.onet 005 ucc_test TOPICLEN=203 KICKLEN=255 MAXTARGETS=20 AWAYLEN=200 CHANMODES=Ibe,k,Fcl,DKMRVimnprstu FNC NETWORK=OnetCzat MAXPARA=32 ELIST=MU OVERRIDE ONETNAMESX INVEX=I EXCEPTS=e :are supported by this server
+	:cf1f2.onet 005 ucc_test INVIGNORE=100 USERIP ESILENCE SILENCE=100 WATCH=200 NAMESX :are supported by this server
+*/
+void raw_005()
+{
+}
+
+
+/*
+	251
+	:cf1f2.onet 251 ucc_test :There are 1933 users and 5 invisible on 10 servers
+*/
+void raw_251()
+{
+}
+
+
+/*
+	252
+	:cf1f2.onet 252 ucc_test 8 :operator(s) online
+*/
+void raw_252()
+{
+}
+
+
+/*
+	253
+	:cf1f1.onet 253 ucc_test 1 :unknown connections
+*/
+void raw_253()
+{
+}
+
+
+/*
+	254
+	:cf1f2.onet 254 ucc_test 2422 :channels formed
+*/
+void raw_254()
+{
+}
+
+
+/*
+	255
+	:cf1f2.onet 255 ucc_test :I have 478 clients and 1 servers
+*/
+void raw_255()
+{
+}
+
+
+/*
+	265
+	:cf1f2.onet 265 ucc_test :Current Local Users: 478  Max: 619
+*/
+void raw_265()
+{
+}
+
+
+/*
+	266
+	:cf1f2.onet 266 ucc_test :Current Global Users: 1938  Max: 2487
+*/
+void raw_266()
+{
+}
+
+
+/*
+	332 (temat pokoju)
+	:cf1f3.onet 332 ucc_test #ucc :Ucieszony Chat Client
+*/
+void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	int topic_chan = -1;
+
+	for(int i = 1; i < CHAN_MAX; ++i)
+	{
+		if(chan_parm[i] && chan_parm[i]->channel == raw_parm[3])	// znajdź kanał, do którego należy temat
+		{
+			topic_chan = i;
+		}
+	}
+
+	if(topic_chan == -1)
+	{
+		return;
+	}
+
+	std::string topic_tmp1 = get_value_from_buf(buffer_irc_raw, raw_parm[3] + " :", "\n");
+	std::string topic_tmp2;
+
+	// usuń z tematu formatowanie fontu i kolorów (na pasku nie jest obsługiwane)
+	for(int i = 0; i < static_cast<int>(topic_tmp1.size()); ++i)
+	{
+		if(topic_tmp1[i] == '\x03')
+		{
+			++i;
+			continue;
+		}
+
+		else if(topic_tmp1[i] == '\x04' || topic_tmp1[i] == '\x05' || topic_tmp1[i] == '\x11' || topic_tmp1[i] == '\x12'
+			|| topic_tmp1[i] == '\x13' || topic_tmp1[i] == '\x14' || topic_tmp1[i] == '\x17')
+		{
+                        continue;
+		}
+
+		topic_tmp2 += topic_tmp1[i];
+	}
+
+	chan_parm[topic_chan]->topic = topic_tmp2;
+}
+
+
+/*
+	366
+	:cf1f4.onet 366 ucc_test #ucc :End of /NAMES list.
+*/
+void raw_366()
+{
+}
+
+
+/*
+	372 (wiadomość dnia)
+	:cf1f2.onet 372 ucc_test :- Onet Czat. Inny Wymiar Czatowania. Witamy!
+	:cf1f2.onet 372 ucc_test :- UWAGA - Nie daj się oszukać! Zanim wyślesz jakikolwiek SMS, zapoznaj się z filmem: http://www.youtube.com/watch?v=4skUNAyIN_c
+	:cf1f2.onet 372 ucc_test :-
+*/
+void raw_372(struct global_args &ga, std::string &buffer_irc_raw)
+{
+	// dopisz wiadomość dnia, którą zwrócił serwer
+	ga.message_day += "\n" xYELLOW + get_value_from_buf(buffer_irc_raw, " :", "\n");
+}
+
+
+/*
+	375
+	:cf1f2.onet 375 ucc_test :cf1f2.onet message of the day
+*/
+void raw_375(struct global_args &ga)
+{
+	// RAW 375 to zapoczątkowanie wiadomości dnia, dlatego wyczyść bufor i wpisz początek (sama wiadomość zostanie dopisana w RAW 372)
+	ga.message_day = xYELLOW "* Wiadomość dnia:";
+}
+
+
+/*
+	376
+	:cf1f2.onet 376 ucc_test :End of message of the day.
+*/
+void raw_376(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	// RAW ten informuje o końcu wiadomości dnia, można ją wyświetlić
+	add_show_chan(ga, chan_parm, "Status", ga.message_day);
+}
+
+
+/*
+	801 (authKey)
+	:cf1f4.onet 801 ucc_test :<authKey>
+*/
+void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	std::string msg_err;
+	std::string authkey = raw_parm[3];
+
+	// konwersja authKey na nowy_authKey
+	auth_code(authkey);
+
+	if(authkey.size() == 0)
+	{
+		ga.irc_ok = false;
+		add_show_win_buf(ga, chan_parm, xRED "# authKey nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?).");
+		return;
+	}
+
+	// wyślij:
+	// AUTHKEY <nowy_authKey>
+	irc_send(ga, chan_parm, "AUTHKEY " + authkey);
+}
+
+
+/*
+	Poniżej obsługa RAW NOTICE bez liczb.
+*/
+
+/*
+	NOTICE Auth
+	:cf1f4.onet NOTICE Auth :*** Looking up your hostname...
+*/
+void raw_notice_auth(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw)
+{
+	add_show_chan(ga, chan_parm, "Status", "* Server: " + get_value_from_buf(buffer_irc_raw, "Auth :", "\n"));
+}

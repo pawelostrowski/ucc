@@ -1,6 +1,8 @@
 #ifndef UCC_GLOBAL_HPP
 #define UCC_GLOBAL_HPP
 
+#include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8 (w tym miejscu dodano ze względu na WINDOW)
+
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define pRED		1
 #define pGREEN		2
@@ -65,6 +67,8 @@ struct global_args
 	std::string zuousername;
 	std::string uokey;
 	std::string cookies;
+
+	std::string message_day;
 };
 
 // struktura kanału

@@ -1,15 +1,13 @@
-#include <cstring>		// memcpy()
-#include <sstream>		// std::string, std::stringstream
-#include <fstream>		// std::ofstream
-#include <cstdlib>		// system()
+#include <cstring>		// memcpy(), strstr()
+#include <fstream>		// std::string, std::ofstream
+
+// -std=gnu++11 - free(), system(), std::to_string()
 
 #include "auth.hpp"
 #include "network.hpp"
+#include "irc_parser.hpp"
 #include "window_utils.hpp"
-#include "enc_str.hpp"
 #include "ucc_global.hpp"
-
-#define FILE_GIF "/tmp/ucc_captcha.gif"
 
 
 void auth_code(std::string &authkey)
@@ -81,38 +79,15 @@ void auth_code(std::string &authkey)
 		ai[i] = f3[ai[i] + i];
 	}
 
+	authkey.clear();
+
 	for(int i = 0; i < 16; ++i)
 	{
 		c = ai[i];
 		// ASCII:    \n         $        =        7        0
 		ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
-		authkey[i] = ai[i];	// char na std::string (po jednym znaku)
+		authkey += ai[i];	// char na std::string (po jednym znaku)
 	}
-}
-
-
-int find_value(char *buffer_recv, std::string expr_before, std::string expr_after, std::string &f_value)
-{
-	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
-
-	pos_expr_before = std::string(buffer_recv).find(expr_before);	// znajdź pozycję początku szukanego wyrażenia
-	if(pos_expr_before == std::string::npos)
-	{
-		return 1;	// kod błędu, gdy nie znaleziono początku szukanego wyrażenia
-	}
-
-	// znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
-	pos_expr_after = std::string(buffer_recv).find(expr_after, pos_expr_before + expr_before.size());
-	if(pos_expr_after == std::string::npos)
-	{
-		return 2;	// kod błędu, gdy nie znaleziono końca szukanego wyrażenia
-	}
-
-	// wstaw szukaną wartość
-	f_value.clear();	// wyczyść bufor szukanej wartości
-	f_value.insert(0, std::string(buffer_recv), pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
-
-	return 0;
 }
 
 
@@ -131,6 +106,7 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
 					ga.cookies, true, offset_recv, msg_err, "[init]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# init: " + msg_err);
@@ -154,10 +130,10 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	char *buffer_recv;
 	char *buffer_gif_ptr;
 	int system_status;
-	std::stringstream system_status_str;
 	std::string msg_err;
 
 	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "[getCaptcha]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getCaptcha: " + msg_err);
@@ -166,6 +142,7 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	// daj wskaźnik na początek obrazka
 	buffer_gif_ptr = strstr(buffer_recv, "GIF");
+
 	if(buffer_gif_ptr == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
@@ -175,9 +152,10 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	// zapisz obrazek z captcha na dysku
 	std::ofstream file_gif(FILE_GIF, std::ios::binary);
+
 	if(file_gif == NULL)
 	{
-		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się zapisać obrazka z kodem do przepisania ("FILE_GIF"), sprawdź uprawnienia do zapisu.");
+		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się zapisać obrazka z kodem do przepisania (" FILE_GIF "), sprawdź uprawnienia do zapisu.");
 		free(buffer_recv);
 		return false;
 	}
@@ -191,11 +169,12 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	free(buffer_recv);
 
 	// wyświetl obrazek z kodem do przepisania
-	system_status = system("/usr/bin/eog "FILE_GIF" 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+	system_status = system("/usr/bin/eog " FILE_GIF " 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
+
 	if(system_status != 0)
 	{
-		system_status_str << system_status;
-		add_show_win_buf(ga, chan_parm, xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + system_status_str.str());
+		add_show_win_buf(ga, chan_parm, xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: "
+						+ std::to_string(system_status));
 		return false;
 	}
 
@@ -215,6 +194,7 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 	std::string msg_err;
 
 	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "[getSk]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getSk: " + msg_err);
@@ -237,6 +217,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 				    "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
 				     ga.cookies, false, offset_recv, msg_err, "[checkCode]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# checkCode: " + msg_err);
@@ -245,7 +226,9 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	// sprawdź, czy wpisany kod jest prawidłowy (wg odpowiedzi serwera: TRUE lub FALSE),
 	// czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
-	if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
+	err_code = get_value_from_buf(std::string(buffer_recv), "err_code=\"", "\"");
+
+	if(err_code.size() == 0)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# checkCode: Serwer nie zwrócił err_code.");
 		free(buffer_recv);
@@ -285,6 +268,7 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 	buffer_recv = http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
 				    "r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
 				     ga.cookies, true, offset_recv, msg_err, "[mLogin]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# mLogin: " + msg_err);
@@ -306,14 +290,12 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 
 	long offset_recv;
 	char *buffer_recv;
-	std::stringstream my_nick_len;
 	std::string msg_err;
 
-	my_nick_len << ga.my_nick.size();
-
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + my_nick_len.str() + ":\"" + ga.my_nick + "\";}",
+				    "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size()) + ":\"" + ga.my_nick + "\";}",
 				     ga.cookies, false, offset_recv, msg_err, "[userOverride]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# userOverride: " + msg_err);
@@ -330,7 +312,6 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	long offset_recv;
 	char *buffer_recv;
-	std::stringstream my_nick_len;
 	std::string my_nick_c, nick_i;
 	std::string err_code;
 	std::string msg_err;
@@ -355,12 +336,11 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 		nick_i = "0";	// stały
 	}
 
-	my_nick_len << my_nick_c.size();
-
 	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + my_nick_len.str() + ":\"" + my_nick_c
+				    "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
 				     + "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
 				     ga.cookies, false, offset_recv, msg_err, "[getUoKey]");
+
 	if(buffer_recv == NULL)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: " + msg_err);
@@ -368,7 +348,9 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	// pobierz kod błędu
-	if(find_value(buffer_recv, "err_code=\"", "\"", err_code) != 0)
+	err_code = get_value_from_buf(std::string(buffer_recv), "err_code=\"", "\"");
+
+	if(err_code.size() == 0)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił err_code.");
 		free(buffer_recv);
@@ -398,7 +380,9 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	// pobierz uoKey
-	if(find_value(buffer_recv, "<uoKey>", "</uoKey>", ga.uokey) != 0)
+	ga.uokey = get_value_from_buf(std::string(buffer_recv), "<uoKey>", "</uoKey>");
+
+	if(ga.uokey.size() == 0)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił uoKey.");
 		free(buffer_recv);
@@ -406,7 +390,9 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	// pobierz zuoUsername (nick, który zwrócił serwer)
-	if(find_value(buffer_recv, "<zuoUsername>", "</zuoUsername>", ga.zuousername) != 0)
+	ga.zuousername = get_value_from_buf(std::string(buffer_recv), "<zuoUsername>", "</zuoUsername>");
+
+	if(ga.zuousername.size() == 0)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# getUoKey: Serwer nie zwrócił zuoUsername.");
 		free(buffer_recv);
@@ -419,270 +405,108 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-bool irc_auth_1(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &msg_err)
+void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	std::string msg_err_pre = "# irc_auth_1: ";
+	std::string msg_err;
+
+	// nie próbuj się znowu łączyć do IRC od zera
+	ga.irc_ready = false;
 
 	// zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie,
-	//  gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
-	irc_ok = true;
+	// gdy napotkamy błąd podczas któregoś etapu autoryzacji do IRC
+	ga.irc_ok = true;
 
+/*
+	Część 1 autoryzacji.
+*/
 	// zainicjalizuj gniazdo oraz połącz z IRC
-	socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
-	if(socketfd_irc == 0)
+	ga.socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
+
+	// w przypadku błędu pokaż komunikat oraz zakończ
+	if(ga.socketfd_irc == 0)
 	{
-		irc_ok = false;
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		ga.irc_ok = false;
+		add_show_win_buf(ga, chan_parm, xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1");
+		return;
 	}
 
-	// pobierz pierwszą odpowiedź serwera po połączeniu
-	if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+	// pobierz pierwszą odpowiedź serwera po połączeniu:
+	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
+	irc_parser(ga, chan_parm);
+
+	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	if(! ga.irc_ok)
 	{
-		// usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth1");
+		return;
 	}
 
-	buffer_irc_recv.insert(0, xWHITE);
-	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
+/*
+	Część 2 autoryzacji.
+*/
+	// wyślij:
+	// NICK <zuoUsername>
+	irc_send(ga, chan_parm, "NICK " + ga.zuousername);
 
-	return true;
-}
-
-
-bool irc_auth_2(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &buffer_irc_sent, std::string &zuousername, std::string &msg_err)
-{
-	msg_err.clear();
-
-	// zakończ natychmiast, jeśli irc_ok jest ustawiony na false
-	if(! irc_ok)
-		return false;
-
-	std::string buffer_irc_send;
-	std::string msg_err_pre = "# irc_auth_2: ";
-
-	// wyślij: NICK <zuousername>
-	buffer_irc_send = "NICK " + zuousername;
-	buffer_irc_sent = get_time() + xYELLOW + buf_iso2utf(buffer_irc_send);	// rozdzielono to w sten sposób, aby można było podejrzeć,
-										// co zostało wysłane do serwera (inf. do debugowania)
-	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	if(! ga.irc_ok)
 	{
-		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth2");
+		return;
 	}
 
-	// pobierz odpowiedź z serwera
-	if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+	// pobierz drugą odpowiedź serwera:
+	// :cf1f4.onet NOTICE Auth :*** Found your hostname (ajs7.neoplus.adsl.tpnet.pl) -- cached
+	irc_parser(ga, chan_parm);
+
+	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	if(! ga.irc_ok)
 	{
-		// usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth2");
+		return;
 	}
 
-	buffer_irc_recv.insert(0, xWHITE);
-	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
+/*
+	Część 3 autoryzacji.
+*/
+	// wyślij:
+	// AUTHKEY
+	irc_send(ga, chan_parm, "AUTHKEY");
 
-	return true;
-}
-
-
-bool irc_auth_3(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &buffer_irc_sent, std::string &msg_err)
-{
-	msg_err.clear();
-
-	// zakończ natychmiast, jeśli irc_ok jest ustawiony na false
-	if(! irc_ok)
-		return false;
-
-	std::string buffer_irc_send;
-	std::string msg_err_pre = "# irc_auth_3: ";
-
-	// wyślij: AUTHKEY
-	buffer_irc_send = "AUTHKEY";
-	buffer_irc_sent = get_time() + xYELLOW + buffer_irc_send;
-	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
+	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	if(! ga.irc_ok)
 	{
-		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth3a");
+		return;
 	}
 
-	// pobierz odpowiedź z serwera (AUTHKEY)
-	if(! irc_recv(socketfd_irc, irc_ok, buffer_irc_recv, msg_err))
+	// pobierz trzecią odpowiedź serwera:
+	// :cf1f4.onet 801 ucc_test :<authKey>
+	// parser wyszuka kod authKey, przeliczy na nowy kod i wyśle do serwera:
+	// AUTHKEY <nowy_authKey>
+	irc_parser(ga, chan_parm);
+
+	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	if(! ga.irc_ok)
 	{
-		// usuń # i spację ze zwracanego stringa (bo irc_recv() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth3b");
+		return;
 	}
 
-	buffer_irc_recv.insert(0, xWHITE);
-//	buffer_irc_recv.erase(buffer_irc_recv.size() - 1, 1);
+/*
+	Część 4 autoryzacji.
+*/
+	// wyślij (zamiast zuoUsername można wysłać inną nazwę):
+	// USER * <uoKey> czat-app.onet.pl :<zuoUsername>
+	// PROTOCTL ONETNAMESX
+	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX");
 
-	return true;
-}
-
-
-bool irc_auth_4(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_recv, std::string &buffer_irc_sent, std::string &msg_err)
-{
-	msg_err.clear();
-
-	// zakończ natychmiast, jeśli irc_ok jest ustawiony na false
-	if(! irc_ok)
-		return false;
-
-	size_t raw_801, pos_authkey_start, pos_authkey_end;
-	std::string buffer_irc_send;
-	std::string authkey;
-	std::string msg_err_pre = "# irc_auth_4: ";
-
-	// wyszukaj AUTHKEY z odebranych danych w irc_auth_3(), przykładowa odpowiedź serwera:
-	// :cf1f1.onet 801 ~ucc :t9fSMnY5VQuwX1x9
-	raw_801 = buffer_irc_recv.find("801", 0);	// znajdź raw 801
-	if(raw_801 == std::string::npos)
+	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	if(! ga.irc_ok)
 	{
-		irc_ok = false;
-		msg_err = msg_err_pre + "Nie uzyskano AUTHKEY (brak odpowiedzi 801).";
-		return false;
-	}
-	pos_authkey_start = buffer_irc_recv.find(":", raw_801);		// szukaj drugiego dwukropka
-	if(pos_authkey_start == std::string::npos)
-	{
-		irc_ok = false;
-		msg_err = msg_err_pre + "Problem ze znalezieniem AUTHKEY (nie znaleziono oczekiwanego dwukropka w odpowiedzi 801).";
-		return false;
-	}
-	pos_authkey_end = buffer_irc_recv.find("\n", raw_801);		// szukaj końca wiersza
-	if(pos_authkey_end == std::string::npos)
-	{
-		irc_ok = false;
-		msg_err = msg_err_pre + "Uszkodzony rekord AUTHKEY (nie znaleziono kodu nowego wiersza w odpowiedzi 801).";
-		return false;
+		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth4");
+		// bez return; bo to i tak koniec funkcji
 	}
 
-	// mamy pozycję początku i końca AUTHKEY, teraz wstaw AUTHKEY do bufora
-	authkey.insert(0, buffer_irc_recv, pos_authkey_start + 1, pos_authkey_end - pos_authkey_start - 1);	// + 1, bo pomijamy dwukropek
-
-	// konwersja AUTHKEY
-	auth_code(authkey);
-
-	if(authkey.size() == 0)
-	{
-		irc_ok = false;
-		msg_err = msg_err_pre + "AUTHKEY nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?).";
-		return false;
-	}
-
-	// wyślij: AUTHKEY <AUTHKEY>
-	buffer_irc_send = "AUTHKEY " + authkey;
-	buffer_irc_sent = get_time() + xYELLOW + buffer_irc_send;
-	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
-	{
-		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
-	}
-
-	return true;
-}
-
-
-bool irc_auth_5(int &socketfd_irc, bool &irc_ok, std::string &buffer_irc_sent, std::string &zuousername, std::string &uokey, std::string &msg_err)
-{
-	msg_err.clear();
-
-	// zakończ natychmiast, jeśli irc_ok jest ustawiony na false
-	if(! irc_ok)
-		return false;
-
-	std::string buffer_irc_send;
-	std::string msg_err_pre = "# irc_auth_5: ";
-
-	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
-	buffer_irc_send = "USER * " + uokey + " czat-app.onet.pl :" + zuousername + "\r\nPROTOCTL ONETNAMESX";
-	buffer_irc_sent = get_time() + xYELLOW + "USER * " + uokey + " czat-app.onet.pl :"
-			+ buf_iso2utf(zuousername) + get_time() + xYELLOW + "PROTOCTL ONETNAMESX";
-	if(! irc_send(socketfd_irc, irc_ok, buffer_irc_send, msg_err))
-	{
-		// usuń # i spację ze zwracanego stringa (bo irc_send() używany jest też w innych miejscach, gdzie # i spacja są potrzebne)
-		msg_err.erase(0, 2);
-		msg_err = msg_err_pre + msg_err;
-		return false;
-	}
-
-	return true;
-}
-
-
-void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
-{
-	bool irc_auth_status;		// status wykonania którejś z funkcji irc_auth_x()
-
-	std::string buffer_irc_recv;	// bufor odebranych danych z IRC
-	std::string buffer_irc_sent;	// dane wysłane do serwera w irc_auth_x() (informacje przydatne do debugowania)
-
-	std::string msg_scr;
-
-	ga.irc_ready = false;      // nie próbuj się znowu łączyć do IRC od zera
-
-	// połącz z serwerem IRC
-	irc_auth_status = irc_auth_1(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, msg_scr);
-	// pokaż odpowiedź serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
-	// w przypadku błędu pokaż, co się stało
-	if(! irc_auth_status)
-	{
-		add_show_win_buf(ga, chan_parm, msg_scr);
-	}
-
-	// wyślij: NICK <zuousername>
-	irc_auth_status = irc_auth_2(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, ga.zuousername, msg_scr);
-	// pokaż, co wysłano do serwera
-//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
-	// pokaż odpowiedź serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
-	// w przypadku błędu pokaż, co się stało
-	if(! irc_auth_status)
-	{
-		add_show_win_buf(ga, chan_parm, msg_scr);
-	}
-
-	// wyślij: AUTHKEY
-	irc_auth_status = irc_auth_3(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
-	// pokaż, co wysłano do serwera
-//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
-	// pokaż odpowiedź serwera
-	add_show_win_buf(ga, chan_parm, buffer_irc_recv);
-	// w przypadku błędu pokaż, co się stało
-	if(! irc_auth_status)
-	{
-		add_show_win_buf(ga, chan_parm, msg_scr);
-	}
-
-	// wyślij: AUTHKEY <AUTHKEY>
-	irc_auth_status = irc_auth_4(ga.socketfd_irc, ga.irc_ok, buffer_irc_recv, buffer_irc_sent, msg_scr);
-	// pokaż, co wysłano do serwera
-//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
-	// w przypadku błędu pokaż, co się stało
-	if(! irc_auth_status)
-	{
-		add_show_win_buf(ga, chan_parm, msg_scr);
-	}
-
-	// wyślij: USER * <uoKey> czat-app.onet.pl :<~nick>\r\nPROTOCTL ONETNAMESX
-	irc_auth_status = irc_auth_5(ga.socketfd_irc, ga.irc_ok, buffer_irc_sent, ga.zuousername, ga.uokey, msg_scr);
-	// pokaż, co wysłano do serwera
-//	add_show_win_buf(ga, chan_parm, buffer_irc_sent);
-	// w przypadku błędu pokaż, co się stało
-	if(! irc_auth_status)
-	{
-		add_show_win_buf(ga, chan_parm, msg_scr);
-	}
+	// jeśli na którymś etapie wystąpił błąd, funkcja irc_auth() zakończy się z ga.irc_ok = false
 }

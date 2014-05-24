@@ -30,6 +30,7 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="-std=gnu++11" />
 		</Compiler>
 		<Linker>
 			<Add option="-lncursesw" />
@@ -38,6 +39,10 @@
 		</Linker>
 		<Unit filename="src/auth.cpp" />
 		<Unit filename="src/auth.hpp" />
+		<Unit filename="src/enc_str.cpp" />
+		<Unit filename="src/enc_str.hpp" />
+		<Unit filename="src/form_conv.cpp" />
+		<Unit filename="src/form_conv.hpp" />
 		<Unit filename="src/irc_parser.cpp" />
 		<Unit filename="src/irc_parser.hpp" />
 		<Unit filename="src/kbd_parser.cpp" />

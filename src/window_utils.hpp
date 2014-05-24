@@ -9,19 +9,15 @@ void wattron_color(WINDOW *win_chat, bool use_colors, short color_p);
 
 std::string get_time();
 
+std::string key_utf2iso(int key_code);
+
+void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
+
 void win_buf_common(struct global_args &ga, std::string &buffer_str, int pos_buf_str_start);
 
 void win_buf_refresh(struct global_args &ga, std::string &buffer_str);
 
 void add_show_win_buf(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_str, bool show_buf = true);
-
-std::string kbd_utf2iso(int key_code);
-
-void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
-
-std::string form_from_chat(std::string &buffer_irc_recv);
-
-std::string onet_color_conv(std::string &onet_color);
 
 void add_act_chan(struct channel_irc *chan_parm[], std::string chan_name, int act_type);
 

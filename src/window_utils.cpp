@@ -1,4 +1,4 @@
-#include <sstream>		// std::string, std::stringstream
+#include <string>		// std::string
 #include <ctime>		// czas
 
 #include "window_utils.hpp"
@@ -66,7 +66,6 @@ std::string get_time()
 	kolorów, bolda itd. (wyłącza je).
 */
 
-	std::stringstream time_hms_tmp;	// tymczasowo do przeniesienie *char do std::string
 	char time_hms[25];
 
 	time_t time_g;		// czas skoordynowany z Greenwich
@@ -76,8 +75,182 @@ std::string get_time()
 	time_l = localtime(&time_g);
 	strftime(time_hms, 20, xNORMAL "[%H:%M:%S] ", time_l);
 
-	time_hms_tmp << time_hms;
-	return time_hms_tmp.str();
+	return std::string(time_hms);
+}
+
+
+std::string key_utf2iso(int key_code)
+{
+/*
+	Zamień znak (jeden) w UTF-8 na ISO-8859-2.
+*/
+
+	int utf_i = 0;
+
+	std::string key_code_tmp;	// tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
+
+	key_code_tmp = key_code;	// wpisz do bufora tymczasowego pierwszy bajt znaku
+
+	// iloczyn bitowy 0xE0 (11100000b) do wykrycia 0xC0 (11000000b), oznaczającego 2-bajtowy znak w UTF-8
+	if((key_code & 0xE0) == 0xC0)
+	{
+		utf_i = 1;
+	}
+
+	// iloczyn bitowy 0xF0 (11110000b) do wykrycia 0xE0 (11100000b), oznaczającego 3-bajtowy znak w UTF-8
+	else if((key_code & 0xF0) == 0xE0)
+	{
+		utf_i = 2;
+	}
+
+	// iloczyn bitowy 0xF8 (11111000b) do wykrycia 0xF0 (11110000b), oznaczającego 4-bajtowy znak w UTF-8
+	else if((key_code & 0xF8) == 0xF0)
+	{
+		utf_i = 3;
+	}
+
+	// iloczyn bitowy 0xFC (11111100b) do wykrycia 0xF8 (11111000b), oznaczającego 5-bajtowy znak w UTF-8
+	else if((key_code & 0xFC) == 0xF8)
+	{
+		utf_i = 4;
+	}
+
+	// iloczyn bitowy 0xFE (11111110b) do wykrycia 0xFC (11111100b), oznaczającego 6-bajtowy znak w UTF-8
+	else if((key_code & 0xFE) == 0xFC)
+	{
+		utf_i = 5;
+	}
+
+	// gdy to 1-bajtowy znak nie wymagający konwersji
+	else
+	{
+		return key_code_tmp;	// zwróć kod bez zmian
+	}
+
+	// dla znaków wielobajtowych w pętli pobierz resztę bajtów
+	for(int i = 0; i < utf_i; ++i)
+	{
+		key_code_tmp += getch();
+	}
+
+	// dokonaj konwersji z UTF-8 na ISO-8859-2
+	key_code_tmp = buf_utf2iso(key_code_tmp);
+
+	// gdy przekonwertowany znak nie istnieje (nie ma odpowiednika), co najczęściej da zerową ilość bajtów, zwróć w kodzie ASCII znak zapytania
+	// (zwrócenie zerowej liczby bajtów spowodowałoby wywalenie się programu ze względu na pisanie poza bufor klawiatury)
+	if(key_code_tmp.size() != 1)
+	{
+		return "?";
+	}
+
+	// natomiast gdy konwersja się udała, zwróć przekonwertowany znak w ISO-8859-2
+	return key_code_tmp;
+}
+
+
+void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos)
+{
+	// należy zauważyć, że operujemy na kopii bufora klawiatury (brak referencji), bo funkcja ta modyfikuje (kopię) przed wyświetleniem
+
+	static int x = 0;
+	static int term_x_len = 0;
+	static int kbd_buf_len_prev = term_x;
+	static int kbd_buf_rest = 0;
+	int cut_left = 0;
+	int cut_right = 0;
+
+	// rozsuwaj tekst, gdy terminal jest powiększany w poziomie oraz gdy z lewej strony tekst jest ukryty
+	// (dopracować, aby szybka zmiana też poprawnie rozsuwała tekst!!!)
+	if(term_x > term_x_len && x > 0)
+	{
+		--x;
+	}
+
+	term_x_len = term_x;
+
+	// Backspace powoduje przesuwanie się tekstu z lewej do kursora, gdy ta część jest niewidoczna
+	if(static_cast<int>(kbd_buf.size()) < kbd_buf_len_prev && x > 0 && static_cast<int>(kbd_buf.size()) - kbd_buf_pos == kbd_buf_rest)
+	{
+		--x;
+	}
+
+	// zachowaj rozmiar bufora dla wyżej wymienionego sprawdzania
+	kbd_buf_len_prev = kbd_buf.size();
+
+	// zapamiętaj, ile po kursorze zostało w buforze, aby powyższe przesuwanie z lewej do kursora nie działało dla Delete
+	kbd_buf_rest = kbd_buf.size() - kbd_buf_pos;
+
+	// gdy kursor cofamy w lewo i jest tam ukryty tekst, odsłaniaj go co jedno przesunięcie
+	if(kbd_buf_pos <= x)
+	{
+		x = kbd_buf_pos;
+	}
+
+	// wycinaj ukryty od lewej strony tekst
+	if(x > 0)
+	{
+		kbd_buf.erase(0, x);
+	}
+
+	// gdy pozycja kursora przekracza rozmiar terminala, obetnij tekst z lewej (po jednym znaku, bo reszta z x była obcięta wyżej)
+	if(kbd_buf_pos - x + static_cast<int>(zuousername.size()) + 4 > term_x)
+	{
+		cut_left = kbd_buf_pos - x + zuousername.size() + 4 - term_x;
+		kbd_buf.erase(0, cut_left);
+	}
+
+	// dopisuj, ile ukryto tekstu z lewej strony
+	if(cut_left > 0)
+	{
+		x += cut_left;
+	}
+
+	// obetnij to, co wystaje poza terminal
+	if(static_cast<int>(kbd_buf.size()) + static_cast<int>(zuousername.size()) + 3 > term_x)
+	{
+		// jeśli szerokość terminala jest mniejsza od długości nicka wraz z nawiasem i spacją, nic nie obcinaj,
+		// bo doprowadzi to do wywalenia się programu
+		if(term_x > static_cast<int>(zuousername.size()) + 3)
+		{
+			cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
+			kbd_buf.erase((zuousername.size() + 3 - term_x) * (-1), cut_right);
+		}
+	}
+
+	// konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8, aby prawidłowo wyświetlić w terminalu z kodowaniem UTF-8
+	kbd_buf.insert(0, "<" + zuousername + "> ");	// dodaj nick
+	kbd_buf = buf_iso2utf(kbd_buf);
+
+	// normalne atrybuty fontu
+	attrset(A_NORMAL);
+
+	// ustaw kursor na początku ostatniego wiersza
+	move(term_y - 1, 0);
+
+	// wyświetl nick (z czata, nie ustawiony przez /nick) oraz zawartość przekonwertowanego bufora (w pętli ze względu na tabulator)
+	for(int i = 0; i < static_cast<int>(kbd_buf.size()); ++i)
+	{
+		// kod tabulatora wyświetl jako t w odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
+		if(kbd_buf[i] == '\t')
+		{
+			attrset(A_REVERSE);	// odwróć kolor tła
+			printw("t");
+			attrset(A_NORMAL);	// przywróć normalne atrybuty
+			continue;		// kod tabulatora wyświetlono jako t z odwróconymi kolorami, więc nie idź dalej, tylko zacznij od początku
+		}
+
+		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
+		printw("%c", kbd_buf[i]);
+	}
+
+	// pozostałe znaki w wierszu wykasuj
+	clrtoeol();
+
+	// ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja oraz uwzględnij ewentualny ukryty tekst z lewej w x)
+	move(term_y - 1, kbd_buf_pos + zuousername.size() + 3 - x);
+
+	// odśwież główne (standardowe) okno, aby od razu pokazać zmiany na pasku
+	refresh();
 }
 
 
@@ -226,9 +399,10 @@ void win_buf_refresh(struct global_args &ga, std::string &buffer_str)
 		wmove(ga.win_chat, clr_y, 0);
 	}
 
-	// odśwież okno (w takiej kolejności, czyli najpierw główne, aby wszystko wyświetliło się prawidłowo)
+	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
 	refresh();
 	wrefresh(ga.win_chat);
+	refresh();
 }
 
 
@@ -283,383 +457,10 @@ void add_show_win_buf(struct global_args &ga, struct channel_irc *chan_parm[], s
 	// wyświetl otrzymaną część bufora
 	win_buf_common(ga, buffer_str, 0);
 
-	// odśwież okno (w takiej kolejności, czyli najpierw główne, aby wszystko wyświetliło się prawidłowo)
+	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
 	refresh();
 	wrefresh(ga.win_chat);
-}
-
-
-std::string kbd_utf2iso(int key_code)
-{
-/*
-	Zamień znak (jeden) w UTF-8 na ISO-8859-2.
-*/
-
-	int utf_i = 0;
-
-	std::string key_code_tmp;	// tymczasowy bufor na odczytany znak z klawiatury (potrzebny podczas konwersji int na std::string)
-
-	key_code_tmp = key_code;	// wpisz do bufora tymczasowego pierwszy bajt znaku
-
-	// iloczyn bitowy 0xE0 (11100000b) do wykrycia 0xC0, oznaczającego 2-bajtowy znak w UTF-8
-	if((key_code & 0xE0) == 0xC0)
-	{
-		utf_i = 1;
-	}
-
-	// iloczyn bitowy 0xF0 (11110000b) do wykrycia 0xE0, oznaczającego 3-bajtowy znak w UTF-8
-	else if((key_code & 0xF0) == 0xE0)
-	{
-		utf_i = 2;
-	}
-
-	// iloczyn bitowy 0xF8 (11111000b) do wykrycia 0xF0, oznaczającego 4-bajtowy znak w UTF-8
-	else if((key_code & 0xF8) == 0xF0)
-	{
-		utf_i = 3;
-	}
-
-	// iloczyn bitowy 0xFC (11111100b) do wykrycia 0xF8, oznaczającego 5-bajtowy znak w UTF-8
-	else if((key_code & 0xFC) == 0xF8)
-	{
-		utf_i = 4;
-	}
-
-	// iloczyn bitowy 0xFE (11111110b) do wykrycia 0xFC, oznaczającego 6-bajtowy znak w UTF-8
-	else if((key_code & 0xFE) == 0xFC)
-	{
-		utf_i = 5;
-	}
-
-	// gdy to 1-bajtowy znak nie wymagający konwersji
-	else
-	{
-		return key_code_tmp;	// zwróć kod bez zmian
-	}
-
-	// dla znaków wielobajtowych w pętli pobierz resztę bajtów
-	for(int i = 0; i < utf_i; ++i)
-	{
-		key_code_tmp += getch();
-	}
-
-	// dokonaj konwersji z UTF-8 na ISO-8859-2
-	key_code_tmp = buf_utf2iso(key_code_tmp);
-
-	// gdy przekonwertowany znak nie istnieje (nie ma odpowiednika), co najczęściej da zerową ilość bajtów, zwróć w kodzie ASCII znak zapytania
-	if(key_code_tmp.size() != 1)
-	{
-		return "?";	// zwrócenie zerowej liczby bajtów spowodowałoby wywalenie się programu ze względu na pisanie poza bufor klawiatury
-	}
-
-	// natomiast gdy konwersja się udała, zwróć przekonwertowany znak w ISO-8859-2
-	return key_code_tmp;
-}
-
-
-void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos)
-{
-	// należy zauważyć, że operujemy na kopii bufora (brak referencji), bo funkcja ta modyfikuje (kopię) przed wyświetleniem
-
-	static int x = 0;
-	static int term_x_len = 0;
-	static int kbd_buf_len_prev = term_x;
-	static int kbd_buf_rest = 0;
-	int cut_left = 0;
-	int cut_right = 0;
-
-	// rozsuwaj tekst, gdy terminal jest powiększany w poziomie oraz gdy z lewej strony tekst jest ukryty
-	// (dopracować, aby szybka zmiana też poprawnie rozsuwała tekst!!!)
-	if(term_x > term_x_len && x > 0)
-	{
-		--x;
-	}
-
-	term_x_len = term_x;
-
-	// Backspace powoduje przesuwanie się tekstu z lewej do kursora, gdy ta część jest niewidoczna
-	if(static_cast<int>(kbd_buf.size()) < kbd_buf_len_prev && x > 0 && static_cast<int>(kbd_buf.size()) - kbd_buf_pos == kbd_buf_rest)
-	{
-		--x;
-	}
-
-	// zachowaj rozmiar bufora dla wyżej wymienionego sprawdzania
-	kbd_buf_len_prev = kbd_buf.size();
-
-	// zapamiętaj, ile po kursorze zostało w buforze, aby powyższe przesuwanie z lewej do kursora nie działało dla Delete
-	kbd_buf_rest = kbd_buf.size() - kbd_buf_pos;
-
-	// gdy kursor cofamy w lewo i jest tam ukryty tekst, odsłaniaj go co jedno przesunięcie
-	if(kbd_buf_pos <= x)
-	{
-		x = kbd_buf_pos;
-	}
-
-	// wycinaj ukryty od lewej strony tekst
-	if(x > 0)
-	{
-		kbd_buf.erase(0, x);
-	}
-
-	// gdy pozycja kursora przekracza rozmiar terminala, obetnij tekst z lewej (po jednym znaku, bo reszta z x była obcięta wyżej)
-	if(kbd_buf_pos - x + static_cast<int>(zuousername.size()) + 4 > term_x)
-	{
-		cut_left = kbd_buf_pos - x + zuousername.size() + 4 - term_x;
-		kbd_buf.erase(0, cut_left);
-	}
-
-	// dopisuj, ile ukryto tekstu z lewej strony
-	if(cut_left > 0)
-	{
-		x += cut_left;
-	}
-
-	// obetnij to, co wystaje poza terminal
-	if(static_cast<int>(kbd_buf.size()) + static_cast<int>(zuousername.size()) + 3 > term_x)
-	{
-		// jeśli szerokość terminala jest mniejsza od długości nicka wraz z nawiasem i spacją, nic nie obcinaj,
-		// bo doprowadzi to do wywalenia się programu
-		if(term_x > static_cast<int>(zuousername.size()) + 3)
-		{
-			cut_right = kbd_buf.size() + zuousername.size() + 3 - term_x;
-			kbd_buf.erase((zuousername.size() + 3 - term_x) * (-1), cut_right);
-		}
-	}
-
-	// konwersja nicka oraz zawartości bufora klawiatury z ISO-8859-2 na UTF-8, aby prawidłowo wyświetlić w terminalu z kodowaniem UTF-8
-	kbd_buf.insert(0, "<" + zuousername + "> ");	// dodaj nick
-	kbd_buf = buf_iso2utf(kbd_buf);
-
-	// normalne atrybuty fontu
-	attrset(A_NORMAL);
-
-	// ustaw kursor na początku ostatniego wiersza
-	move(term_y - 1, 0);
-
-	// wyświetl nick (z czata, nie ustawiony przez /nick) oraz zawartość przekonwertowanego bufora (w pętli ze względu na tabulator)
-	for(int i = 0; i < static_cast<int>(kbd_buf.size()); ++i)
-	{
-		// kod tabulatora wyświetl jako t w odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
-		if(kbd_buf[i] == '\t')
-		{
-			attrset(A_REVERSE);	// odwróć kolor tła
-			printw("t");
-			attrset(A_NORMAL);	// przywróć normalne atrybuty
-			continue;		// kod tabulatora wyświetlono jako t z odwróconymi kolorami, więc nie idź dalej, tylko zacznij od początku
-		}
-
-		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-		printw("%c", kbd_buf[i]);
-	}
-
-	// pozostałe znaki w wierszu wykasuj
-	clrtoeol();
-
-	// ustaw kursor w obecnie przetwarzany znak (+ długość nicka, nawias i spacja oraz uwzględnij ewentualny ukryty tekst z lewej w x)
-	move(term_y - 1, kbd_buf_pos + zuousername.size() + 3 - x);
-
-	// odśwież główne (standardowe) okno, aby od razu pokazać zmiany na pasku
 	refresh();
-}
-
-
-std::string form_from_chat(std::string &buffer_irc_recv)
-{
-	int j;
-
-	int buffer_irc_recv_len = buffer_irc_recv.size();
-
-	// wykryj formatowanie fontów, kolorów i emotek, a następnie odpowiednio je skonwertuj
-	for(int i = 0; i < buffer_irc_recv_len; ++i)
-	{
-		// znak % rozpoczyna formatowanie
-		if(buffer_irc_recv[i] == '%')
-		{
-			j = i;		// zachowaj punkt wycięcia przy dokonaniu konwersji
-			++i;		// kolejny znak
-
-			// wykryj fonty, jednocześnie sprawdzając, czy nie koniec bufora
-			if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'F')
-			{
-				++i;
-
-				// wykryj bold, jednocześnie sprawdzając, czy nie koniec bufora
-				if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'b')
-				{
-					for(++i; i < buffer_irc_recv_len; ++i)
-					{
-						// spacja wewnątrz formatowania przerywa przetwarzanie
-						if(buffer_irc_recv[i] == ' ')
-						{
-							break;
-						}
-
-						// znak % kończy formatowanie, trzeba teraz wyciąć tę część
-						else if(buffer_irc_recv[i] == '%')
-						{
-							buffer_irc_recv.insert(j, xBOLD_ON);	// dodaj kod włączenia bolda
-
-							size_t b_off = buffer_irc_recv.find("\n", i);
-							if(b_off != std::string::npos)
-							{
-								buffer_irc_recv.insert(b_off, xBOLD_OFF);
-							}
-
-							// wytnij z bufora kod formatujący %Fb[...]%
-							buffer_irc_recv.erase(j + 1, i - j + 1);	// + 1: pomiń kod bolda, kolejny + 1: wytnij drugi %
-
-							// wycięto część z bufora, trzeba wyrównać koniec licznika
-							i -= i - j;
-
-							break;
-						}
-					}
-				}
-
-				// jeśli nie bold, to trzeba wyciąć (jeśli są) 'i' lub nazwę fontu
-				else
-				{
-					for(++i; i < buffer_irc_recv_len; ++i)
-					{
-						// spacja wewnątrz formatowania przerywa przetwarzanie
-						if(buffer_irc_recv[i] == ' ')
-						{
-							break;
-						}
-
-						// znak % kończy formatowanie, trzeba teraz wyciąć tę część
-						else if(buffer_irc_recv[i] == '%')
-						{
-							buffer_irc_recv.erase(j, i - j + 1);	// + 1, aby wyciąć do drugiego %
-							i -= i - j + 1;
-
-							// gdy to nie bold, wyłącz go
-							buffer_irc_recv.insert(i + 1, xBOLD_OFF);
-
-							break;
-						}
-					}
-				}
-
-			}
-
-			// wykryj kolory, jednocześnie sprawdzając, czy nie koniec bufora
-			else if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'C')
-			{
-				std::string onet_color;
-
-				// wczytaj kolor
-				for(++i; i < buffer_irc_recv_len; ++i)
-				{
-					// spacja wewnątrz formatowania przerywa przetwarzanie
-					if(buffer_irc_recv[i] == ' ')
-					{
-						break;
-					}
-
-					if(buffer_irc_recv[i] == '%' && onet_color.size() == 6)
-					{
-						buffer_irc_recv.erase(i - 8, 9);
-						buffer_irc_recv.insert(i - 8, onet_color_conv(onet_color));
-						i -= 9;
-
-						break;		// przerwij, aby nie czytać dalej kolorów, tylko zacznij od nowa
-					}
-
-					onet_color += buffer_irc_recv[i];
-				}
-			}
-
-			// wykryj emotki, jednocześnie sprawdzając, czy nie koniec bufora
-			else if(i < buffer_irc_recv_len && buffer_irc_recv[i] == 'I')
-			{
-
-			}
-		}
-	}
-
-	return buffer_irc_recv;
-}
-
-
-std::string onet_color_conv(std::string &onet_color)
-{
-/*
-	Ze względu na to, że terminal w podstawowej wersji kolorów nie obsługuje kolorów, jakie są na czacie, trzeba było niektóre "oszukać" i wybrać
-	inne, które są podobne (mało eleganckie, ale w tej sytuacji inaczej nie można, zanim nie zostanie dodana obsługa xterm-256).
-*/
-
-	if(onet_color == "623c00")		// brązowy
-	{
-		return xYELLOW;
-	}
-
-	else if(onet_color == "c86c00")		// ciemny pomarańczowy
-	{
-		return xYELLOW;
-	}
-
-	else if(onet_color == "ff6500")		// pomarańczowy
-	{
-		return xYELLOW;
-	}
-
-	else if(onet_color == "ff0000")		// czerwony
-	{
-		return xRED;
-	}
-
-	else if(onet_color == "e40f0f")		// ciemniejszy czerwony
-	{
-		return xRED;
-	}
-
-	else if(onet_color == "990033")		// bordowy
-	{
-		return xRED;
-	}
-
-	else if(onet_color == "8800ab")		// fioletowy
-	{
-		return xMAGENTA;
-	}
-
-	else if(onet_color == "ce00ff")		// magenta
-	{
-		return xMAGENTA;
-	}
-
-	else if(onet_color == "0f2ab1")		// granatowy
-	{
-		return xBLUE;
-	}
-
-	else if(onet_color == "3030ce")		// ciemny niebieski
-	{
-		return xBLUE;
-	}
-
-	else if(onet_color == "006699")		// cyjan
-	{
-		return xCYAN;
-	}
-
-	else if(onet_color == "1a866e")		// zielono-cyjanowy
-	{
-		return xCYAN;
-	}
-
-	else if(onet_color == "008100")		// zielony
-	{
-		return xGREEN;
-	}
-
-	else if(onet_color == "959595")		// szary
-	{
-		return xWHITE;
-	}
-
-	return xTERMC;			// gdy żaden z wymienionych
 }
 
 
