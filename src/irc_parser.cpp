@@ -465,9 +465,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	std::string chan_join;
-
-	std::string nick_mode;
+	std::string chan_join, nick_mode;
 
 	// jeśli to typowy nick w stylu ChanServ!service@service.onet, to pobierz część przed !
 	if(raw_parm[0].find("!") != std::string::npos)
@@ -657,8 +655,6 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 	}
-
-	std::string msg_err;
 
 	if(chan_join.size() > 0)
 	{
@@ -992,7 +988,6 @@ void raw_376(struct global_args &ga, struct channel_irc *chan_parm[])
 */
 void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	std::string msg_err;
 	std::string authkey = raw_parm[3];
 
 	// konwersja authKey na nowy_authKey

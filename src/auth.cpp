@@ -244,7 +244,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 		return false;
 	}
 
-	// brak TRUE oznacza błąd w odpowiedzi serwera
+	// brak TRUE (lub wcześniejszego FALSE) oznacza błąd w odpowiedzi serwera
 	if(err_code != "TRUE")
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# checkCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
@@ -451,7 +451,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth2");
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth2");
 		return;
 	}
 
@@ -476,7 +476,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth3a");
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth3a");
 		return;
 	}
 
@@ -504,7 +504,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		add_show_win_buf(ga, chan_parm, xRED + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth4");
+		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth4");
 		// bez return; bo to i tak koniec funkcji
 	}
 
