@@ -19,7 +19,7 @@
 bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
 	size_t pos_cookie_start, pos_cookie_end;
-	std::string cookie_string, cookie_tmp;
+	std::string cookie_string;
 
 	cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
 
@@ -41,13 +41,9 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 			return false;
 		}
 
-		// skopiuj cookie do bufora pomocniczego
-		cookie_tmp.clear();	// wyczyść bufor pomocniczy
-		cookie_tmp.insert(0, std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
-				  pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
-
 		// dopisz kolejne cookie do bufora
-		cookies += cookie_tmp;
+		cookies.insert(cookies.size(), std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
+						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
 		// znajdź kolejne cookie
 		pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());

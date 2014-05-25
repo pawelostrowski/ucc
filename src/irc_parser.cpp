@@ -98,7 +98,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 		return;
 	}
 
-	// konwersja formatowania fontu, kolorów i emotek
+	// konwersja formatowania fontów, kolorów i emotikon
 	buffer_irc_recv = form_from_chat(buffer_irc_recv);
 
 	// obsłuż bufor

@@ -434,7 +434,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
 	if(! ga.irc_ok)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth1");
@@ -459,7 +459,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// :cf1f4.onet NOTICE Auth :*** Found your hostname (ajs7.neoplus.adsl.tpnet.pl) -- cached
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
 	if(! ga.irc_ok)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth2");
@@ -486,7 +486,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// AUTHKEY <nowy_authKey>
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, dopisz drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
 	if(! ga.irc_ok)
 	{
 		add_show_win_buf(ga, chan_parm, xRED "# Błąd wystąpił w: ircAuth3b");

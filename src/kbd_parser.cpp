@@ -209,7 +209,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	std::string f_command_org;		// j/w, ale małe litery nie są zamieniane na wielkie
 	std::string f_arg;			// kolejne argumenty podane za poleceniem
 	std::string r_args;			// pozostałe argumentu lub argument od pozycji w pos_arg_start zwracane w rest_args()
-	std::string captcha, err_code;
+	std::string err_code;
 
 	// pobierz wpisane polecenie
 	f_command_status = find_command(kbd_buf, f_command, f_command_org, pos_arg_start);
@@ -246,14 +246,15 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		}
 
 		// pobierz wpisany kod captcha
-		find_arg(kbd_buf, captcha, pos_arg_start, false);
+		find_arg(kbd_buf, f_arg, pos_arg_start, false);
+
 		if(pos_arg_start == 0)
 		{
 			add_show_win_buf(ga, chan_parm, xRED "# Nie podano kodu, spróbuj jeszcze raz.");
 			return;
 		}
 
-		if(captcha.size() != 6)
+		if(f_arg.size() != 6)
 		{
 			add_show_win_buf(ga, chan_parm, xRED "# Kod musi mieć 6 znaków, spróbuj jeszcze raz.");
 			return;
@@ -261,7 +262,8 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 		// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
 		ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
-		if(! http_auth_checkcode(ga, chan_parm, captcha))
+
+		if(! http_auth_checkcode(ga, chan_parm, f_arg))
 		{
 			return;
 		}
@@ -315,7 +317,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 /*
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! http_auth_useroverride(ga))
+			if(! http_auth_useroverride(ga, chan_parm))
 			{
 				return;
 			}
@@ -759,4 +761,10 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		// tutaj pokaż oryginalnie wpisane polecenie z uwzględnieniem przekodowania na UTF-8
 		add_show_win_buf(ga, chan_parm, xRED "# Nieznane polecenie: /" + buf_iso2utf(f_command_org));
 	}
+}
+
+
+void kbd_command_captcha()
+{
+
 }
