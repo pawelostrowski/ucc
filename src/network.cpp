@@ -526,24 +526,24 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
-//		return;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+				xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
 	}
 
-	if(bytes_sent == 0)
+	else if(bytes_sent == 0)
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		add_show_win_buf(ga, chan_parm, xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
-//		return;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+				xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
 	}
 
-	if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
+	else if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
-//		return;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+				xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
 	}
 }
 
@@ -565,15 +565,15 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		add_show_win_buf(ga, chan_parm, xRED "# Nie udało się pobrać danych z serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie udało się pobrać danych z serwera, rozłączono [IRC]");
 		return;
 	}
 
-	if(bytes_recv == 0)
+	else if(bytes_recv == 0)
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		add_show_win_buf(ga, chan_parm, xRED "# Podczas próby pobrania danych serwer zakończył połączenie [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Podczas próby pobrania danych serwer zakończył połączenie [IRC]");
 		return;
 	}
 

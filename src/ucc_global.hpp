@@ -13,7 +13,6 @@
 #define pWHITE		7
 #define pTERMC		8	// kolor zależny od ustawień terminala
 #define pWHITE_BLUE	9	// biały font, niebieskie tło
-
 #define pCYAN_BLUE	10	// cyjan font, niebieskie tło
 #define pMAGENTA_BLUE	11	// magenta font, niebieskie tło
 
@@ -26,7 +25,9 @@
 #define xCYAN		"\x03\x06"
 #define xWHITE		"\x03\x07"
 #define xTERMC		"\x03\x08"
-#define xBLUE_WHITE	"\x03\x09"
+#define xWHITE_BLUE	"\x03\x09"
+#define xCYAN_BLUE	"\x03\x0A"
+#define xMAGENTA_BLUE	"\x03\x0B"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"
@@ -38,11 +39,11 @@
 #define xNORMAL		"\x17"		// przywraca ustawienia domyślne (atrybuty normalne, czyli brak kolorów, bolda, itd.)
 
 // maksymalna liczba kanałów (dodano zapas) wraz z kanałem "Status" oraz "Debug"
-#define CHAN_MAX	30 + 2		// kanały czata + "Status" i "Debug"
+#define CHAN_MAX	22 + 2		// kanały czata + "Status" i "Debug"
 
-// nadanie numerów w tablicy kanałom: "Status" i "Debug"
-#define CHAN_STATUS	0
-#define CHAN_DEBUG_IRC	CHAN_MAX
+// nadanie numerów w tablicy kanałom "Status" i "Debug"
+#define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy
+#define CHAN_DEBUG_IRC	CHAN_MAX	// "Debug" zawsze jako ostatni w tablicy
 
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
@@ -60,7 +61,7 @@ struct global_args
 	bool irc_ready;
 	bool irc_ok;
 
-	int chan_nr;
+	int current_chan;
 
 	std::string my_nick;
 	std::string my_password;
@@ -69,6 +70,9 @@ struct global_args
 	std::string cookies;
 
 	std::string message_day;
+
+	// tymczasowo NAMES do zmiennej, zanim nie zostanie zaimplementowana lista nicków
+	std::string names;
 };
 
 // struktura kanału

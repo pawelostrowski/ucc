@@ -1,5 +1,6 @@
 #include <string>		// std::string
-#include <ctime>		// czas
+
+// -std=gnu++11 - time_t, time(), localtime(), strftime()
 
 #include "window_utils.hpp"
 #include "enc_str.hpp"
@@ -74,6 +75,34 @@ std::string get_time()
 	time(&time_g);
 	time_l = localtime(&time_g);
 	strftime(time_hms, 20, xNORMAL "[%H:%M:%S] ", time_l);
+
+	return std::string(time_hms);
+}
+
+
+std::string time_unixtimestamp2local(std::string &time_unixtimestamp)
+{
+	char time_hms[25];
+
+	time_t time_g = std::stoi("0" + time_unixtimestamp);
+	struct tm *time_l;	// czas lokalny
+
+	time_l = localtime(&time_g);
+	strftime(time_hms, 20, xNORMAL "[%H:%M:%S] ", time_l);
+
+	return std::string(time_hms);
+}
+
+
+std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
+{
+	char time_hms[100];
+
+	time_t time_g = std::stoi("0" + time_unixtimestamp);
+	struct tm *time_l;	// czas lokalny
+
+	time_l = localtime(&time_g);
+	strftime(time_hms, 95, "%A, %d %B %Y, %H:%M:%S", time_l);
 
 	return std::string(time_hms);
 }
@@ -254,106 +283,102 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 }
 
 
-void win_buf_common(struct global_args &ga, std::string &buffer_str, int pos_buf_str_start)
+void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_buf_start)
 {
 	int clr_y, clr_x;
-
-	int buffer_str_len = buffer_str.size();
+	int win_buf_len = win_buf.size();
 
 	// wypisywanie w pętli
-	for(int i = pos_buf_str_start; i < buffer_str_len; ++i)
+	for(int i = pos_win_buf_start; i < win_buf_len; ++i)
 	{
-		// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem)
-		if(buffer_str[i] == '\r')
-		{
-			continue;
-		}
-
 		// wykryj formatowanie kolorów w buforze (kod \x03 informuje, że mamy kolor, następny bajt to kod koloru)
-		if(buffer_str[i] == '\x03')
+		if(win_buf[i] == '\x03')
 		{
 			// nie czytaj poza bufor
-			if(i + 1 < buffer_str_len)
+			if(i + 1 < win_buf_len)
 			{
 				++i;	// przejdź na kod koloru
-				wattron_color(ga.win_chat, ga.use_colors, buffer_str[i]);
+				wattron_color(ga.win_chat, ga.use_colors, win_buf[i]);
 			}
-
-			continue;	// kodu koloru nie wyświetlaj jako ASCII, rozpocznij od początku pętlę wyświetlającą
 		}
 
 		// wykryj pogrubienie tekstu (kod \x04 włącza pogrubienie)
-		if(buffer_str[i] == '\x04')
+		else if(win_buf[i] == '\x04')
 		{
 			wattron(ga.win_chat, A_BOLD);
-			continue;
 		}
 
 		// wykryj pogrubienie tekstu (kod \x5 wyłącza pogrubienie)
-		if(buffer_str[i] == '\x05')
+		else if(win_buf[i] == '\x05')
 		{
 			wattroff(ga.win_chat, A_BOLD);
-			continue;
 		}
 
 		// wykryj odwrócenie kolorów (kod \x11 włącza odwrócenie kolorów)
-		if(buffer_str[i] == '\x11')
+		else if(win_buf[i] == '\x11')
 		{
 			wattron(ga.win_chat, A_REVERSE);
-			continue;
 		}
 
 		// wykryj odwrócenie kolorów (kod \x12 wyłącza odwrócenie kolorów)
-		if(buffer_str[i] == '\x12')
+		else if(win_buf[i] == '\x12')
 		{
 			wattroff(ga.win_chat, A_REVERSE);
-			continue;
 		}
 
 		// wykryj podkreślenie tekstu (kod \x13 włącza podkreślenie)
-		if(buffer_str[i] == '\x13')
+		else if(win_buf[i] == '\x13')
 		{
 			wattron(ga.win_chat, A_UNDERLINE);
-			continue;
 		}
 
 		// wykryj podkreślenie tekstu (kod \x14 wyłącza podkreślenie)
-		if(buffer_str[i] == '\x14')
+		else if(win_buf[i] == '\x14')
 		{
 			wattroff(ga.win_chat, A_UNDERLINE);
-			continue;
 		}
 
 		// wykryj przywrócenie domyślnych ustawień bez formatowania (kod \x17 przywraca ustawienia domyślne)
-		if(buffer_str[i] == '\x17')
+		else if(win_buf[i] == '\x17')
 		{
 			wattrset(ga.win_chat, A_NORMAL);
-			continue;
 		}
 
-		// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów)
-		if(buffer_str[i] == '\n')
+		else
 		{
-			getyx(ga.win_chat, clr_y, clr_x);		// zachowaj pozycję kursora
-			clrtoeol();
-			wmove(ga.win_chat, clr_y, clr_x);		// przywróć pozycję kursora
+			// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów)
+			if(win_buf[i] == '\n')
+			{
+				getyx(ga.win_chat, clr_y, clr_x);		// zachowaj pozycję kursora
+				clrtoeol();
+				wmove(ga.win_chat, clr_y, clr_x);		// przywróć pozycję kursora
+			}
+
+			// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem)
+			if(win_buf[i] != '\r')
+			{
+				// wyświetl aktualną zawartość bufora dla pozycji w 'i'
+				wprintw(ga.win_chat, "%c", win_buf[i]);
+			}
 		}
 
-		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-		wprintw(ga.win_chat, "%c", buffer_str[i]);
-	}
+	}	// for()
 
 	// zapamiętaj po wyjściu z funkcji pozycję kursora w oknie "wirtualnym"
 	getyx(ga.win_chat, ga.wcur_y, ga.wcur_x);
 }
 
 
-void win_buf_refresh(struct global_args &ga, std::string &buffer_str)
+void win_buf_refresh(struct global_args &ga, std::string &win_buf)
 {
+/*
+	Odśwież zawartość okna danego kanału.
+*/
+
 	int wterm_y, wterm_x;		// wymiary okna "wirtualnego"
 	int clr_y, clr_x;		// pozycja kursora używana podczas "czyszczenia" ekranu
 
-	size_t pos_buf_str_start;
+	size_t pos_win_buf_start;
 	int rows = 1;
 
 	// zacznij od początku okna "wirtualnego"
@@ -363,32 +388,32 @@ void win_buf_refresh(struct global_args &ga, std::string &buffer_str)
 	getmaxyx(ga.win_chat, wterm_y, wterm_x);
 
 	// wykryj początek, od którego należy zacząć wyświetlać zawartość bufora (na podstawie kodu \n)
-	pos_buf_str_start = buffer_str.rfind("\n");
+	pos_win_buf_start = win_buf.rfind("\n");
 
-	if(pos_buf_str_start != std::string::npos)
+	if(pos_win_buf_start != std::string::npos)
 	{
 		// zakończ szukanie, gdy pozycja zejdzie do zera lub liczba znalezionych wierszy zrówna się z liczbą wierszy okna "wirtualnego"
-		while(pos_buf_str_start != std::string::npos && pos_buf_str_start > 0 && rows < wterm_y)
+		while(pos_win_buf_start != std::string::npos && pos_win_buf_start > 0 && rows < wterm_y)
 		{
-			pos_buf_str_start = buffer_str.rfind("\n", pos_buf_str_start - 1);	// - 1, aby pominąć kod \n
+			pos_win_buf_start = win_buf.rfind("\n", pos_win_buf_start - 1);	// - 1, aby pominąć kod \n
 			++rows;
 		}
 	}
 
 	// jeśli nie wykryto żadnego kodu \n lub nie wykryto go na początku bufora (np. przy pustym buforze), ustal początek wyświetlania na 0
-	if(pos_buf_str_start == std::string::npos)
+	if(pos_win_buf_start == std::string::npos)
 	{
-		pos_buf_str_start = 0;
+		pos_win_buf_start = 0;
 	}
 
 	// jeśli na początku wyświetlanej części bufora jest kod \n, pomiń go, aby nie tworzyć pustego wiersza
-	if(buffer_str[pos_buf_str_start] == '\n')
+	if(win_buf[pos_win_buf_start] == '\n')
 	{
-		++pos_buf_str_start;
+		++pos_win_buf_start;
 	}
 
 	// wyświetl ustaloną część bufora
-	win_buf_common(ga, buffer_str, pos_buf_str_start);
+	win_buf_common(ga, win_buf, pos_win_buf_start);
 
 	// wyczyść pozostałą część ekranu
 	getyx(ga.win_chat, clr_y, clr_x);	// potrzebna jest pozycja Y, aby wiedzieć, kiedy koniec okna "wirtualnego"
@@ -406,27 +431,44 @@ void win_buf_refresh(struct global_args &ga, std::string &buffer_str)
 }
 
 
-void add_show_win_buf(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_str, bool show_buf)
+void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, bool add_time)
 {
 /*
-	Dodaj string do bufora oraz wyświetl jego zawartość (jeśli trzeba) wraz z dodaniem przed wyrażeniem aktualnego czasu.
+	Dodaj string do bufora danego kanału oraz wyświetl jego zawartość (jeśli to aktywny pokój) wraz z dodaniem przed wyrażeniem aktualnego czasu
+	(domyślnie).
 */
+
+	int which_chan = CHAN_STATUS;		// kanał, do którego należy dopisać bufor (domyślnie, gdy nie znaleziony, wpisz do "Status"
+
+	// znajdź kanał, do którego należy dopisać bufor
+	for(int i = 1; i < CHAN_MAX; ++i)
+	{
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		{
+			which_chan = i;		// wpisz numer znalezionego kanału
+			break;
+		}
+	}
 
 	// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
 	// trzeba go wstawić na początku bufora pomocniczego (+ 1 załatwia sprawę, w kolejnych obiegach + 1 wstawia czas za kodem \n)
 	size_t buffer_str_n_pos = -1;
 
-	// pobierz rozmiar zajmowany przez wyświetlenie czasu, potrzebne przy szukaniu kodu \n
-	int time_len = get_time().size();
-
-	// poniższa pętla wstawia czas za każdym kodem \n (poza początkiem, gdzie go nie ma i wstawia na początku bufora pomocniczego)
-	do
+	// jeśli trzeba, wstaw czas na początki każdego wiersza (opcja domyślna)
+	if(add_time)
 	{
-		buffer_str.insert(buffer_str_n_pos + 1, get_time());	// wstaw czas na początku każdego wiersza
+		// pobierz rozmiar zajmowany przez wyświetlenie czasu, potrzebne przy szukaniu kodu \n
+		int time_len = get_time().size();
 
-		buffer_str_n_pos = buffer_str.find("\n", buffer_str_n_pos + time_len + 1);	// kolejny raz szukaj za czasem i kodem \n
+		// poniższa pętla wstawia czas za każdym kodem \n (poza początkiem, gdzie go nie ma i wstawia na początku bufora pomocniczego)
+		do
+		{
+			buffer_str.insert(buffer_str_n_pos + 1, get_time());	// wstaw czas na początku każdego wiersza
 
-	} while(buffer_str_n_pos != std::string::npos);
+			buffer_str_n_pos = buffer_str.find("\n", buffer_str_n_pos + time_len + 1);	// kolejny raz szukaj za czasem i kodem \n
+
+		} while(buffer_str_n_pos != std::string::npos);
+	}
 
 	// ze względu na przyjęty sposób trzymania danych w buforze, na końcu bufora głównego danego kanału nie ma kodu \n, więc aby przejść do nowej
 	// linii, należy na początku bufora pomocniczego dodać kod \n
@@ -435,11 +477,14 @@ void add_show_win_buf(struct global_args &ga, struct channel_irc *chan_parm[], s
 		buffer_str.insert(0, "\n");
 	}
 
-	// dodaj zawartość bufora pomocniczego do bufora głównego danego kanału
-	chan_parm[ga.chan_nr]->win_buf += buffer_str;
+	// dodaj zawartość bufora pomocniczego do bufora głównego znalezionego kanału
+	if(chan_parm[which_chan])
+	{
+		chan_parm[which_chan]->win_buf += buffer_str;
+	}
 
-	// sprawdź, czy wyświetlić otrzymaną część bufora (nie zawsze jest to wymagane)
-	if(! show_buf)
+	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy)
+	if(ga.current_chan != which_chan)
 	{
 		return;
 	}
@@ -464,10 +509,15 @@ void add_show_win_buf(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void add_act_chan(struct channel_irc *chan_parm[], std::string chan_name, int act_type)
+void chan_act_add(struct channel_irc *chan_parm[], std::string chan_name, int act_type)
 {
+/*
+	Ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym.
+*/
+
 	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo w kanale "Debug" nie będzie wyświetlania aktywności
 	{
+		// znajdź kanał, którego dotyczy włączenie aktywności
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
 			// nie zmieniaj aktywności na "niższą"
@@ -482,83 +532,95 @@ void add_act_chan(struct channel_irc *chan_parm[], std::string chan_name, int ac
 }
 
 
-void new_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool chan_ok)
+void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	// kanał "Debug" zawsze pod ostatnim numerem
-	if(chan_name == "Debug")
+	if(chan_parm[CHAN_STATUS] == 0)
 	{
-		// na wszelki wypadek sprawdź, czy kanał nie istnieje jeszcze
-		if(chan_parm[CHAN_DEBUG_IRC] == 0)
-		{
-			ga.chan_nr = CHAN_DEBUG_IRC;	// ustaw nowoutworzony kanał jako aktywny
+		ga.current_chan = CHAN_STATUS;		// ustaw nowoutworzony kanał jako aktywny
 
-			chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
-			chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";	// nazwa kanału "Debug"
-			chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można wysyłać wiadomości jak w kanale czata
-
-			// zacznij od braku aktywności kanału
-			chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;
-
-			// wyczyść okno
-			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
-
-			return;		// zakończ
-		}
-	}
-
-	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo tutaj nie będzie tworzony kanał "Debug" (tworzony jest wyżej)
-	{
-		// nie twórz dwóch kanałów o takiej samej nazwie
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
-		{
-			return;
-		}
-
-		if(chan_parm[i] == 0)
-		{
-			ga.chan_nr = i;		// ustaw nowoutworzony kanał jako aktywny
-
-			chan_parm[ga.chan_nr] = new channel_irc;
-			chan_parm[ga.chan_nr]->channel = chan_name;
-			chan_parm[ga.chan_nr]->channel_ok = chan_ok;	// true dla kanałów czata, false dla "Status"
-
-			// zacznij od braku aktywności kanału
-			chan_parm[ga.chan_nr]->chan_act = 0;
-
-			// wyczyść okno
-			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
-
-			return;		// gdy utworzono kanał, przerwij szukanie wolnego kanału
-		}
+		chan_parm[CHAN_STATUS] = new channel_irc;
+		chan_parm[CHAN_STATUS]->channel = "Status";
+		chan_parm[CHAN_STATUS]->channel_ok = false;	// w kanale "Status" nie można pisać tekstu jak w kanale czata
+		chan_parm[CHAN_STATUS]->topic = "Ucieszony Chat Client - wersja rozwojowa";	// napis wyświetlany na górnym pasku
+		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
 	}
 }
 
 
-void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[])
+void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	// nie można usunąć kanału "Status" oraz "Debug"
-	if(ga.chan_nr == CHAN_STATUS || ga.chan_nr == CHAN_DEBUG_IRC)
+	if(chan_parm[CHAN_DEBUG_IRC] == 0)
 	{
-		return;
+		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
+		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
+		chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można pisać tekstu jak w kanale czata
+		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
+	}
+}
+
+
+bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name)
+{
+/*
+	Utwórz nowy kanał czata w programie. Poniższa pętla wyszukuje pierwsze wolne miejsce w tablicy i wtedy tworzy kanał.
+*/
+
+	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo tutaj nie będą tworzone kanały "Status" oraz "Debug" (tylko kanały czata)
+	{
+		// nie twórz dwóch kanałów o takiej samej nazwie
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		{
+			return true;	// co prawda nie utworzono nowego kanału, ale nie jest to błąd, bo kanał już istnieje
+		}
+
+		else if(chan_parm[i] == 0)
+		{
+			ga.current_chan = i;		// ustaw nowoutworzony kanał jako aktywny
+
+			chan_parm[ga.current_chan] = new channel_irc;
+			chan_parm[ga.current_chan]->channel = chan_name;	// nazwa kanału czata
+			chan_parm[ga.current_chan]->channel_ok = true;	// w kanałach czata można pisać normalny tekst do wysłania na serwer
+			chan_parm[ga.current_chan]->chan_act = 0;	// zacznij od braku aktywności kanału
+
+			// wyczyść okno (by nie było zawartości poprzedniego okna na ekranie)
+			wclear(ga.win_chat);
+
+			// ustaw w nim kursor na pozycji początkowej
+			ga.wcur_y = 0;
+			ga.wcur_x = 0;
+
+			return true;	// gdy utworzono kanał, przerwij szukanie wolnego kanału z kodem sukcesu
+		}
 	}
 
-	// jeśli kanał nie istnieje, zakończ
-	if(chan_parm[ga.chan_nr] == 0)
+	return false;	// zakończ z błędem, gdy nie znaleziono wolnych miejsc w tablicy
+}
+
+
+void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name)
+{
+/*
+	Usuń kanał czata w programie.
+*/
+
+	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo kanały "Status" oraz "Debug" nie mogą zostać usunięte
 	{
-		return;
+		// znajdź po nazwie kanału jego numer w tablicy
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		{
+			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
+			ga.current_chan = CHAN_STATUS;
+			win_buf_refresh(ga, chan_parm[CHAN_STATUS]->win_buf);
+
+			// usuń kanał, który był przed zmianą na "Status"
+			delete chan_parm[i];
+
+			// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
+			chan_parm[i] = 0;
+
+			break;
+		}
 	}
-
-	int current_chan = ga.chan_nr;	// zapamiętaj, który kanał usunąć
-
-	// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
-	ga.chan_nr = CHAN_STATUS;
-	win_buf_refresh(ga, chan_parm[CHAN_STATUS]->win_buf);
-
-	// usuń kanał, który był przed zmianą na "Status"
-	delete chan_parm[current_chan];
-
-	// wyzeruj go w tablicy, w ten sposób wiadomo, czy istnieje
-	chan_parm[current_chan] = 0;
 }
 
 
@@ -574,50 +636,6 @@ void del_all_chan(struct channel_irc *chan_parm[])
 		{
 			delete chan_parm[i];
 		}
-	}
-}
-
-
-void add_show_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str)
-{
-/*
-	Na podstawie tego, jaki kanał był w RAW, wrzuć go do odpowiedniego bufora kanału lub do kanału "Status", jeśli kanał nie istnieje lub RAW
-	nie zawiera kanału.
-*/
-
-	bool chan_found = false;	// przyjmij, że nie znaleziono szukanego kanału
-
-	int current_chan = ga.chan_nr;	// zachowaj aktualny kanał
-
-	for(int i = 1; i < CHAN_MAX; ++i)
-	{
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
-		{
-			// jeśli to aktywny kanał, pokaż wpisany bufor
-			if(i == ga.chan_nr)
-			{
-				ga.chan_nr = i;		// zmień kanał, aby do niego wpisać bufor
-				add_show_win_buf(ga, chan_parm, buffer_str);	// gdy znaleziono kanał, wpisz do niego zawartość bufora
-			}
-
-			// w przeciwnym razie dodaj tylko bufor
-			else
-			{
-				ga.chan_nr = i;		// zmień kanał, aby do niego wpisać bufor
-				add_show_win_buf(ga, chan_parm, buffer_str, false);
-			}
-
-			ga.chan_nr = current_chan;	// po wpisaniu przywróć kanał
-			chan_found = true;
-
-			break;
-		}
-	}
-
-	// jeśli nie znaleziono szukanego kanału, wpisz bufor do aktualnego kanału
-	if(! chan_found)
-	{
-		add_show_win_buf(ga, chan_parm, buffer_str);
 	}
 }
 

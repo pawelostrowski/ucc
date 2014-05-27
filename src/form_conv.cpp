@@ -3,7 +3,7 @@
 #include "ucc_global.hpp"
 
 
-bool check_font(std::string &onet_font)
+bool onet_font_check(std::string &onet_font)
 {
 /*
 	Funkcja ta służy tylko do sprawdzenia, czy nazwa czcionki istnieje, aby uznać, że formatowanie jest poprawne.
@@ -120,7 +120,13 @@ std::string onet_color_conv(std::string &onet_color)
 		return xWHITE;
 	}
 
-	return xTERMC;			// gdy żaden z wymienionych
+	else if(onet_color == "000000")		// czarny
+	{
+		return xTERMC;			// jako kolor zależny od ustawień terminala
+	}
+
+	// gdy żaden z wymienionych, zwróć zamiast kodu koloru jego kod z czata, aby wyświetlić wpisaną wartość w programie (bez zmiany koloru)
+	return "%C" + onet_color + "%";
 }
 
 
@@ -191,7 +197,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 
 							// znak % za nazwą czcionki kończy formatowanie, trzeba teraz wstawić kod bold,
 							// o ile czcionka jest poprawna
-							else if(buffer_irc_recv[j] == '%' && check_font(onet_font))
+							else if(buffer_irc_recv[j] == '%' && onet_font_check(onet_font))
 							{
 								was_form = true;	// było poprawne formatowanie (czyli nie wyświetlaj obecnego %)
 								i = j;		// kolejny obieg pętli zacznie czytać za tym %
@@ -200,7 +206,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 								break;
 							}
 
-							// pobierz kolejno litery nazwy czcionki
+							// pobierz kolejne litery nazwy czcionki
 							onet_font += buffer_irc_recv[j];
 						}
 					}
@@ -231,7 +237,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 
 						// znak % za nazwą czcionki kończy formatowanie, trzeba teraz wstawić kod wyłączający bold,
 						// o ile czcionka jest poprawna
-						else if(buffer_irc_recv[j] == '%' && check_font(onet_font))
+						else if(buffer_irc_recv[j] == '%' && onet_font_check(onet_font))
 						{
 							was_form = true;	// było poprawne formatowanie (czyli nie wyświetlaj obecnego %)
 							i = j;		// kolejny obieg pętli zacznie czytać za tym %
@@ -248,7 +254,7 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 			}	// F
 
 			// wykryj formatowanie kolorów
-			else if(j < buffer_len && buffer_irc_recv[j] == 'C')	// dodać reakcję na nieprawidłowe nazwy kolorów (wyświetlać je)
+			else if(j < buffer_len && buffer_irc_recv[j] == 'C')
 			{
 				onet_color.clear();
 

@@ -60,8 +60,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 
 	ga.zuousername = NICK_NOT_LOGGED;
 
-	ga.chan_nr = CHAN_STATUS;	// zacznij od kanału "Status" (zerowy element w tablicy kanałów)
-
 	ga.wcur_y = 0;
 	ga.wcur_x = 0;
 /*
@@ -101,26 +99,23 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	// tablica kanałów
 	struct channel_irc *chan_parm[CHAN_MAX] = {};		// wyzeruj od razu tablicę
 
-	// kanał "Status" zawsze pod numerem 0 w tablicy (bo jest tworzony jako pierwszy, a kanały są tworzone w taki sposób, że wybierany jest najniższy
-	// wolny indeks) i zawsze istnieje w programie (nie mylić z włączaniem go kombinacją Alt+1)
-	new_chan(ga, chan_parm, "Status", false);
-
-	// Na górnym pasku wyświetl napis
-	chan_parm[CHAN_STATUS]->topic = "Ucieszony Chat Client - wersja rozwojowa";
+	// kanał "Status" zawsze pod numerem 0 w tablicy (nie mylić z włączaniem go kombinacją Alt+1)
+	new_chan_status(ga, chan_parm);
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
-	add_show_win_buf(ga, chan_parm,	xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
-					xCYAN  "/nick nazwa_nicka\n"
-					xCYAN  "/connect\n"
-					xGREEN "# Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
-					xCYAN  "/captcha kod_z_obrazka\n"
-					xGREEN "# Aby zalogować się na nick stały (zarejestrowany), wpisz:\n"
-					xCYAN  "/nick nazwa_nicka hasło_do_nicka\n"
-					xCYAN  "/connect\n"
-					xGREEN "# Aby zobaczyć dostępne polecenia, wpisz:\n"
-					xCYAN  "/help\n"
-					xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
-					xCYAN  "/quit lub /q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
+	win_buf_add_str(ga, chan_parm, "Status",
+			xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
+			xCYAN  "/nick nazwa_nicka\n"
+			xCYAN  "/connect\n"
+			xGREEN "# Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
+			xCYAN  "/captcha kod_z_obrazka\n"
+			xGREEN "# Aby zalogować się na nick stały (zarejestrowany), wpisz:\n"
+			xCYAN  "/nick nazwa_nicka hasło_do_nicka\n"
+			xCYAN  "/connect\n"
+			xGREEN "# Aby zobaczyć dostępne polecenia, wpisz:\n"
+			xCYAN  "/help\n"
+			xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
+			xCYAN  "/quit lub /q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
 
 	// pętla główna programu
 	while(! ga.ucc_quit)
@@ -139,7 +134,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
 
 			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
-			win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+			win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -166,13 +161,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 
 		// temat pokoju (jeśli to kanał czata, dopisz "Temat: "
 		topic_bar.clear();
-		if(chan_parm[ga.chan_nr]->channel_ok)
+		if(chan_parm[ga.current_chan]->channel_ok)
 		{
 			topic_bar = "Temat: ";
 		}
 
 		// przygotuj cały bufor
-		topic_bar += chan_parm[ga.chan_nr]->topic;
+		topic_bar += chan_parm[ga.current_chan]->topic;
 
 		// wyświetl, uwzględniając szerokość terminala (wyświetl tyle, ile się zmieści)
 		top_excess = 0;
@@ -200,10 +195,10 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		printw("%s", get_time().erase(0, 1).c_str());	// .erase(0, 1) - usuń kod \x17 (na paskach kody nie są obsługiwane)
 
 		// nr kanału i jego nazwa
-		printw("[%d:%s] ", ga.chan_nr + 1, chan_parm[ga.chan_nr]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
+		printw("[%d: %s] ", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
 
 		// w aktywnym pokoju skasuj flagi aktywności
-		chan_parm[ga.chan_nr]->chan_act = 0;
+		chan_parm[ga.current_chan]->chan_act = 0;
 
 		// wyświetl aktywność kanałów
 		for(int i = 0; i < CHAN_MAX; ++i)
@@ -386,8 +381,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				{
 					if(chan_parm[key_code - '1'])	// jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08)
 					{
-						ga.chan_nr = key_code - '1';
-						win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+						ga.current_chan = key_code - '1';
+						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
 					}
 				}
 
@@ -395,14 +390,14 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				{
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
 					{
-						ga.chan_nr = 9;
+						ga.current_chan = 9;
 						win_buf_refresh(ga, chan_parm[9]->win_buf);
 					}
 				}
 
 				else if(key_code == 'd' && ucc_dbg_irc)
 				{
-					//ga.chan_nr = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
+					//ga.current_chan = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
 					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
 				}
 			}
@@ -412,16 +407,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			{
 				for(int i = 0; i < CHAN_MAX; ++i)
 				{
-					--ga.chan_nr;
+					--ga.current_chan;
 
-					if(ga.chan_nr < 0)
+					if(ga.current_chan < 0)
 					{
-						ga.chan_nr = CHAN_MAX - 1;
+						ga.current_chan = CHAN_MAX - 1;
 					}
 
-					if(chan_parm[ga.chan_nr])
+					if(chan_parm[ga.current_chan])
 					{
-						win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
 						break;
 					}
 				}
@@ -432,16 +427,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			{
 				for(int i = 0; i < CHAN_MAX; ++i)
 				{
-					++ga.chan_nr;
+					++ga.current_chan;
 
-					if(ga.chan_nr == CHAN_MAX)
+					if(ga.current_chan == CHAN_MAX)
 					{
-						ga.chan_nr = 0;
+						ga.current_chan = 0;
 					}
 
-					if(chan_parm[ga.chan_nr])
+					if(chan_parm[ga.current_chan])
 					{
-						win_buf_refresh(ga, chan_parm[ga.chan_nr]->win_buf);
+						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
 						break;
 					}
 				}
