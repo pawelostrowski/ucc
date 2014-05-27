@@ -324,3 +324,118 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 
 	return buffer_converted;	// zwróć przekonwertowany bufor z czata
 }
+
+
+std::string dayen2daypl(std::string &day_en)
+{
+	if(day_en == "Mon")
+	{
+		return "poniedziałek";
+	}
+
+	else if(day_en == "Tue")
+	{
+		return "wtorek";
+	}
+
+	else if(day_en == "Wed")
+	{
+		return "środa";
+	}
+
+	else if(day_en == "Thu")
+	{
+		return "czwartek";
+	}
+
+	else if(day_en == "Fri")
+	{
+		return "piątek";
+	}
+
+	else if(day_en == "Sat")
+	{
+		return "sobota";
+	}
+
+	else if(day_en == "Sun")
+	{
+		return "niedziela";
+	}
+
+	// gdyby zmieniono sposób zapisu, zwróć oryginalną formę
+	else
+	{
+		return day_en;
+	}
+}
+
+
+std::string monthen2monthpl(std::string &month_en)
+{
+	if(month_en == "Jan")
+	{
+		return "styczeń";
+	}
+
+	else if(month_en == "Feb")
+	{
+		return "luty";
+	}
+
+	else if(month_en == "Mar")
+	{
+		return "marzec";
+	}
+
+	else if(month_en == "Apr")
+	{
+		return "kwiecień";
+	}
+
+	else if(month_en == "May")
+	{
+		return "maj";
+	}
+
+	else if(month_en == "Jun")
+	{
+		return "czerwiec";
+	}
+
+	else if(month_en == "Jul")
+	{
+		return "lipiec";
+	}
+
+	else if(month_en == "Aug")
+	{
+		return "sierpień";
+	}
+
+	else if(month_en == "Sep")
+	{
+		return "wrzesień";
+	}
+
+	else if(month_en == "Oct")
+	{
+		return "październik";
+	}
+
+	else if(month_en == "Nov")
+	{
+		return "listopad";
+	}
+
+	else if(month_en == "Dec")
+	{
+		return "grudzień";
+	}
+
+	// gdyby zmieniono sposób zapisu, zwróć oryginalną formę
+	else
+	{
+		return month_en;
+	}
+}

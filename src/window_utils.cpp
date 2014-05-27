@@ -96,15 +96,50 @@ std::string time_unixtimestamp2local(std::string &time_unixtimestamp)
 
 std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 {
-	char time_hms[100];
+	char time_date[100];
 
-	time_t time_g = std::stoi("0" + time_unixtimestamp);
-	struct tm *time_l;	// czas lokalny
+	time_t time_date_g = std::stoi("0" + time_unixtimestamp);
+	struct tm *time_date_l;	// czas lokalny
 
-	time_l = localtime(&time_g);
-	strftime(time_hms, 95, "%A, %d %B %Y, %H:%M:%S", time_l);
+	time_date_l = localtime(&time_date_g);
+	strftime(time_date, 95, "%A, %d %B %Y, %H:%M:%S", time_date_l);
 
-	return std::string(time_hms);
+	return std::string(time_date);
+}
+
+
+std::string time_sec2time(std::string &sec)
+{
+	long sec_l = std::stol("0" + sec);
+	int d, h, m, s;
+	std::string time_str;
+
+	d = sec_l / 86400;
+	h = sec_l / 3600 % 24;
+	m = sec_l / 60 % 60;
+	s = sec_l % 60;
+
+	if(d > 0)
+	{
+		time_str = std::to_string(d) + "d " + std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
+	}
+
+	else if(h > 0)
+	{
+		time_str = std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
+	}
+
+	else if(m > 0)
+	{
+		time_str = std::to_string(m) + "m " + std::to_string(s) + "s";
+	}
+
+	else
+	{
+		time_str = std::to_string(s) + "s";
+	}
+
+	return time_str;
 }
 
 

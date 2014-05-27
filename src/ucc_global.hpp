@@ -69,6 +69,8 @@ struct global_args
 	std::string uokey;
 	std::string cookies;
 
+	bool busy_state;
+
 	std::string message_day;
 
 	// tymczasowo NAMES do zmiennej, zanim nie zostanie zaimplementowana lista nicków

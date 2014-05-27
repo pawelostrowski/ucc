@@ -13,6 +13,8 @@ std::string time_unixtimestamp2local(std::string &time_unixtimestamp);
 
 std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp);
 
+std::string time_sec2time(std::string &sec);
+
 std::string key_utf2iso(int key_code);
 
 void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
