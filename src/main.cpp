@@ -9,9 +9,9 @@ int main(int argc, char *argv[])
 	int window_status;
 
 	bool use_colors_main = true;	// domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)
-	bool ucc_dbg_irc = true;	// domyślnie pracuj w trybie debugowania IRC (potem zamienić to na parametr pobierany z argv[])
+	bool ucc_dbg_irc_main = true;	// domyślnie pracuj w trybie debugowania IRC (potem zamienić to na parametr pobierany z argv[])
 
-	window_status = main_window(use_colors_main, ucc_dbg_irc);
+	window_status = main_window(use_colors_main, ucc_dbg_irc_main);
 
 	if(window_status == 1)
 	{

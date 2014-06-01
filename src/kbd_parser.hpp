@@ -15,9 +15,13 @@ void msg_connect_irc_err(struct global_args &ga, struct channel_irc *chan_parm[]
 	Poniżej są funkcje do obsługi poleceń wpisywanych w programie.
 */
 
+void kbd_command_away(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
+
 void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
+
+void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
 
 void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]);
 
@@ -42,6 +46,8 @@ void kbd_command_quit(struct global_args &ga, struct channel_irc *chan_parm[], s
 void kbd_command_raw(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
 
 void kbd_command_time(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
 
 void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start);
 

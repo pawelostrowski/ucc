@@ -41,6 +41,7 @@ bool check_colors()
 	init_pair(pWHITE_BLUE, COLOR_WHITE, COLOR_BLUE);
 	init_pair(pCYAN_BLUE, COLOR_CYAN, COLOR_BLUE);
 	init_pair(pMAGENTA_BLUE, COLOR_MAGENTA, COLOR_BLUE);
+	init_pair(pYELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
 
 	return true;
 }
@@ -102,7 +103,7 @@ std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 	struct tm *time_date_l;	// czas lokalny
 
 	time_date_l = localtime(&time_date_g);
-	strftime(time_date, 95, "%A, %d %B %Y, %H:%M:%S", time_date_l);
+	strftime(time_date, 95, "%A, %-d %B %Y, %H:%M:%S", time_date_l);	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
 
 	return std::string(time_date);
 }
@@ -112,34 +113,31 @@ std::string time_sec2time(std::string &sec)
 {
 	long sec_l = std::stol("0" + sec);
 	int d, h, m, s;
-	std::string time_str;
 
 	d = sec_l / 86400;
-	h = sec_l / 3600 % 24;
-	m = sec_l / 60 % 60;
+	h = (sec_l / 3600) % 24;
+	m = (sec_l / 60) % 60;
 	s = sec_l % 60;
 
 	if(d > 0)
 	{
-		time_str = std::to_string(d) + "d " + std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
+		return std::to_string(d) + "d " + std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
 	}
 
 	else if(h > 0)
 	{
-		time_str = std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
+		return std::to_string(h) + "h " + std::to_string(m) + "m " + std::to_string(s) + "s";
 	}
 
 	else if(m > 0)
 	{
-		time_str = std::to_string(m) + "m " + std::to_string(s) + "s";
+		return std::to_string(m) + "m " + std::to_string(s) + "s";
 	}
 
 	else
 	{
-		time_str = std::to_string(s) + "s";
+		return std::to_string(s) + "s";
 	}
-
-	return time_str;
 }
 
 
@@ -326,8 +324,8 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 	// wypisywanie w pętli
 	for(int i = pos_win_buf_start; i < win_buf_len; ++i)
 	{
-		// wykryj formatowanie kolorów w buforze (kod \x03 informuje, że mamy kolor, następny bajt to kod koloru)
-		if(win_buf[i] == '\x03')
+		// wykryj formatowanie kolorów w buforze (kod xCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
+		if(win_buf[i] == dCOLOR)
 		{
 			// nie czytaj poza bufor
 			if(i + 1 < win_buf_len)
@@ -337,44 +335,44 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 			}
 		}
 
-		// wykryj pogrubienie tekstu (kod \x04 włącza pogrubienie)
-		else if(win_buf[i] == '\x04')
+		// wykryj włączenie pogrubienia tekstu
+		else if(win_buf[i] == dBOLD_ON)
 		{
 			wattron(ga.win_chat, A_BOLD);
 		}
 
-		// wykryj pogrubienie tekstu (kod \x5 wyłącza pogrubienie)
-		else if(win_buf[i] == '\x05')
+		// wykryj wyłączenie pogrubienia tekstu
+		else if(win_buf[i] == dBOLD_OFF)
 		{
 			wattroff(ga.win_chat, A_BOLD);
 		}
 
-		// wykryj odwrócenie kolorów (kod \x11 włącza odwrócenie kolorów)
-		else if(win_buf[i] == '\x11')
+		// wykryj włączenie odwrócenia kolorów
+		else if(win_buf[i] == dREVERSE_ON)
 		{
 			wattron(ga.win_chat, A_REVERSE);
 		}
 
-		// wykryj odwrócenie kolorów (kod \x12 wyłącza odwrócenie kolorów)
-		else if(win_buf[i] == '\x12')
+		// wykryj wyłączenie odwrócenia kolorów
+		else if(win_buf[i] == dREVERSE_OFF)
 		{
 			wattroff(ga.win_chat, A_REVERSE);
 		}
 
-		// wykryj podkreślenie tekstu (kod \x13 włącza podkreślenie)
-		else if(win_buf[i] == '\x13')
+		// wykryj włączenie podkreślenia tekstu
+		else if(win_buf[i] == dUNDERLINE_ON)
 		{
 			wattron(ga.win_chat, A_UNDERLINE);
 		}
 
-		// wykryj podkreślenie tekstu (kod \x14 wyłącza podkreślenie)
-		else if(win_buf[i] == '\x14')
+		// wykryj wyłączenie podkreślenia tekstu
+		else if(win_buf[i] == dUNDERLINE_OFF)
 		{
 			wattroff(ga.win_chat, A_UNDERLINE);
 		}
 
-		// wykryj przywrócenie domyślnych ustawień bez formatowania (kod \x17 przywraca ustawienia domyślne)
-		else if(win_buf[i] == '\x17')
+		// wykryj przywrócenie domyślnych ustawień bez formatowania
+		else if(win_buf[i] == dNORMAL)
 		{
 			wattrset(ga.win_chat, A_NORMAL);
 		}

@@ -519,6 +519,15 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	DBG IRC END
 */
 
+/*
+	// debug w oknie
+	if(ga.ucc_dbg_irc)
+	{
+		std::string buffer_irc_send_dbg = buffer_irc_send;
+		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + buffer_irc_send_dbg.erase(buffer_irc_send_dbg.size() - 1, 1));
+	}
+*/
+
 	// wyślij dane do hosta
 	bytes_sent = send(ga.socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
 
@@ -631,4 +640,13 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		// oraz usuń go z głównego bufora
 		buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
 	}
+
+/*
+	// debug w oknie
+	if(ga.ucc_dbg_irc)
+	{
+		std::string buffer_irc_rec_dbg = buffer_irc_recv;
+		win_buf_add_str(ga, chan_parm, "Debug", xWHITE + buffer_irc_rec_dbg.erase(buffer_irc_rec_dbg.size() - 1, 1));
+	}
+*/
 }

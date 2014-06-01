@@ -168,8 +168,9 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		return;
 	}
 
-	// wykryj, czy wpisano polecenie (znak / na pierwszej pozycji o tym świadczy)
-	if(kbd_buf[0] != '/')
+	// wykryj, czy wpisano polecenie (znak / na pierwszej pozycji o tym świadczy), dwa znaki // również traktuj jak zwykły tekst
+	// (np. w przypadku emotikon)
+	if(kbd_buf[0] != '/' || (kbd_buf.size() > 1 && kbd_buf[1] == '/'))
 	{
 		// jeśli brak połączenia z IRC, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 		if(! ga.irc_ok)
@@ -223,14 +224,24 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 /*
 	Wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej.
 */
-	if(f_command == "BUSY")
+	if(f_command == "AWAY")
+	{
+		kbd_command_away(ga, chan_parm, kbd_buf, pos_arg_start);
+	}
+
+	else if(f_command == "BUSY")
 	{
 		kbd_command_busy(ga, chan_parm);
 	}
 
-	else if(f_command == "CAPTCHA")
+	else if(f_command == "CAPTCHA" || f_command == "CAP")
 	{
 		kbd_command_captcha(ga, chan_parm, kbd_buf, pos_arg_start);
+	}
+
+	else if(f_command == "CARD")
+	{
+		kbd_command_card(ga, chan_parm, kbd_buf, pos_arg_start);
 	}
 
 	else if(f_command == "CONNECT" || f_command == "C")
@@ -293,6 +304,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		kbd_command_time(ga, chan_parm);
 	}
 
+	else if(f_command == "TOPIC")
+	{
+		kbd_command_topic(ga, chan_parm, kbd_buf, pos_arg_start);
+	}
+
 	else if(f_command == "VHOST")
 	{
 		kbd_command_vhost(ga, chan_parm, kbd_buf, pos_arg_start);
@@ -325,6 +341,34 @@ void msg_connect_irc_err(struct global_args &ga, struct channel_irc *chan_parm[]
 /*
 	Poniżej są funkcje do obsługi poleceń wpisywanych w programie (w kolejności alfabetycznej).
 */
+
+
+void kbd_command_away(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start)
+{
+	std::string r_args;
+
+	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	if(ga.irc_ok)
+	{
+		// jeśli podano powód nieobecności, wyślij go
+		if(rest_args(kbd_buf, pos_arg_start, r_args))
+		{
+			irc_send(ga, chan_parm, "AWAY :" + r_args);
+		}
+
+		// w przeciwnym razie wyślij bez powodu (co wyłączy status nieobecności)
+		else
+		{
+			irc_send(ga, chan_parm, "AWAY");
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_connect_irc_err(ga, chan_parm);
+	}
+}
 
 
 void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
@@ -399,6 +443,28 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 	}
 
 	ga.irc_ready = true;	// gotowość do połączenia z IRC
+}
+
+
+void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start)
+{
+	std::string f_arg;
+
+	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	if(ga.irc_ok)
+	{
+		find_arg(kbd_buf, f_arg, pos_arg_start, false);
+
+		// polecenie do IRC (można nie podawać nicka, wtedy pokaże własną wizytówkę)
+		irc_send(ga, chan_parm, "NS INFO " + f_arg);
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_connect_irc_err(ga, chan_parm);
+	}
+
 }
 
 
@@ -500,8 +566,10 @@ void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
 				xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
+				xCYAN  "/away\n"
 				xCYAN  "/busy\n"
-				xCYAN  "/captcha\n"
+				xCYAN  "/captcha lub /cap\n"
+				xCYAN  "/card\n"
 				xCYAN  "/connect lub /c\n"
 				xCYAN  "/disconnect lub /d\n"
 				xCYAN  "/help lub /h\n"
@@ -514,6 +582,7 @@ void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 				xCYAN  "/quit lub /q\n"
 				xCYAN  "/raw\n"
 				xCYAN  "/time\n"
+				xCYAN  "/topic\n"
 				xCYAN  "/vhost\n"
 				xCYAN  "/whois\n"
 				xCYAN  "/whowas");
@@ -716,7 +785,7 @@ void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], s
 	if(ga.irc_ok)
 	{
 		// wyślij polecenie, gdy to aktywny pokój czata, a nie "Status" lub "Debug"
-		if(chan_parm[ga.current_chan]->channel_ok)
+		if(chan_parm[ga.current_chan] && chan_parm[ga.current_chan]->channel_ok)
 		{
 			// jeśli podano powód wyjścia, wyślij go
 			if(rest_args(kbd_buf, pos_arg_start, r_args))
@@ -832,6 +901,37 @@ void kbd_command_time(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.irc_ok)
 	{
 		irc_send(ga, chan_parm, "TIME");
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_connect_irc_err(ga, chan_parm);
+	}
+}
+
+
+void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t &pos_arg_start)
+{
+	std::string r_args;
+
+	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	if(ga.irc_ok)
+	{
+		// temat można zmienić tylko w aktywnym oknie czata (nie w "Status" i "Debug)
+		if(chan_parm[ga.current_chan] && chan_parm[ga.current_chan]->channel_ok)
+		{
+			// można nie podawać tematu, wtedy zostanie on wyczyszczony
+			rest_args(kbd_buf, pos_arg_start, r_args);
+
+			// wyślij temat do IRC
+			irc_send(ga, chan_parm, "TOPIC " + buf_utf2iso(chan_parm[ga.current_chan]->channel) + " :" + r_args);
+		}
+
+		else
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
+		}
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie

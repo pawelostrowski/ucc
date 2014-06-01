@@ -1,18 +1,20 @@
 #include <string>		// std::string, setlocale()
 #include <cerrno>		// errno
 #include <sys/select.h>		// select()
+#include <sys/time.h>		// gettimeofday()
 #include <unistd.h>		// close() - socket
 
 #include "main_window.hpp"
 #include "window_utils.hpp"
 #include "enc_str.hpp"
+#include "network.hpp"
 #include "kbd_parser.hpp"
 #include "irc_parser.hpp"
 #include "auth.hpp"
 #include "ucc_global.hpp"
 
 
-int main_window(bool use_colors_main, bool ucc_dbg_irc)
+int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 {
 	// zapobiega zapętleniu się programu po wpisaniu w terminalu czegoś w stylu 'echo text | ucc'
 	if(freopen("/dev/tty", "r", stdin) == NULL)
@@ -41,6 +43,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	int top_excess;
 	bool chan_act_ok = false;
 	short act_color;
+	int ping_counter = 0;
 /*
 	Koniec zmiennych.
 */
@@ -49,6 +52,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 	Struktura globalnych zmiennych (nazwa może być myląca, chodzi o zmienne używane w wielu miejscach) oraz ustalenie wartości początkowych.
 */
 	struct global_args ga;
+
+	ga.ucc_dbg_irc = ucc_dbg_irc_main;
 
 	ga.ucc_quit = false;		// aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
 
@@ -62,9 +67,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 
 	ga.wcur_y = 0;
 	ga.wcur_x = 0;
+
+	ga.ping = 0;
+	ga.pong = 0;
+	ga.lag = 0;
+//	ga.lag_timeout = false;
 /*
 	Koniec ustalania globalnych zmiennych.
 */
+
+	struct timeval t_ping, t_pong;
 
 	struct timeval tv;		// struktura dla select(), aby ustawić czas wychodzenia z oczekiwania na klawiaturę lub socket, aby pokazać czas
 
@@ -117,14 +129,73 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
 			xCYAN  "/quit lub /q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
 
+	// jeśli trzeba, utwórz kanał "Debug"
+	if(ga.ucc_dbg_irc)
+	{
+//		new_chan_debug_irc(ga, chan_parm);
+	}
+
 	// pętla główna programu
 	while(! ga.ucc_quit)
 	{
-		// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku)
-		tv.tv_sec = 0;
-		tv.tv_usec = 250000;
+		// licznik dla PING
+		if(ga.irc_ok)
+		{
+			++ping_counter;
+		}
 
-		readfds_tmp = readfds;
+		else
+		{
+			ping_counter = 0;
+			ga.lag = 0;
+
+			ga.lag_timeout = false;
+		}
+
+		// PING do serwera co liczbę sekund w PING_TIME (gdy klient jest zalogowany)
+		if(ga.irc_ok && ping_counter == PING_TIME * 5)
+		{
+			if(ga.lag_timeout)
+			{
+				gettimeofday(&t_pong, NULL);
+				ga.pong = t_pong.tv_sec * 1000;
+				ga.pong += t_pong.tv_usec / 1000;
+
+				ga.lag += ga.pong - ga.ping;
+
+				if(ga.lag >= PING_TIMEOUT * 1000)
+				{
+					ga.irc_ok = false;
+					FD_CLR(ga.socketfd_irc, &readfds);
+					ga.zuousername = NICK_NOT_LOGGED;
+
+					if(ga.socketfd_irc > 0)
+					{
+						close(ga.socketfd_irc);
+						ga.socketfd_irc = 0;
+					}
+
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+							xRED "# Serwer nie odpowiadał przez ponad " + std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+				}
+			}
+
+			ga.lag_timeout = true;
+			ping_counter = 0;
+			gettimeofday(&t_ping, NULL);
+			ga.ping = t_ping.tv_sec * 1000;
+			ga.ping += t_ping.tv_usec / 1000;
+
+			if(ga.irc_ok)
+			{
+				irc_send(ga, chan_parm, "PING :" + std::to_string(ga.ping));
+			}
+		}
+
+		// co 0.2s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
+		// oraz o aktualizację aktywności pokoi)
+		tv.tv_sec = 0;
+		tv.tv_usec = 200000;
 
 		// wykryj zmianę rozmiaru okna terminala
 		if(is_term_resized(term_y, term_x))
@@ -138,7 +209,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-		wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
+		if(ga.use_colors)
+		{
+			wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
+		}
+
+		else
+		{
+			attrset(A_NORMAL);
+			attron(A_REVERSE);
+		}
 
 		// pasek górny
 		move(0, 0);
@@ -195,7 +275,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		printw("%s", get_time().erase(0, 1).c_str());	// .erase(0, 1) - usuń kod \x17 (na paskach kody nie są obsługiwane)
 
 		// nr kanału i jego nazwa
-		printw("[%d: %s] ", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
+		printw("[%d: %s]", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
 
 		// w aktywnym pokoju skasuj flagi aktywności
 		chan_parm[ga.current_chan]->chan_act = 0;
@@ -228,7 +308,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 				{
 					if(! chan_act_ok)
 					{
-						printw("[Aktywność: ");
+						printw(" [Aktywność: ");
 
 						// numer pokoju w kolorze
 						wattron_color(stdscr, ga.use_colors, act_color);
@@ -267,10 +347,24 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 
 		if(chan_act_ok)
 		{
-			printw("] ");
+			printw("]");
 		}
 
 		chan_act_ok = false;
+
+		// pokaż lag
+		if(ga.lag > 0)
+		{
+			if(ga.lag < 1000)
+			{
+				printw(" [Lag: %dms]", ga.lag);
+			}
+
+			else
+			{
+				printw(" [Lag: %.2fs]", ga.lag / 1000.00);
+			}
+		}
 /*
 	Koniec informacji na pasku dolnym.
 */
@@ -282,6 +376,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 /*
 	Czekaj na aktywność klawiatury lub gniazda (socket).
 */
+		readfds_tmp = readfds;
+
 		if(select(ga.socketfd_irc + 1, &readfds_tmp, NULL, NULL, &tv) == -1)
 		{
 			// sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, więc trzeba to wykryć, aby nie wywalić programu
@@ -395,7 +491,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					}
 				}
 
-				else if(key_code == 'd' && ucc_dbg_irc)
+				else if(key_code == 'd' && ga.ucc_dbg_irc)
 				{
 					//ga.current_chan = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
 					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
@@ -468,13 +564,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 					// gdy połączenie do IRC nie powiedzie się, wyzeruj socket oraz przywróć nick na pasku na domyślny
 					else
 					{
+						ga.zuousername = NICK_NOT_LOGGED;
+
 						if(ga.socketfd_irc > 0)
 						{
 							close(ga.socketfd_irc);
 							ga.socketfd_irc = 0;
 						}
-
-						ga.zuousername = NICK_NOT_LOGGED;
 					}
 
 				}	// if(irc_ready)
@@ -507,7 +603,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 		}	// if(FD_ISSET(0, &readfds_tmp))
 
 		// gniazdo (socket), sprawdzaj tylko, gdy socket jest aktywny
-		if(FD_ISSET(ga.socketfd_irc, &readfds_tmp) && ga.socketfd_irc > 0)
+		if(ga.socketfd_irc > 0 && FD_ISSET(ga.socketfd_irc, &readfds_tmp))
 		{
 			// pobierz dane z serwera oraz zinterpretuj odpowiedź (obsłuż otrzymane dane)
 			irc_parser(ga, chan_parm);
@@ -516,14 +612,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc)
 			if(! ga.irc_ok)
 			{
 				FD_CLR(ga.socketfd_irc, &readfds);
+				ga.zuousername = NICK_NOT_LOGGED;
 
 				if(ga.socketfd_irc > 0)
 				{
 					close(ga.socketfd_irc);
 					ga.socketfd_irc = 0;
 				}
-
-				ga.zuousername = NICK_NOT_LOGGED;
 			}
 		}
 
