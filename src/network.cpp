@@ -8,8 +8,6 @@
 #include "enc_str.hpp"
 #include "ucc_global.hpp"
 
-#define BUF_SIZE (1500 * sizeof(char))
-
 #if DBG_HTTP == 1
 #include <fstream>		// std::fstream
 #define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"

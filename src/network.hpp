@@ -1,6 +1,8 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+#define BUF_SIZE (1500 * sizeof(char))
+
 // debugowanie HTTP (1 - zapisuje plik na dysku)
 #define DBG_HTTP 1
 

@@ -640,10 +640,10 @@ void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 		// jeśli jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w oknie terminala
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
-				xMAGENTA "" xBOLD_ON "* " + buf_iso2utf(ga.zuousername) + xBOLD_OFF "" xTERMC " " + buf_iso2utf(r_args));
+				xBOLD_ON xMAGENTA "* " + buf_iso2utf(ga.zuousername) + xNORMAL " " + buf_iso2utf(r_args));
 
 		// wyślij też komunikat do serwera IRC
-		irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.current_chan]->channel) + " :\x01""ACTION " + r_args + "\x01");
+		irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.current_chan]->channel) + " :\x01" "ACTION " + r_args + "\x01");
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie

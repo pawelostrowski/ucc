@@ -295,9 +295,9 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 		// kod tabulatora wyświetl jako t w odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
 		if(kbd_buf[i] == '\t')
 		{
-			attrset(A_REVERSE);	// odwróć kolor tła
+			attron(A_REVERSE);	// odwróć kolor tła
 			printw("t");
-			attrset(A_NORMAL);	// przywróć normalne atrybuty
+			attroff(A_NORMAL);	// przywróć normalne atrybuty
 			continue;		// kod tabulatora wyświetlono jako t z odwróconymi kolorami, więc nie idź dalej, tylko zacznij od początku
 		}
 
@@ -331,7 +331,7 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 			if(i + 1 < win_buf_len)
 			{
 				++i;	// przejdź na kod koloru
-				wattron_color(ga.win_chat, ga.use_colors, win_buf[i]);
+				wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(win_buf[i]));
 			}
 		}
 
@@ -379,7 +379,8 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 
 		else
 		{
-			// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów)
+			// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów lub zmiany
+			// rozmiaru okna terminala)
 			if(win_buf[i] == '\n')
 			{
 				getyx(ga.win_chat, clr_y, clr_x);		// zachowaj pozycję kursora
@@ -483,13 +484,13 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		}
 	}
 
-	// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
-	// trzeba go wstawić na początku bufora pomocniczego (+ 1 załatwia sprawę, w kolejnych obiegach + 1 wstawia czas za kodem \n)
-	size_t buffer_str_n_pos = -1;
-
 	// jeśli trzeba, wstaw czas na początki każdego wiersza (opcja domyślna)
 	if(add_time)
 	{
+		// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
+		// trzeba go wstawić na początku bufora pomocniczego (+ 1 załatwia sprawę, w kolejnych obiegach + 1 wstawia czas za kodem \n)
+		size_t buffer_str_n_pos = -1;
+
 		// pobierz rozmiar zajmowany przez wyświetlenie czasu, potrzebne przy szukaniu kodu \n
 		int time_len = get_time().size();
 
