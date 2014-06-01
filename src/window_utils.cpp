@@ -41,6 +41,7 @@ bool check_colors()
 	init_pair(pWHITE_BLUE, COLOR_WHITE, COLOR_BLUE);
 	init_pair(pCYAN_BLUE, COLOR_CYAN, COLOR_BLUE);
 	init_pair(pMAGENTA_BLUE, COLOR_MAGENTA, COLOR_BLUE);
+	init_pair(pBLACK_BLUE, COLOR_BLACK, COLOR_BLUE);
 	init_pair(pYELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
 
 	return true;
@@ -484,7 +485,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		}
 	}
 
-	// jeśli trzeba, wstaw czas na początki każdego wiersza (opcja domyślna)
+	// jeśli trzeba, wstaw czas na początku każdego wiersza (opcja domyślna)
 	if(add_time)
 	{
 		// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
@@ -588,6 +589,7 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
 		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
 		chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można pisać tekstu jak w kanale czata
+		chan_parm[CHAN_DEBUG_IRC]->topic = "Debug";
 		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
 	}
 }

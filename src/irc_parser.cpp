@@ -2136,6 +2136,7 @@ void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	:cf1f4.onet NOTICE Auth :*** Looking up your hostname...
 	:cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
 	:AT89S8253!70914256@aaa2a7.a7f7a6.88308b.464974 NOTICE #ucc :test
+	:cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel
 */
 void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {

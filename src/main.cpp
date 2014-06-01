@@ -1,5 +1,7 @@
-#include <iostream>			// std::cerr, std::endl
-#include <cstdio>			// perror()
+#include <iostream>			// std::string, std::cout, std::cerr, std::endl
+//#include <cstdio>			// perror()
+
+// -std=gnu++11 - perror()
 
 #include "main_window.hpp"
 
@@ -8,8 +10,50 @@ int main(int argc, char *argv[])
 {
 	int window_status;
 
-	bool use_colors_main = true;	// domyślnie używaj kolorów w terminalu (jeśli terminal je obsługuje)
-	bool ucc_dbg_irc_main = true;	// domyślnie pracuj w trybie debugowania IRC (potem zamienić to na parametr pobierany z argv[])
+	// wartości domyślne (zostaną zmienione, jeśli w wierszu poleceń wpiszemy odpowiednie parametry)
+	bool use_colors_main = true;	// domyślnie używaj kolorów w terminalu
+	bool ucc_dbg_irc_main = false;	// domyślnie nie pracuj w trybie debugowania IRC
+
+	std::string args[argc];
+
+	// wczytaj wszystkie argumenty łącznie z ze ścieżką i nazwą programu
+	for(int i = 0; i < argc; ++i)
+	{
+		args[i] = std::string(argv[i]);
+	}
+
+	// poprawić obsługę o wykrywanie błędnych argumentów
+	for(int i = 0; i < argc; ++i)
+	{
+		// --color=on
+		if(args[i] == "--colors=on")
+		{
+			// w zasadzie może tego w ogóle nie być, bo kolory są domyślnie włączone
+		}
+
+		else if(args[i] == "--colors=off")
+		{
+			use_colors_main = false;
+		}
+
+		// --dbg-irc
+		else if(args[i] == "--dbg-irc")
+		{
+			ucc_dbg_irc_main = true;
+		}
+
+		// --help
+		else if(args[i] == "--help")
+		{
+			std::cout << "Ucieszony Chat Client - wersja rozwojowa" << std::endl << std::endl;
+			std::cout << "Opcje:" << std::endl;
+			std::cout << "  --colors=on/off\twłącza/wyłącza kolory w programie (domyślnie włączone)" << std::endl;
+			std::cout << "  --dbg-irc\t\twłącza debugowanie IRC w oknie \"Debug\"" << std::endl;
+			std::cout << "  --help\t\twyświetla ten tekst pomocy i kończy działanie programu" << std::endl;
+
+			return 0;
+		}
+	}
 
 	window_status = main_window(use_colors_main, ucc_dbg_irc_main);
 

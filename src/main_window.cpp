@@ -132,7 +132,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	// jeśli trzeba, utwórz kanał "Debug"
 	if(ga.ucc_dbg_irc)
 	{
-//		new_chan_debug_irc(ga, chan_parm);
+		new_chan_debug_irc(ga, chan_parm);
 	}
 
 	// pętla główna programu
@@ -274,9 +274,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		//pokaż aktualny czas
 		printw("%s", get_time().erase(0, 1).c_str());	// .erase(0, 1) - usuń kod \x17 (na paskach kody nie są obsługiwane)
 
-		// nr kanału i jego nazwa
-		printw("[%d: %s]", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
-
 		// w aktywnym pokoju skasuj flagi aktywności
 		chan_parm[ga.current_chan]->chan_act = 0;
 
@@ -303,45 +300,48 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					act_color = pCYAN_BLUE;
 				}
 
-				// gdy była aktywność, wyświetl wynik
-				if(chan_parm[i]->chan_act > 0 && chan_parm[i]->chan_act <= 3)
+				// brak aktywności wyświetl jako czarny tekst na niebieskim tle
+				else
 				{
-					if(! chan_act_ok)
-					{
-						printw(" [Aktywność: ");
-
-						// numer pokoju w kolorze
-						wattron_color(stdscr, ga.use_colors, act_color);
-
-						if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
-						{
-							wattron(stdscr, A_BOLD);
-						}
-
-						printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
-
-						chan_act_ok = true;	// gdy napisano "Aktywność: ", nie dopisuj tego ponownie
-					}
-
-					else
-					{
-						printw(",");
-
-						// numer pokoju w kolorze
-						wattron_color(stdscr, ga.use_colors, act_color);
-
-						if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
-						{
-							wattron(stdscr, A_BOLD);
-						}
-
-						printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
-					}
-
-					// przywróć domyślny kolor paska bez bolda
-					wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
-					wattroff(stdscr, A_BOLD);
+					act_color = pBLACK_BLUE;
 				}
+
+				// wyświetl wynik
+				if(! chan_act_ok)
+				{
+					printw("[Pokoje: ");
+
+					// numer pokoju w kolorze
+					wattron_color(stdscr, ga.use_colors, act_color);
+
+					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
+					{
+						wattron(stdscr, A_BOLD);
+					}
+
+					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
+
+					chan_act_ok = true;	// gdy napisano "Aktywność: ", nie dopisuj tego ponownie
+				}
+
+				else
+				{
+					printw(",");
+
+					// numer pokoju w kolorze
+					wattron_color(stdscr, ga.use_colors, act_color);
+
+					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
+					{
+						wattron(stdscr, A_BOLD);
+					}
+
+					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
+				}
+
+				// przywróć domyślny kolor paska bez bolda
+				wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
+				wattroff(stdscr, A_BOLD);
 			}
 		}
 
@@ -351,6 +351,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		}
 
 		chan_act_ok = false;
+
+		// nr kanału i jego nazwa
+		printw(" [%d: %s]", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
 
 		// pokaż lag
 		if(ga.lag > 0)
@@ -493,8 +496,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 				else if(key_code == 'd' && ga.ucc_dbg_irc)
 				{
-					//ga.current_chan = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt+d
-					//win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
+					ga.current_chan = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt + d
+					win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
 				}
 			}
 
