@@ -17,6 +17,7 @@
 #define pMAGENTA_BLUE	0x0B	// magenta font, niebieskie tło
 #define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
 #define pYELLOW_BLACK	0x0D	// żółty font, czarne tło
+#define pBLACK_CYAN	0x0E
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -33,6 +34,7 @@
 #define xMAGENTA_BLUE	xCOLOR "\x0B"
 #define xBLACK_BLUE	xCOLOR "\x0C"
 #define xYELLOW_BLACK	xCOLOR "\x0D"
+#define xBLACK_CYAN	xCOLOR "\x0E"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"

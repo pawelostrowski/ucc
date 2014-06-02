@@ -43,6 +43,7 @@ bool check_colors()
 	init_pair(pMAGENTA_BLUE, COLOR_MAGENTA, COLOR_BLUE);
 	init_pair(pBLACK_BLUE, COLOR_BLACK, COLOR_BLUE);
 	init_pair(pYELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
+	init_pair(pBLACK_CYAN, COLOR_BLACK, COLOR_CYAN);
 
 	return true;
 }

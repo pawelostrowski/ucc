@@ -450,7 +450,7 @@ void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], s
 {
 	std::string f_arg;
 
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		find_arg(kbd_buf, f_arg, pos_arg_start, false);
@@ -594,7 +594,7 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 {
 	std::string f_arg;
 
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		find_arg(kbd_buf, f_arg, pos_arg_start, false);
@@ -626,7 +626,7 @@ void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	std::string r_args;
 
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		// jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
@@ -988,19 +988,21 @@ void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], 
 {
 	std::string f_arg;
 
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		find_arg(kbd_buf, f_arg, pos_arg_start, false);
 
+		// jeśli nie podano nicka, użyj własnego
 		if(pos_arg_start == 0)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie podano nicka do sprawdzenia.");
-			return;
+			irc_send(ga, chan_parm, "WHOIS " + ga.zuousername + " " + ga.zuousername);	// 2x nick, aby pokazało idle
 		}
 
-		// polecenie do IRC
-		irc_send(ga, chan_parm, "WHOIS " + f_arg + " " + f_arg);	// 2x nick, aby pokazało idle
+		else
+		{
+			irc_send(ga, chan_parm, "WHOIS " + f_arg + " " + f_arg);	// 2x nick, aby pokazało idle
+		}
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -1015,19 +1017,21 @@ void kbd_command_whowas(struct global_args &ga, struct channel_irc *chan_parm[],
 {
 	std::string f_arg;
 
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		find_arg(kbd_buf, f_arg, pos_arg_start, false);
 
+		// jeśli nie podano nicka, użyj własnego
 		if(pos_arg_start == 0)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie podano nicka do sprawdzenia.");
-			return;
+			irc_send(ga, chan_parm, "WHOWAS " + ga.zuousername);
 		}
 
-		// polecenie do IRC
-		irc_send(ga, chan_parm, "WHOWAS " + f_arg);
+		else
+		{
+			irc_send(ga, chan_parm, "WHOWAS " + f_arg);
+		}
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie

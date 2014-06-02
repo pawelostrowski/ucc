@@ -17,7 +17,11 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 
 void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_invignore(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
+
 void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
+
+void raw_invreject(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
 void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
@@ -95,6 +99,8 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 void raw_333(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
+void raw_341();
+
 void raw_353(struct global_args &ga, std::string &buffer_irc_raw);
 
 void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
@@ -154,6 +160,10 @@ void raw_807(struct global_args &ga, struct channel_irc *chan_parm[]);
 void raw_808(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void raw_809(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
+void raw_811(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
+void raw_812(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
 void raw_815(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 

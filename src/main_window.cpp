@@ -316,7 +316,14 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
 					{
-						wattron(stdscr, A_BOLD);
+						attron(A_BOLD);
+					}
+
+					if(i == ga.current_chan)
+					{
+//						attron(A_BOLD);
+							wattron_color(stdscr, ga.use_colors, pBLACK_CYAN);
+//						attron(A_UNDERLINE);
 					}
 
 					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
@@ -333,15 +340,24 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
 					{
-						wattron(stdscr, A_BOLD);
+						attron(A_BOLD);
+					}
+
+					if(i == ga.current_chan)
+					{
+							wattron_color(stdscr, ga.use_colors, pBLACK_CYAN);
+//						attron(A_BOLD);
+//						attron(A_UNDERLINE);
 					}
 
 					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
 				}
 
-				// przywróć domyślny kolor paska bez bolda
+				// przywróć domyślny kolor paska bez bolda i podkreślenia
 				wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
-				wattroff(stdscr, A_BOLD);
+				attroff(A_BOLD);
+				attroff(A_UNDERLINE);
+
 			}
 		}
 

@@ -158,9 +158,19 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_ping(ga, chan_parm, raw_parm);
 		}
 
+		else if(raw_parm[1] == "INVIGNORE")
+		{
+			raw_invignore(ga, chan_parm, raw_parm, buffer_irc_raw);
+		}
+
 		else if(raw_parm[1] == "INVITE")
 		{
 			raw_invite(ga, chan_parm, raw_parm, buffer_irc_raw);
+		}
+
+		else if(raw_parm[1] == "INVREJECT")
+		{
+			raw_invreject(ga, chan_parm, raw_parm, buffer_irc_raw);
 		}
 
 		else if(raw_parm[1] == "JOIN")
@@ -328,6 +338,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 				raw_333(ga, chan_parm, raw_parm, buffer_irc_raw);
 				break;
 
+			case 341:
+				raw_341();
+				break;
+
 			case 353:
 				raw_353(ga, buffer_irc_raw);
 				break;
@@ -446,6 +460,14 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 
 			case 809:
 				raw_809(ga, chan_parm, raw_parm);
+				break;
+
+			case 811:
+				raw_811(ga, chan_parm, raw_parm);
+				break;
+
+			case 812:
+				raw_812(ga, chan_parm, raw_parm);
 				break;
 
 			case 815:
@@ -621,6 +643,32 @@ void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 
 /*
+	INVIGNORE
+	:Kernel_Panic!78259658@87edcc.6bc2d5.f4e8a2.b9d18c INVIGNORE ucc_test ^cf1f2753898
+	:Kernel_Panic!78259658@87edcc.6bc2d5.f4e8a2.b9d18c INVIGNORE ucc_test #ucc
+*/
+void raw_invignore(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	// jeśli zignorowano zaproszenie do rozmowy prywatnej
+	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " zignorował(a) Twoje zaproszenie do rozmowy prywatnej.");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, raw_parm[3], 1);
+	}
+
+	// jeśli zignorowano zaproszenie do pokoju
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " zignorował(a) Twoje zaproszenie do pokoju " + raw_parm[3]);
+	}
+}
+
+
+/*
 	INVITE
 	:Kernel_Panic!78259658@87edcc.6bc2d5.9f815e.0d56cc INVITE ucc_test :^cf1f1551082
 	:ucieszony86!50256503@87edcc.6bc2d5.ee917f.54dae7 INVITE ucc_test :#ucc
@@ -656,13 +704,41 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		}
 
 		// informacja w "Status"
+		raw_parm[4] = raw_parm[3];	// po /join wytnij #, ale nie wycinaj go w pierwszej części zdania, dlatego użyj innego bufora (wolnego)
+
 		win_buf_add_str(ga, chan_parm, "Status", xBOLD_ON xYELLOW_BLACK "* "
 				+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
-				+ "] zaprasza do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[3].erase(0, 1));
+				+ "] zaprasza do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[4].erase(0, 1));
 	}
 
 	// aktywność typu 1 w "Status"
 	chan_act_add(chan_parm, "Status", 1);
+}
+
+
+/*
+	INVREJECT
+	:Kernel_Panic!78259658@87edcc.6bc2d5.f4e8a2.b9d18c INVREJECT ucc_test ^cf1f1123456
+	:Kernel_Panic!78259658@87edcc.6bc2d5.f4e8a2.b9d18c INVREJECT ucc_test #ucc
+*/
+void raw_invreject(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	// jeśli odrzucono zaproszenie do rozmowy prywatnej
+	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " odrzucił(a) Twoje zaproszenie do rozmowy prywatnej.");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, raw_parm[3], 1);
+	}
+
+	// jeśli odrzucono zaproszenie do pokoju
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " odrzucił(a) Twoje zaproszenie do pokoju " + raw_parm[3]);
+	}
 }
 
 
@@ -674,17 +750,17 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	// jeśli to ja wchodzę, utwórz nowy kanał
-	if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername && ! new_chan_chat(ga, chan_parm, raw_parm[2]))
+	if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername) && ! new_chan_chat(ga, chan_parm, raw_parm[2]))
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie udało się utworzyć nowego kanału (brak pamięci)!");
-		return;
+//		return;
 	}
 
 	// jeśli jest ^ (rozmowa prywatna), wyświetl odpowiedni komunikat
 	else if(raw_parm[2].size() > 0 && raw_parm[2][0] == '^')
 	{
 		// jeśli to ja dołączam do rozmowy prywatnej, komunikat będzie inny, niż jeśli to ktoś dołącza
-		if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
+		if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername))
 		{
 			win_buf_add_str(ga, chan_parm, raw_parm[2], xGREEN "* Dołączasz do rozmowy prywatnej.");
 		}
@@ -724,7 +800,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	}
 
 	// jeśli to mnie wyrzucono, pokaż inny komunikat
-	if(raw_parm[3] == ga.zuousername)
+	if(raw_parm[3] == buf_iso2utf(ga.zuousername))
 	{
 		// usuń kanał z programu
 		del_chan_chat(ga, chan_parm, raw_parm[2]);
@@ -767,7 +843,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw, bool normal_user)
 {
 	// flaga normal_user jest informacją, że to zwykły użytkownik czata (a nie np. ChanServ) ustawił daną flagę, dlatego wtedy dodaj "(a)" po "ustawił",
-	// pojawia się też tylko przy niektórych zmianach, dlatego nie wszędzie flaga normal_user jest brana pod uwagę
+	// pojawia się tylko przy niektórych zmianach, dlatego nie wszędzie flaga normal_user jest brana pod uwagę
 	std::string a;
 
 	if(normal_user)
@@ -1004,7 +1080,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 
 		// pokazuj tylko moje szyfrowanie IP
-		else if(raw_parm[3][i] == 'x' && raw_parm[2] == ga.zuousername)
+		else if(raw_parm[3][i] == 'x' && raw_parm[2] == buf_iso2utf(ga.zuousername))
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1022,7 +1098,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 
 		// pokazuj tylko mój zarejestrowany nick
-		else if(raw_parm[3][i] == 'r' && raw_parm[2] == ga.zuousername)
+		else if(raw_parm[3][i] == 'r' && raw_parm[2] == buf_iso2utf(ga.zuousername))
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1059,7 +1135,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// :NickServ!service@service.onet MODE ucc_test +r
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// od 1, bo pomijamy "Status" oraz - 1, bo pomijamy "Debug"
 	{
-		if(chan_parm[i] && chan_parm[i]->channel.size() > 0 && raw_parm[2] == ga.zuousername && raw_parm[3][1] == 'r')
+		if(chan_parm[i] && chan_parm[i]->channel.size() > 0 && raw_parm[2] == buf_iso2utf(ga.zuousername) && raw_parm[3][1] == 'r')
 		{
 			// pierwszy kanał bez przecinka
 			if(chan_join.size() == 0)
@@ -1108,7 +1184,7 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 
 		//jeśli to ja opuszczam rozmowę prywatną, komunikat będzie inny, niż jeśli to ktoś opuszcza
-		if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
+		if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername))
 		{
 			win_buf_add_str(ga, chan_parm, raw_parm[2], xCYAN "* Opuszczasz rozmowę prywatną" + reason);
 		}
@@ -1128,7 +1204,7 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	}
 
 	// jeśli to ja wychodzę, usuń kanał z programu
-	if(get_value_from_buf(buffer_irc_raw, ":", "!") == ga.zuousername)
+	if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername))
 	{
 		del_chan_chat(ga, chan_parm, raw_parm[2]);
 	}
@@ -1164,7 +1240,7 @@ void raw_pong(struct global_args &ga)
 void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	std::string form_start;
-	size_t nick_call = buffer_irc_raw.find(ga.zuousername);
+	size_t nick_call = buffer_irc_raw.find(buf_iso2utf(ga.zuousername));
 
 	// jeśli ktoś mnie woła, pogrub jego nick i wyświetl w żółtym kolorze
 	if(nick_call != std::string::npos)
@@ -1629,6 +1705,15 @@ void raw_333(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
+	341 (INVITE - bez informowania, bo podobną informację zwraca RAW NOTICE)
+	:cf1f3.onet 341 ucc_test Kernel_Panic #ucc
+*/
+void raw_341()
+{
+}
+
+
+/*
 	353 (NAMES)
 	:cf1f1.onet 353 ucc_test = #scc :%ucc_test|rx,0 AT89S8253|brx,0 %Husar|rx,1 ~Ayindida|x,0 YouTube_Dekoder|rx,0 StyX1|rx,0 %Radowsky|rx,1 fml|rx,0
 */
@@ -1873,7 +1958,7 @@ void raw_433(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "* Nick " + raw_parm[3] + " jest już w użyciu.");
 
-	ga.irc_ok = false;
+	ga.irc_ok = false;	// tymczasowo, przerobić to na coś lepszego, np. pytanie o useroverride
 }
 
 
@@ -2068,6 +2153,27 @@ void raw_809(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
+	811 (INVIGNORE)
+	:cf1f2.onet 811 ucc_test Kernel_Panic :Ignore invites
+*/
+void raw_811(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, "* Zignorowano zaproszenia od " + raw_parm[3]);
+}
+
+
+/*
+	812 (INVREJECT)
+	:cf1f4.onet 812 ucc_test Kernel_Panic ^cf1f2754610 :Invite rejected
+*/
+void raw_812(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	// poprawić na odróżnianie pokoi i rozmów prywatnych
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, "* Odrzucono zaproszenie od " + raw_parm[3] + " do " + raw_parm[4]);
+}
+
+
+/*
 	815 (WHOIS)
 	:cf1f4.onet 815 ucc_test ucieszony86 :Public webcam
 */
@@ -2137,6 +2243,7 @@ void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	:cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
 	:AT89S8253!70914256@aaa2a7.a7f7a6.88308b.464974 NOTICE #ucc :test
 	:cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel
+	:cf1f1.onet NOTICE ^cf1f1756979 :*** ucc_test invited Kernel_Panic into the channel
 */
 void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
@@ -2162,6 +2269,37 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n"));
 	}
 
+	// jeśli to zaproszenie do pokoju lub do rozmowy prywatnej, komunikat skieruj do właściwego pokoju
+	else if(buffer_irc_raw.find(":*** " +  raw_parm[4] + " invited " + raw_parm[6] + " into the channel") != std::string::npos
+		&& raw_parm[0].find("!") == std::string::npos)
+	{
+		// rozmowa prywatna
+		if(raw_parm[2][0] == '^')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm[2], "* Wysłano zaproszenie do rozmowy prywatnej dla " + raw_parm[6]);
+		}
+
+		// pokój
+		else
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm[2],
+					"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL + "*** " + raw_parm[6]
+					+ " został(a) zaproszony(a) do pokoju " + raw_parm[2] + " przez " + raw_parm[4]);
+
+			// aktywność typu 1
+			chan_act_add(chan_parm, raw_parm[2], 1);
+		}
+
+	}
+
+	// jeśli to wiadomość dla pokoju, a nie nicka, komunikat skieruj do właściwego pokoju
+	else if(raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2],
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+	}
+
+	// jeśli to wiadomość dla nicka (mojego), komunikat skieruj do aktualnie otwartego pokoju
 	else
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
