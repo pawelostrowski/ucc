@@ -8,7 +8,7 @@
 #define PING_TIME 10
 
 // po jakim czasie braku odpowiedzi zerwać połączenie (w sekundach)
-#define PING_TIMEOUT 20
+#define PING_TIMEOUT (PING_TIME * 2)
 
 // nick na pasku dolnym, gdy nie jesteśmy zalogowani do czata
 #define NICK_NOT_LOGGED "Niezalogowany"

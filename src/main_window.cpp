@@ -135,7 +135,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		new_chan_debug_irc(ga, chan_parm);
 	}
 
-	// pętla główna programu
+/*
+	Pętla główna programu.
+*/
 	while(! ga.ucc_quit)
 	{
 		// licznik dla PING
@@ -175,7 +177,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 						ga.socketfd_irc = 0;
 					}
 
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 							xRED "# Serwer nie odpowiadał przez ponad " + std::to_string(PING_TIMEOUT) + "s, rozłączono.");
 				}
 			}
@@ -205,7 +207,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
 
 			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
-			win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
+			win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -241,13 +243,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		// temat pokoju (jeśli to kanał czata, dopisz "Temat: "
 		topic_bar.clear();
-		if(chan_parm[ga.current_chan]->channel_ok)
+		if(chan_parm[ga.current]->channel_ok)
 		{
 			topic_bar = "Temat: ";
 		}
 
 		// przygotuj cały bufor
-		topic_bar += chan_parm[ga.current_chan]->topic;
+		topic_bar += chan_parm[ga.current]->topic;
 
 		// wyświetl, uwzględniając szerokość terminala (wyświetl tyle, ile się zmieści)
 		top_excess = 0;
@@ -274,8 +276,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		//pokaż aktualny czas
 		printw("%s", get_time().erase(0, 1).c_str());	// .erase(0, 1) - usuń kod \x17 (na paskach kody nie są obsługiwane)
 
-		// w aktywnym pokoju skasuj flagi aktywności
-		chan_parm[ga.current_chan]->chan_act = 0;
+		// skasuj flagi aktywności w aktualnie otwartym pokoju
+		chan_parm[ga.current]->chan_act = 0;
 
 		// wyświetl aktywność kanałów
 		for(int i = 0; i < CHAN_MAX; ++i)
@@ -300,10 +302,19 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					act_color = pCYAN_BLUE;
 				}
 
-				// brak aktywności wyświetl jako czarny tekst na niebieskim tle
+				// brak aktywności
 				else
 				{
-					act_color = pBLACK_BLUE;
+					// numer aktualnie otwartego pokoju wyświetl na białym tle
+					if(i == ga.current)
+					{
+						act_color = pBLUE_WHITE;
+					}
+
+					else
+					{
+						act_color = pBLACK_BLUE;
+					}
 				}
 
 				// wyświetl wynik
@@ -317,13 +328,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
 					{
 						attron(A_BOLD);
-					}
-
-					if(i == ga.current_chan)
-					{
-//						attron(A_BOLD);
-							wattron_color(stdscr, ga.use_colors, pBLACK_CYAN);
-//						attron(A_UNDERLINE);
 					}
 
 					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
@@ -341,13 +345,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
 					{
 						attron(A_BOLD);
-					}
-
-					if(i == ga.current_chan)
-					{
-							wattron_color(stdscr, ga.use_colors, pBLACK_CYAN);
-//						attron(A_BOLD);
-//						attron(A_UNDERLINE);
 					}
 
 					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
@@ -368,8 +365,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		chan_act_ok = false;
 
-		// nr kanału i jego nazwa
-		printw(" [%d: %s]", ga.current_chan + 1, chan_parm[ga.current_chan]->channel.c_str());	// + 1, bo kanały od 1 a nie od 0
+		// nazwa kanału
+		printw(" [%s]", chan_parm[ga.current]->channel.c_str());
 
 		// pokaż lag
 		if(ga.lag > 0)
@@ -496,8 +493,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				{
 					if(chan_parm[key_code - '1'])	// jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08)
 					{
-						ga.current_chan = key_code - '1';
-						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
+						ga.current = key_code - '1';
+						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
 					}
 				}
 
@@ -505,14 +502,14 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				{
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
 					{
-						ga.current_chan = 9;
+						ga.current = 9;
 						win_buf_refresh(ga, chan_parm[9]->win_buf);
 					}
 				}
 
 				else if(key_code == 'd' && ga.ucc_dbg_irc)
 				{
-					ga.current_chan = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt + d
+					ga.current = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt + d
 					win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
 				}
 			}
@@ -522,16 +519,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			{
 				for(int i = 0; i < CHAN_MAX; ++i)
 				{
-					--ga.current_chan;
+					--ga.current;
 
-					if(ga.current_chan < 0)
+					if(ga.current < 0)
 					{
-						ga.current_chan = CHAN_MAX - 1;
+						ga.current = CHAN_MAX - 1;
 					}
 
-					if(chan_parm[ga.current_chan])
+					if(chan_parm[ga.current])
 					{
-						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
+						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
 						break;
 					}
 				}
@@ -542,16 +539,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			{
 				for(int i = 0; i < CHAN_MAX; ++i)
 				{
-					++ga.current_chan;
+					++ga.current;
 
-					if(ga.current_chan == CHAN_MAX)
+					if(ga.current == CHAN_MAX)
 					{
-						ga.current_chan = 0;
+						ga.current = 0;
 					}
 
-					if(chan_parm[ga.current_chan])
+					if(chan_parm[ga.current])
 					{
-						win_buf_refresh(ga, chan_parm[ga.current_chan]->win_buf);
+						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
 						break;
 					}
 				}

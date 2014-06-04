@@ -2,6 +2,7 @@
 #define UCC_GLOBAL_HPP
 
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8 (w tym miejscu dodano ze względu na WINDOW)
+#include <map>
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define pRED		0x01
@@ -17,7 +18,7 @@
 #define pMAGENTA_BLUE	0x0B	// magenta font, niebieskie tło
 #define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
 #define pYELLOW_BLACK	0x0D	// żółty font, czarne tło
-#define pBLACK_CYAN	0x0E
+#define pBLUE_WHITE	0x0E
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -34,7 +35,7 @@
 #define xMAGENTA_BLUE	xCOLOR "\x0B"
 #define xBLACK_BLUE	xCOLOR "\x0C"
 #define xYELLOW_BLACK	xCOLOR "\x0D"
-#define xBLACK_CYAN	xCOLOR "\x0E"
+#define xBLUE_WHITE	xCOLOR "\x0E"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"
@@ -56,11 +57,11 @@
 #define dNORMAL		0x17
 
 // maksymalna liczba kanałów (dodano zapas) wraz z kanałem "Status" oraz "Debug"
-#define CHAN_MAX	22 + 2		// kanały czata + "Status" i "Debug"
+#define CHAN_MAX	(22 + 2)		// kanały czata + "Status" i "Debug"
 
 // nadanie numerów w tablicy kanałom "Status" i "Debug"
 #define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy
-#define CHAN_DEBUG_IRC	CHAN_MAX - 1	// "Debug" zawsze jako ostatni w tablicy (- 1, bo liczymy od 0)
+#define CHAN_DEBUG_IRC	(CHAN_MAX - 1)	// "Debug" zawsze jako ostatni w tablicy (- 1, bo liczymy od 0)
 
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
@@ -80,7 +81,9 @@ struct global_args
 	bool irc_ready;
 	bool irc_ok;
 
-	int current_chan;
+	int current;			// aktualnie otwarty pokój
+
+	std::string chat_user;		// nazwa użytkownika czata używana do zapisu w std::map
 
 	std::string my_nick;
 	std::string my_password;
@@ -102,18 +105,23 @@ struct global_args
 	std::string card_avatar, card_birthdate, card_city, card_country, card_email, card_long_desc, card_offmsg, card_prefs,
 			card_rank, card_sex, card_short_desc, card_type, card_v_email, card_www;
 	std::string card_friend, card_ignore, card_favourites;
+
+	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
+	bool command_card, command_names, command_vhost;
 };
 
 // struktura kanału
 struct channel_irc
 {
-	bool channel_ok;	// czy to kanał czata i czy można w nim pisać (czy np. nie wyrzucono z pokoju, mimo, że jest on pokazywany)
+	bool channel_ok;	// czy to kanał czata i czy można w nim pisać
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
 	std::string win_buf;
 	std::string channel;
 	std::string topic;
+
+        std::map<std::string, struct nick_irc> nick_parm;
 };
 
 // struktura nicka (każdego na czacie, ale nie własnego, który jest w global_args)
@@ -121,7 +129,6 @@ struct nick_irc
 {
 	std::string nick;
 	std::string zuo;
-//	bool index_chan[CHAN_CHAT_MAX];
 };
 
 #endif		// UCC_GLOBAL_HPP

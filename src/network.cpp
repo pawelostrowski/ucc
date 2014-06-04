@@ -531,7 +531,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
 	}
 
@@ -539,7 +539,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
 	}
 
@@ -547,7 +547,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel,
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
 	}
 }
@@ -570,7 +570,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Nie udało się pobrać danych z serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać danych z serwera, rozłączono [IRC]");
 		return;
 	}
 
@@ -578,7 +578,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current_chan]->channel, xRED "# Podczas próby pobrania danych serwer zakończył połączenie [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Podczas próby pobrania danych serwer zakończył połączenie [IRC]");
 		return;
 	}
 
