@@ -719,6 +719,6 @@ void destroy_my_password(struct global_args &ga)
 {
 	for(int i = 0; i < static_cast<int>(ga.my_password.size()); ++i)
 	{
-		ga.my_password[i] = '*';
+		ga.my_password[i] = rand();
 	}
 }

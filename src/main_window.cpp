@@ -368,6 +368,12 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		// nazwa kanału
 		printw(" [%s]", chan_parm[ga.current]->channel.c_str());
 
+		// liczba osób w pokoju (o ile to nie "Status" lub "Debug")
+		if(ga.current != CHAN_STATUS && ga.current != CHAN_DEBUG_IRC)
+		{
+			printw(" [Osoby: %d]", chan_parm[ga.current]->nick_parm.size());
+		}
+
 		// pokaż lag
 		if(ga.lag > 0)
 		{

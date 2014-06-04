@@ -540,6 +540,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_256(ga, chan_parm, raw_parm);
 					break;
 
+				case 257:
+					raw_notice_257();
+					break;
+
 				case 258:
 					raw_notice_258(ga, chan_parm, raw_parm);
 					break;
@@ -831,7 +835,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				+ " przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
 
 		// usuń nick z listy
-		del_nick_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"));
+		del_nick_chan(ga, chan_parm, raw_parm[2], raw_parm[3]);
 
 		// aktywność typu 1
 		chan_act_add(chan_parm, raw_parm[2], 1);
@@ -1876,7 +1880,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 		win_buf_add_str(ga, chan_parm, raw_parm[3], names_tmp);
 	}
 
-	// skasuj użycie /names
+	// skasuj ewentualne użycie /names
 	ga.command_names = false;
 
 
@@ -1892,6 +1896,12 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			|| names_tmp[0] == '=' || names_tmp[0] == '+'))
 			{
 				names_tmp.erase(0, 1);
+
+				// dla właściciela występuje @ na kolejnej pozycji
+				if(names_tmp.size() > 0 && names_tmp[0] == '@')
+				{
+					names_tmp.erase(0, 1);
+				}
 			}
 
 			// usuń | i flagi
@@ -2831,6 +2841,15 @@ void raw_notice_256(struct global_args &ga, struct channel_irc *chan_parm[], std
 	raw_parm[4] = raw_parm[6];
 
 	raw_mode(ga, chan_parm, raw_parm, raw_parm[0], true);
+}
+
+
+/*
+	NOTICE 257 (np. gdy zmieniam status prywatności pokoju)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :257 #ucc * :settings changed
+*/
+void raw_notice_257()
+{
 }
 
 
