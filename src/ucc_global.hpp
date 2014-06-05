@@ -98,13 +98,13 @@ struct global_args
 
 	std::string message_day;
 
-	// tymczasowo NAMES do zmiennej, zanim nie zostanie zaimplementowana lista nicków
-	std::string names;
+	std::string names, cs_homes;
 
 	// używane podczas pobierania wizytówki
 	std::string card_avatar, card_birthdate, card_city, card_country, card_email, card_long_desc, card_offmsg, card_prefs,
 			card_rank, card_sex, card_short_desc, card_type, card_v_email, card_www;
-	std::string card_friend, card_ignore, card_favourites;
+
+	std::string my_friend, my_ignore, my_favourites;
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
 	bool command_card, command_names, command_vhost;
@@ -127,8 +127,8 @@ struct channel_irc
 // struktura nicka (każdego na czacie, ale nie własnego, który jest w global_args)
 struct nick_irc
 {
-	std::string nick;
 	std::string zuo;
+	std::string flags;
 };
 
 #endif		// UCC_GLOBAL_HPP

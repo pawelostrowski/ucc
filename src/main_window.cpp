@@ -155,7 +155,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		}
 
 		// PING do serwera co liczbę sekund w PING_TIME (gdy klient jest zalogowany)
-		if(ga.irc_ok && ping_counter == PING_TIME * 5)
+		if(ga.irc_ok && ping_counter == PING_TIME * 4)
 		{
 			if(ga.lag_timeout)
 			{
@@ -194,10 +194,10 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 		}
 
-		// co 0.2s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
+		// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
 		// oraz o aktualizację aktywności pokoi)
 		tv.tv_sec = 0;
-		tv.tv_usec = 200000;
+		tv.tv_usec = 250000;
 
 		// wykryj zmianę rozmiaru okna terminala
 		if(is_term_resized(term_y, term_x))
@@ -487,6 +487,15 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
+/*
+				// test
+				for(std::map<std::string, struct nick_irc>::iterator i = chan_parm[ga.current]->nick_parm.begin();
+				i != chan_parm[ga.current]->nick_parm.end(); ++i)
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							i->first + ": " + i->second.zuo + " " + i->second.flags);
+				}
+*/
 			}
 
 			// Alt Left + (...)

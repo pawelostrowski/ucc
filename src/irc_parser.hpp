@@ -125,6 +125,8 @@ void raw_403(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_405(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
 void raw_406(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
 void raw_412(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
@@ -183,13 +185,25 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_notice_141(struct global_args &ga, std::string &buffer_irc_raw);
+
+void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void raw_notice_151(struct global_args &ga, std::string &buffer_irc_raw);
+
+void raw_notice_152(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw);
+
 void raw_notice_220(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
 void raw_notice_221(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_notice_240(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
+void raw_notice_241(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
 void raw_notice_255();
 
-void raw_notice_256(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+void raw_notice_256(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
 void raw_notice_257();
 

@@ -677,18 +677,15 @@ void del_all_chan(struct channel_irc *chan_parm[])
 }
 
 
-void new_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick_chan)
+void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick_chan, std::string nick_zuo,
+				std::string nick_flags)
 {
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie będą wrzucani użytkownicy
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
-			// nie dodawaj dwa razy tego samego nicka
-			if(chan_parm[i]->nick_parm.find(nick_chan) == chan_parm[i]->nick_parm.end())
-			{
-				chan_parm[i]->nick_parm[nick_chan];
-			}
+			chan_parm[i]->nick_parm[nick_chan] = {nick_zuo, nick_flags};
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}
@@ -696,18 +693,14 @@ void new_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 }
 
 
-void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick_chan)
+void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick_chan)
 {
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie byli wrzucani użytkownicy
 	{
 		// znajdź kanał, którego dotyczy usunięcie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
-			// nie usuwaj nicka, jeśli takiego nie było w pokoju
-			if(chan_parm[i]->nick_parm.find(nick_chan) != chan_parm[i]->nick_parm.end())
-			{
-				chan_parm[i]->nick_parm.erase(nick_chan);
-			}
+			chan_parm[i]->nick_parm.erase(nick_chan);
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}
