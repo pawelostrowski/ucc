@@ -31,7 +31,7 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[]);
 
-bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name);
+bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool active = true);
 
 void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name);
 

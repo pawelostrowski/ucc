@@ -188,6 +188,11 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_mode(ga, chan_parm, raw_parm, buffer_irc_raw);
 		}
 
+		else if(raw_parm[1] == "MODERMSG")
+		{
+			raw_modermsg(ga, chan_parm, raw_parm, buffer_irc_raw);
+		}
+
 		else if(raw_parm[1] == "PART")
 		{
 			raw_part(ga, chan_parm, raw_parm, buffer_irc_raw);
@@ -382,12 +387,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 				raw_401(ga, chan_parm, raw_parm);
 				break;
 
+			case 402:
+				raw_402(ga, chan_parm, raw_parm);
+				break;
+
 			case 403:
 				raw_403(ga, chan_parm, raw_parm);
 				break;
 
 			case 404:
-				raw_404(ga, chan_parm, raw_parm);
+				raw_404(ga, chan_parm, raw_parm, buffer_irc_raw);
 				break;
 
 			case 405:
@@ -792,8 +801,8 @@ void raw_invreject(struct global_args &ga, struct channel_irc *chan_parm[], std:
 */
 void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	// jeśli to ja wchodzę, utwórz nowy kanał
-	if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername) && ! new_chan_chat(ga, chan_parm, raw_parm[2]))
+	// jeśli to ja wchodzę, utwórz nowy kanał (jeśli to /join, przechodź od razu do tego okna - ga.command_join)
+	if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername) && ! new_chan_chat(ga, chan_parm, raw_parm[2], ga.command_join))
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się utworzyć nowego pokoju (brak pamięci w tablicy pokoi).");
 		return;
@@ -822,6 +831,9 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
 	}
 
+	// skasuj ewentualne użycie /join
+	ga.command_join = false;
+
 	// dodaj nick do listy
 	new_or_update_nick_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"), get_value_from_buf(buffer_irc_raw, "!", " "),
 				get_value_from_buf(buffer_irc_raw, " :", "\n"));
@@ -838,12 +850,13 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	std::string reason;
+	// pobierz powód, jeśli podano
+	std::string reason = get_value_from_buf(buffer_irc_raw, " :", "\n");
 
-	// jeśli podano powód, pobierz go z bufora (w raw_parm[4] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
-	if(raw_parm[4].size() > 0)
+	if(reason.size() > 0)
 	{
-		reason = " [Powód: " + get_value_from_buf(buffer_irc_raw, " :", "\n") + "]";
+		reason.insert(0, " [Powód: ");
+		reason += "]";
 	}
 
 	// jeśli to mnie wyrzucono, pokaż inny komunikat
@@ -852,7 +865,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		// usuń kanał z programu
 		del_chan_chat(ga, chan_parm, raw_parm[2]);
 
-		// powód wyrzucenia pokaż w kanale "Status"
+		// komunikat o wyrzuceniu pokaż w kanale "Status"
 		win_buf_add_str(ga, chan_parm, "Status", xRED "* Zostajesz wyrzucony(a) z pokoju " + raw_parm[2]
 				+ " przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
 	}
@@ -866,11 +879,11 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		{
 			if(chan_parm[i] && chan_parm[i]->channel == raw_parm[2])
 			{
-				auto ii = chan_parm[i]->nick_parm.find(raw_parm[3]);
+				auto it = chan_parm[i]->nick_parm.find(raw_parm[3]);
 
-				if(ii != chan_parm[i]->nick_parm.end())
+				if(it != chan_parm[i]->nick_parm.end())
 				{
-					nick_zuo = ii->second.zuo;
+					nick_zuo = it->second.zuo;
 				}
 
 				break;
@@ -913,6 +926,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	:ChanServ!service@service.onet MODE #ucc -b+eh *!76995189@* *!76995189@* ucc_test
 	:ChanServ!service@service.onet MODE #ucc -ips
 	:GuardServ!service@service.onet MODE #scc -I *!6@*
+	:ChanServ!service@service.onet MODE #Towarzyski -m
 	:ChanServ!service@service.onet MODE #ucc +c 1
 */
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw, bool normal_user)
@@ -1083,6 +1097,24 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
+		else if(raw_parm[3][i] == 'm' && raw_parm[2][0] == '#')
+		{
+			if(raw_parm[3][s] == '+')
+			{
+				win_buf_add_str(ga, chan_parm, raw_parm[2],
+						xMAGENTA "* Pokój " + raw_parm[2] + " jest teraz moderowany (ustawił" + a + " " + nick_mode + ").");
+			}
+
+			else if(raw_parm[3][s] == '-')
+			{
+				win_buf_add_str(ga, chan_parm, raw_parm[2],
+						xMAGENTA "* Pokój " + raw_parm[2] + " nie jest już moderowany (ustawił" + a + " " + nick_mode + ").");
+			}
+
+			// aktywność typu 1
+			chan_act_add(chan_parm, raw_parm[2], 1);
+		}
+
 		else if(raw_parm[3][i] == 'I' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			if(raw_parm[3][s] == '+')
@@ -1160,7 +1192,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 /*
 	Zmiany flag osób.
 */
-		else if(raw_parm[3][i] == 'O')
+		else if(raw_parm[3][i] == 'O' && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1199,7 +1231,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 
-		else if(raw_parm[3][i] == 'W')
+		else if(raw_parm[3][i] == 'W' && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1236,7 +1268,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 
-		else if(raw_parm[3][i] == 'V')
+		else if(raw_parm[3][i] == 'V' && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1340,7 +1372,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 					chan_join = chan_parm[i]->channel;
 				}
 
-				// do pozostałych dopisz przecinek za poprzednim
+				// do pozostałych dopisz przecinek za wcześniejszym pokojem
 				else
 				{
 					chan_join += "," + chan_parm[i]->channel;
@@ -1357,6 +1389,61 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 
 /*
+	MODERMSG
+	:M_X!36866915@d2d929.646f7c.4180a1.bd429d MODERMSG ucc_test - #Towarzyski :Moderowany?
+	:M_X!36866915@d2d929.646f7c.4180a1.bd429d MODERMSG Karolinaaa1 - #Towarzyski :%Fb%%C0f2ab1%u2u2 nie spimy %Ituba%
+*/
+void raw_modermsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	std::string form_start;
+
+	std::string modermsg = get_value_from_buf(buffer_irc_raw, " :", "\n");
+
+	size_t nick_call = modermsg.find(buf_iso2utf(ga.zuousername));
+
+	// jeśli ktoś mnie woła, jego nick wyświetl w żółtym kolorze
+	if(nick_call != std::string::npos)
+	{
+		form_start = xYELLOW;
+
+		// gdy ktoś mnie woła, pokaż aktywność typu 3
+		chan_act_add(chan_parm, raw_parm[4], 3);
+
+		// testowa wersja dźwięku, do poprawy jeszcze
+		if(system("aplay -q /usr/share/sounds/pop.wav 2>/dev/null &") != 0)
+		{
+			// coś
+		}
+	}
+
+	else
+	{
+		// gdy ktoś pisze, ale mnie nie woła, pokaż aktywność typu 2
+		chan_act_add(chan_parm, raw_parm[4], 2);
+	}
+
+	// wykryj, gdy ktoś pisze przez użycie /me
+	std::string action_me = get_value_from_buf(buffer_irc_raw, " :\x01" "ACTION ", "\x01\n");
+
+	// jeśli tak, wyświetl inaczej wiadomość
+	if(action_me.size() > 0)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[4],
+				xMAGENTA "* " + form_start + raw_parm[2] + " " + xNORMAL + action_me
+				+ " " xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]");
+	}
+
+	// a jeśli nie było /me wyświetl wiadomość w normalny sposób
+	else
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[4],
+				xCYAN + form_start + "<" + raw_parm[2] + ">" + xNORMAL " " + modermsg
+				+ " " xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]");
+	}
+}
+
+
+/*
 	PART
 	:ucc_test!76995189@e0c697.bbe735.fea2d4.23661c PART #ucc
 	:ucc_test!76995189@e0c697.bbe735.fea2d4.23661c PART #ucc :Bye
@@ -1365,12 +1452,13 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	std::string reason;
+	// pobierz powód, jeśli podano
+	std::string reason = get_value_from_buf(buffer_irc_raw, " :", "\n");
 
-	// jeśli podano powód, pobierz go z bufora (w raw_parm[3] co prawda nie jest cały powód, bo tekst może być dłuższy, ale informuje, że w ogóle jest)
-	if(raw_parm[3].size() > 0)
+	if(reason.size() > 0)
 	{
-		reason = " [Powód: " + get_value_from_buf(buffer_irc_raw, " :", "\n") + "]";
+		reason.insert(0, " [Powód: ");
+		reason += "]";
 	}
 
 	// jeśli jest ^ (rozmowa prywatna), wyświetl odpowiedni komunikat
@@ -2211,9 +2299,18 @@ void raw_401(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	// co może być mylące)
 	else
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "* " + raw_parm[3] + " - nie ma takiego pokoju.");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + raw_parm[3] + " - nie ma takiego pokoju.");
 	}
+}
+
+
+/*
+	402 (MOTD nieznany_serwer)
+	:cf1f4.onet 402 ucc_test abc :No such server
+*/
+void raw_402(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + raw_parm[3] + " - nie ma takiego serwera.");
 }
 
 
@@ -2233,11 +2330,28 @@ void raw_403(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 /*
 	404 (próba wysłania wiadomości do kanału, w którym nie przebywamy)
 	:cf1f1.onet 404 ucc_test #ucc :Cannot send to channel (no external messages)
+	404 (próba wysłania wiadomości w pokoju moderowanym, gdzie nie mamy uprawnień)
+	:cf1f2.onet 404 ucc_test #Suwałki :Cannot send to channel (+m)
 */
-void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* Nie można wysłać wiadomości do pokoju " + raw_parm[3] + " (nie przebywasz w nim).");
+	if(buffer_irc_raw.find("Cannot send to channel (no external messages)") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "* Nie można wysłać wiadomości do pokoju " + raw_parm[3] + " (nie przebywasz w nim).");
+	}
+
+	else if(buffer_irc_raw.find("Cannot send to channel (+m)") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "* Nie możesz pisać w pokoju " + raw_parm[3] + " (pokój jest moderowany i nie masz uprawnień).");
+	}
+
+	// jeśli inny typ wiadomości, pokaż RAW bez zmian
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE + buffer_irc_raw.erase(buffer_irc_raw.size() - 1, 1));
+	}
 }
 
 

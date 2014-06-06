@@ -29,6 +29,8 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw, bool normal_user = false);
 
+void raw_modermsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
+
 void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
 void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
@@ -121,9 +123,11 @@ void raw_378(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 void raw_401(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_402(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
 void raw_403(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
-void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
 void raw_405(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 

@@ -596,7 +596,7 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name)
+bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool active)
 {
 /*
 	Utwórz nowy kanał czata w programie. Poniższa pętla wyszukuje pierwsze wolne miejsce w tablicy i wtedy tworzy kanał.
@@ -612,12 +612,16 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 
 		else if(chan_parm[i] == 0)
 		{
-			ga.current = i;		// ustaw nowoutworzony kanał jako aktywny
+			chan_parm[i] = new channel_irc;
+			chan_parm[i]->channel = chan_name;	// nazwa kanału czata
+			chan_parm[i]->channel_ok = true;	// w kanałach czata można pisać normalny tekst do wysłania na serwer
+			chan_parm[i]->chan_act = 0;		// zacznij od braku aktywności kanału
 
-			chan_parm[ga.current] = new channel_irc;
-			chan_parm[ga.current]->channel = chan_name;	// nazwa kanału czata
-			chan_parm[ga.current]->channel_ok = true;	// w kanałach czata można pisać normalny tekst do wysłania na serwer
-			chan_parm[ga.current]->chan_act = 0;	// zacznij od braku aktywności kanału
+			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), domyślnie oznaczaj
+			if(active)
+			{
+				ga.current = i;
+			}
 
 			// wyczyść okno (by nie było zawartości poprzedniego okna na ekranie)
 			wclear(ga.win_chat);

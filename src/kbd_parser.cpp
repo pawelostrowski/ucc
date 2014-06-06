@@ -498,6 +498,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	// skasuj użycie wybranych flag poleceń w celu odpowiedniego sterowania wyświetlaniem komunikatów podczas logowania na czat
 	ga.command_card = false;
+	ga.command_join = false;
 	ga.command_names = false;
 	ga.command_vhost = false;
 
@@ -631,6 +632,8 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 		}
 
 		irc_send(ga, chan_parm, "JOIN " + f_arg);
+
+		ga.command_join = true;
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie

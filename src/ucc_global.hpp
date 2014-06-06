@@ -107,7 +107,7 @@ struct global_args
 	std::string my_friend, my_ignore, my_favourites;
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
-	bool command_card, command_names, command_vhost;
+	bool command_card, command_join, command_names, command_vhost;
 };
 
 // struktura kanału
