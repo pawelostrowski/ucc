@@ -1,6 +1,9 @@
 #ifndef UCC_GLOBAL_HPP
 #define UCC_GLOBAL_HPP
 
+#define UCC_NAME "Ucieszony Chat Client"
+#define UCC_VERSION "v1.0 alpha1"
+
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8 (w tym miejscu dodano ze względu na WINDOW)
 #include <map>
 
@@ -18,7 +21,7 @@
 #define pMAGENTA_BLUE	0x0B	// magenta font, niebieskie tło
 #define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
 #define pYELLOW_BLACK	0x0D	// żółty font, czarne tło
-#define pBLUE_WHITE	0x0E
+#define pBLUE_WHITE	0x0E	// niebieski font, białe tło
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -67,9 +70,9 @@
 struct global_args
 {
 	WINDOW *win_chat;
+	int wcur_y, wcur_x;
 
 	bool use_colors;
-	int wcur_y, wcur_x;
 
 	bool ucc_dbg_irc;
 
@@ -117,6 +120,8 @@ struct channel_irc
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
+	size_t win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
+
 	std::string win_buf;
 	std::string channel;
 	std::string topic;
@@ -124,7 +129,7 @@ struct channel_irc
         std::map<std::string, struct nick_irc> nick_parm;
 };
 
-// struktura nicka (każdego na czacie, ale nie własnego, który jest w global_args)
+// struktura nicka na czacie
 struct nick_irc
 {
 	std::string zuo;

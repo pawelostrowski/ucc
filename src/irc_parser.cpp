@@ -537,6 +537,22 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_112(ga, chan_parm, raw_parm);
 					break;
 
+				case 121:
+					raw_notice_121();
+					break;
+
+				case 122:
+					raw_notice_122();
+					break;
+
+				case 131:
+					raw_notice_131();
+					break;
+
+				case 132:
+					raw_notice_132();
+					break;
+
 				case 141:
 					raw_notice_141(ga, buffer_irc_raw);
 					break;
@@ -2815,7 +2831,7 @@ void raw_notice_109(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
-	NOTICE 111 (NS INFO nick)
+	NOTICE 111 (NS INFO nick - początek)
 */
 void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
@@ -2906,7 +2922,7 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
-	NOTICE 112 (NS INFO nick)
+	NOTICE 112 (NS INFO nick - koniec)
 	:NickServ!service@service.onet NOTICE ucieszony86 :112 ucieszony86 :end of user info
 */
 void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
@@ -3072,6 +3088,46 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 121 (ulubione nicki - lista)
+	:NickServ!service@service.onet NOTICE ucieszony86 :121 :devi85
+*/
+void raw_notice_121()
+{
+	// feature
+}
+
+
+/*
+	NOTICE 122 (ulubione nicki - koniec listy)
+	:NickServ!service@service.onet NOTICE ucieszony86 :122 :end of friend list
+*/
+void raw_notice_122()
+{
+	// feature
+}
+
+
+/*
+	NOTICE 131 (ignorowane nicki - lista)
+	:NickServ!service@service.onet NOTICE ucieszony86 :131 :Bot
+*/
+void raw_notice_131()
+{
+	// feature
+}
+
+
+/*
+	NOTICE 132 (ignorowane nicki - koniec listy)
+	:NickServ!service@service.onet NOTICE ucieszony86 :132 :end of ignore list
+*/
+void raw_notice_132()
+{
+	// feature
+}
+
+
+/*
 	NOTICE 141 (ulubione pokoje - lista)
 	:NickServ!service@service.onet NOTICE ucieszony86 :141 :#Komputer #Suwałki #Learning_English #Computers #Komputery #scc #2012 #zua_zuy_zuo #Linux #ucc #ateizm #Augustów #PHP
 */
@@ -3176,7 +3232,7 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_220(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " zostaje dodany(a) do listy przyjaciół.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) dodany(a) do listy przyjaciół.");
 }
 
 
@@ -3186,7 +3242,7 @@ void raw_notice_220(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_221(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " zostaje usunięty(a) z listy przyjaciół.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) usunięty(a) z listy przyjaciół.");
 }
 
 
@@ -3196,7 +3252,7 @@ void raw_notice_221(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_240(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm[4] + " zostaje dodany do listy ulubionych.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm[4] + " został dodany do listy ulubionych.");
 }
 
 
@@ -3206,7 +3262,7 @@ void raw_notice_240(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_241(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm[4] + " zostaje usunięty z listy ulubionych.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm[4] + " został usunięty z listy ulubionych.");
 }
 
 

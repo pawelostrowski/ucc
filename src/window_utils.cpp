@@ -400,15 +400,15 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 
 	}	// for()
 
-	// zapamiętaj po wyjściu z funkcji pozycję kursora w oknie "wirtualnym"
+	// zapamiętaj pozycję kursora w oknie "wirtualnym"
 	getyx(ga.win_chat, ga.wcur_y, ga.wcur_x);
 }
 
 
-void win_buf_refresh(struct global_args &ga, std::string &win_buf)
+void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
-	Odśwież zawartość okna danego kanału.
+	Odśwież zawartość okna aktualnie otwartego pokoju (ga.current).
 */
 
 	int wterm_y, wterm_x;		// wymiary okna "wirtualnego"
@@ -424,14 +424,14 @@ void win_buf_refresh(struct global_args &ga, std::string &win_buf)
 	getmaxyx(ga.win_chat, wterm_y, wterm_x);
 
 	// wykryj początek, od którego należy zacząć wyświetlać zawartość bufora (na podstawie kodu \n)
-	pos_win_buf_start = win_buf.rfind("\n");
+	pos_win_buf_start = chan_parm[ga.current]->win_buf.rfind("\n");
 
 	if(pos_win_buf_start != std::string::npos)
 	{
 		// zakończ szukanie, gdy pozycja zejdzie do zera lub liczba znalezionych wierszy zrówna się z liczbą wierszy okna "wirtualnego"
 		while(pos_win_buf_start != std::string::npos && pos_win_buf_start > 0 && rows < wterm_y)
 		{
-			pos_win_buf_start = win_buf.rfind("\n", pos_win_buf_start - 1);	// - 1, aby pominąć kod \n
+			pos_win_buf_start = chan_parm[ga.current]->win_buf.rfind("\n", pos_win_buf_start - 1);	// - 1, aby pominąć kod \n
 			++rows;
 		}
 	}
@@ -443,13 +443,13 @@ void win_buf_refresh(struct global_args &ga, std::string &win_buf)
 	}
 
 	// jeśli na początku wyświetlanej części bufora jest kod \n, pomiń go, aby nie tworzyć pustego wiersza
-	if(win_buf[pos_win_buf_start] == '\n')
+	if(chan_parm[ga.current]->win_buf[pos_win_buf_start] == '\n')
 	{
 		++pos_win_buf_start;
 	}
 
 	// wyświetl ustaloną część bufora
-	win_buf_common(ga, win_buf, pos_win_buf_start);
+	win_buf_common(ga, chan_parm[ga.current]->win_buf, pos_win_buf_start);
 
 	// wyczyść pozostałą część ekranu
 	getyx(ga.win_chat, clr_y, clr_x);	// potrzebna jest pozycja Y, aby wiedzieć, kiedy koniec okna "wirtualnego"
@@ -474,16 +474,21 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	(domyślnie).
 */
 
-	int which_chan = CHAN_STATUS;		// kanał, do którego należy dopisać bufor (domyślnie, gdy nie znaleziony, wpisz do "Status"
+	int which_chan = -1;		// kanał, do którego należy dopisać bufor (-1 przy braku kanału powoduje wyjście)
 
 	// znajdź kanał, do którego należy dopisać bufor
-	for(int i = 1; i < CHAN_MAX; ++i)
+	for(int i = 0; i < CHAN_MAX; ++i)
 	{
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
 			which_chan = i;		// wpisz numer znalezionego kanału
 			break;
 		}
+	}
+
+	if(which_chan == -1)
+	{
+		return;
 	}
 
 	// jeśli trzeba, wstaw czas na początku każdego wiersza (opcja domyślna)
@@ -506,17 +511,11 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		} while(buffer_str_n_pos != std::string::npos);
 	}
 
-	// ze względu na przyjęty sposób trzymania danych w buforze, na końcu bufora głównego danego kanału nie ma kodu \n, więc aby przejść do nowej
-	// linii, należy na początku bufora pomocniczego dodać kod \n
+	// ze względu na przyjęty sposób trzymania danych w buforze, na końcu bufora głównego danego kanału nie ma kodu \n, więc aby przejść do nowego
+	// wiersza, należy przed dopisaniem bufora pomocniczego dodać kod \n
 	if(buffer_str.size() > 0 && buffer_str[0] != '\n')	// na wszelki wypadek sprawdź, czy na początku nie ma już kodu \n
 	{
-		buffer_str.insert(0, "\n");
-	}
-
-	// dodaj zawartość bufora pomocniczego do bufora głównego znalezionego kanału
-	if(chan_parm[which_chan])
-	{
-		chan_parm[which_chan]->win_buf += buffer_str;
+		chan_parm[which_chan]->win_buf += "\n" + buffer_str;
 	}
 
 	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy)
@@ -525,14 +524,19 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		return;
 	}
 
-	// ustal kursor na pozycji, gdzie jest koniec aktualnego tekstu
+	// przenieś kursor na pozycję, gdzie jest koniec aktualnego tekstu
 	wmove(ga.win_chat, ga.wcur_y, ga.wcur_x);
 
-	// jeśli kursor jest na początku okna "wirtualnego", usuń kod \n, aby nie tworzyć pustego wiersza (kod ten już został dopisany do bufora głównego
-	// danego kanału)
+	// jeśli kursor jest na początku okna "wirtualnego", i jest tam kod \n, to go usuń, aby nie tworzyć pustego wiersza
 	if(ga.wcur_y == 0 && ga.wcur_x == 0 && buffer_str.size() > 0 && buffer_str[0] == '\n')
 	{
 		buffer_str.erase(0, 1);
+	}
+
+	// jeśli kursor nie jest na początku okna "wirtualnego", dodaj kod \n, aby przejść do nowego wiersza
+	else if(ga.wcur_y != 0 && ga.wcur_x != 0)
+	{
+		buffer_str.insert(0, "\n");
 	}
 
 	// wyświetl otrzymaną część bufora
@@ -577,8 +581,14 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_STATUS] = new channel_irc;
 		chan_parm[CHAN_STATUS]->channel = "Status";
 		chan_parm[CHAN_STATUS]->channel_ok = false;	// w kanale "Status" nie można pisać tekstu jak w kanale czata
-		chan_parm[CHAN_STATUS]->topic = "Ucieszony Chat Client - wersja rozwojowa";	// napis wyświetlany na górnym pasku
+		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VERSION;	// napis wyświetlany na górnym pasku
 		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
+
+		chan_parm[CHAN_STATUS]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+
+		// ustaw w nim kursor na pozycji początkowej (to pierwszy tworzony pokój, więc zawsze należy zacząć od pozycji początkowej)
+		ga.wcur_y = 0;
+		ga.wcur_x = 0;
 	}
 }
 
@@ -592,6 +602,8 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można pisać tekstu jak w kanale czata
 		chan_parm[CHAN_DEBUG_IRC]->topic = "Debug";
 		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
+
+		chan_parm[CHAN_DEBUG_IRC]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 	}
 }
 
@@ -617,18 +629,20 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 			chan_parm[i]->channel_ok = true;	// w kanałach czata można pisać normalny tekst do wysłania na serwer
 			chan_parm[i]->chan_act = 0;		// zacznij od braku aktywności kanału
 
+			chan_parm[i]->win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
+
 			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), domyślnie oznaczaj
 			if(active)
 			{
 				ga.current = i;
+
+				// wyczyść okno (by nie było zawartości poprzedniego okna na ekranie)
+				wclear(ga.win_chat);
+
+				// ustaw w nim kursor na pozycji początkowej
+				ga.wcur_y = 0;
+				ga.wcur_x = 0;
 			}
-
-			// wyczyść okno (by nie było zawartości poprzedniego okna na ekranie)
-			wclear(ga.win_chat);
-
-			// ustaw w nim kursor na pozycji początkowej
-			ga.wcur_y = 0;
-			ga.wcur_x = 0;
 
 			return true;	// gdy utworzono kanał, przerwij szukanie wolnego kanału z kodem sukcesu
 		}
@@ -651,7 +665,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		{
 			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 			ga.current = CHAN_STATUS;
-			win_buf_refresh(ga, chan_parm[CHAN_STATUS]->win_buf);
+			win_buf_refresh(ga, chan_parm);
 
 			// usuń kanał, który był przed zmianą na "Status"
 			delete chan_parm[i];

@@ -39,7 +39,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
-	std::string topic_bar;		// bufor pomocniczy tematu, aby nie wyjść poza szerokość terminala, gdy temat jest za długi
 	int top_excess;
 	bool chan_act_ok = false;
 	short act_color;
@@ -64,9 +63,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	ga.irc_ok = false;		// stan połączenia z czatem
 
 	ga.zuousername = NICK_NOT_LOGGED;
-
-	ga.wcur_y = 0;
-	ga.wcur_x = 0;
 
 	ga.ping = 0;
 	ga.pong = 0;
@@ -116,18 +112,19 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	win_buf_add_str(ga, chan_parm, "Status",
+			xGREEN "# Witaj w programie Ucieszony Chat Client\n"
 			xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
 			xCYAN  "/nick nazwa_nicka\n"
-			xCYAN  "/connect\n"
+			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
 			xGREEN "# Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
-			xCYAN  "/captcha kod_z_obrazka\n"
+			xCYAN  "/captcha kod_z_obrazka " xGREEN "lub " xCYAN "/cap kod_z_obrazka\n"
 			xGREEN "# Aby zalogować się na nick stały (zarejestrowany), wpisz:\n"
 			xCYAN  "/nick nazwa_nicka hasło_do_nicka\n"
-			xCYAN  "/connect\n"
+			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
 			xGREEN "# Aby zobaczyć dostępne polecenia, wpisz:\n"
-			xCYAN  "/help\n"
+			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
-			xCYAN  "/quit lub /q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
+			xCYAN  "/quit " xGREEN "lub " xCYAN "/q");		// ze względu na przyjętą budowę bufora na końcu nie ma \n
 
 	// jeśli trzeba, utwórz kanał "Debug"
 	if(ga.ucc_dbg_irc)
@@ -207,7 +204,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
 
 			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
-			win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
+			win_buf_refresh(ga, chan_parm);
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -241,28 +238,20 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 */
 		move(0, 0);
 
-		// temat pokoju (jeśli to kanał czata, dopisz "Temat: "
-		topic_bar.clear();
-		if(chan_parm[ga.current]->channel_ok)
-		{
-			topic_bar = "Temat: ";
-		}
-
-		// przygotuj cały bufor
-		topic_bar += chan_parm[ga.current]->topic;
-
+		// temat pokoju
 		// wyświetl, uwzględniając szerokość terminala (wyświetl tyle, ile się zmieści)
 		top_excess = 0;
-		for(int i = 0; i < static_cast<int>(topic_bar.size()) && i < term_x + top_excess; ++i)
+
+		for(int i = 0; i < static_cast<int>(chan_parm[ga.current]->topic.size()) && i < term_x + top_excess; ++i)
 		{
 			// wykryj znaki wielobajtowe w UTF-8 (konkretnie 2-bajtowe, wersja uproszczona, zakładająca, że nie będzie innych znaków),
 			// aby zniwelować szerokość wyświetlania
-			if((topic_bar[i] & 0xE0) == 0xC0)
+			if((chan_parm[ga.current]->topic[i] & 0xE0) == 0xC0)
 			{
 				++top_excess;
 			}
 
-			printw("%c", topic_bar[i]);
+			printw("%c", chan_parm[ga.current]->topic[i]);
 		}
 /*
 	Koniec informacji na pasku górnym.
@@ -509,7 +498,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					if(chan_parm[key_code - '1'])	// jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08)
 					{
 						ga.current = key_code - '1';
-						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
+						win_buf_refresh(ga, chan_parm);
 					}
 				}
 
@@ -518,14 +507,14 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
 					{
 						ga.current = 9;
-						win_buf_refresh(ga, chan_parm[9]->win_buf);
+						win_buf_refresh(ga, chan_parm);
 					}
 				}
 
 				else if(key_code == 'd' && ga.ucc_dbg_irc)
 				{
 					ga.current = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt + d
-					win_buf_refresh(ga, chan_parm[CHAN_DEBUG_IRC]->win_buf);
+					win_buf_refresh(ga, chan_parm);
 				}
 			}
 
@@ -543,7 +532,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 					if(chan_parm[ga.current])
 					{
-						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
+						win_buf_refresh(ga, chan_parm);
 						break;
 					}
 				}
@@ -563,7 +552,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 					if(chan_parm[ga.current])
 					{
-						win_buf_refresh(ga, chan_parm[ga.current]->win_buf);
+						win_buf_refresh(ga, chan_parm);
 						break;
 					}
 				}

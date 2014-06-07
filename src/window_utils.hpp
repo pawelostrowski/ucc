@@ -21,7 +21,7 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 
 void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_buf_start);
 
-void win_buf_refresh(struct global_args &ga, std::string &win_buf);
+void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, bool add_time = true);
 
