@@ -534,7 +534,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	}
 
 	// jeśli kursor nie jest na początku okna "wirtualnego", dodaj kod \n, aby przejść do nowego wiersza
-	else if(ga.wcur_y != 0 && ga.wcur_x != 0)
+	else if(ga.wcur_y != 0 || ga.wcur_x != 0)
 	{
 		buffer_str.insert(0, "\n");
 	}
