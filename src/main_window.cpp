@@ -112,7 +112,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	win_buf_add_str(ga, chan_parm, "Status",
-			xGREEN "# Witaj w programie Ucieszony Chat Client\n"
+			xBOLD_ON xGREEN "# Witaj w programie Ucieszony Chat Client\n"
 			xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
 			xCYAN  "/nick nazwa_nicka\n"
 			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
@@ -493,7 +493,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// lewy Alt generuje też kod klawisza, z którym został wciśnięty (dla poniższych sprawdzeń), dlatego pobierz ten kod
 				key_code = getch();
 
-				if(key_code >= '1' && key_code <= '9')
+				if(key_code >= '1' && key_code <= '9')	// okna od 1 do 9
 				{
 					if(chan_parm[key_code - '1'])	// jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08)
 					{
@@ -502,7 +502,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					}
 				}
 
-				else if(key_code == '0')	// 0 jest traktowane jak 10
+				else if(key_code == '0')	// okno 10 (0 jest traktowane jak 10)
 				{
 					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
 					{
@@ -511,10 +511,112 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					}
 				}
 
-				else if(key_code == 'd' && ga.ucc_dbg_irc)
+				else if(key_code == 'q')	// okno 11
 				{
-					ga.current = CHAN_DEBUG_IRC;	// debugowanie w ostatnim kanale pod kombinacją Alt + d
-					win_buf_refresh(ga, chan_parm);
+					if(chan_parm[10])
+					{
+						ga.current = 10;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'w')	// okno 12
+				{
+					if(chan_parm[11])
+					{
+						ga.current = 11;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'e')	// okno 13
+				{
+					if(chan_parm[12])
+					{
+						ga.current = 12;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'r')	// okno 14
+				{
+					if(chan_parm[13])
+					{
+						ga.current = 13;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 't')	// okno 15
+				{
+					if(chan_parm[14])
+					{
+						ga.current = 14;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'y')	// okno 16
+				{
+					if(chan_parm[15])
+					{
+						ga.current = 15;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'u')	// okno 17
+				{
+					if(chan_parm[16])
+					{
+						ga.current = 16;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'i')	// okno 18
+				{
+					if(chan_parm[17])
+					{
+						ga.current = 17;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'o')	// okno 19
+				{
+					if(chan_parm[18])
+					{
+						ga.current = 18;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'p')	// okno 20
+				{
+					if(chan_parm[19])
+					{
+						ga.current = 19;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 'a')	// okno 21
+				{
+					if(chan_parm[20])
+					{
+						ga.current = 20;
+						win_buf_refresh(ga, chan_parm);
+					}
+				}
+
+				else if(key_code == 's')	// okno 22
+				{
+					if(chan_parm[21])
+					{
+						ga.current = 21;
+						win_buf_refresh(ga, chan_parm);
+					}
 				}
 			}
 

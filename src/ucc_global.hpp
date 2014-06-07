@@ -59,8 +59,8 @@
 #define dUNDERLINE_OFF	0x14
 #define dNORMAL		0x17
 
-// maksymalna liczba kanałów (dodano zapas) wraz z kanałem "Status" oraz "Debug"
-#define CHAN_MAX	(22 + 2)		// kanały czata + "Status" i "Debug"
+// maksymalna liczba kanałów czata wraz z kanałami "Status" oraz "Debug"
+#define CHAN_MAX	(20 + 2)		// kanały czata + "Status" i "Debug"
 
 // nadanie numerów w tablicy kanałom "Status" i "Debug"
 #define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy

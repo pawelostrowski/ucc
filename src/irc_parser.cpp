@@ -1968,12 +1968,12 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	if(topic_tmp.size() > 0)
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[3], "* Temat pokoju " + raw_parm[3] + " - " + topic_tmp);
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " + raw_parm[3] + " - " + topic_tmp);
 	}
 
 	else
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[3], "* Temat pokoju " + raw_parm[3] + " nie został ustawiony (jest pusty).");
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " + raw_parm[3] + " nie został ustawiony (jest pusty).");
 	}
 
 	// teraz znajdź pokój, do którego należy temat, wpisz go do jego bufora "topic" i wyświetl na górnym pasku
@@ -2025,7 +2025,7 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 void raw_333(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, raw_parm[3],
-			"* Temat pokoju " + raw_parm[3] + " ustawiony przez " + get_value_from_buf(buffer_irc_raw, raw_parm[3] + " ", "!")
+			xWHITE "* Temat pokoju " + raw_parm[3] + " ustawiony przez " + get_value_from_buf(buffer_irc_raw, raw_parm[3] + " ", "!")
 			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] (" + time_unixtimestamp2local_full(raw_parm[5]) + ").");
 }
 
@@ -2709,8 +2709,12 @@ void raw_817(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+	// informacja w "Status"
+	win_buf_add_str(ga, chan_parm, "Status",
 			xYELLOW "* Dodano " + raw_parm[5] + " do listy ignorowanych, nie będziesz otrzymywać od niego zaproszeń ani powiadomień.");
+
+	// aktywność typu 1
+	chan_act_add(chan_parm, "Status", 1);
 }
 
 
