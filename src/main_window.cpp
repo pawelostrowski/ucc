@@ -64,6 +64,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	ga.zuousername = NICK_NOT_LOGGED;
 
+	ga.nicklist = true;
+	ga.nicklist_refresh = false;
+
 	ga.ping = 0;
 	ga.pong = 0;
 	ga.lag = 0;
@@ -101,7 +104,17 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, "Status" i "Debug" (jeśli włączony jest tryb debugowania IRC)
 	getmaxyx(stdscr, term_y, term_x);	// pobierz wymiary terminala (okna głównego)
-	ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
+
+	if(ga.nicklist)
+	{
+		ga.win_chat = newwin(term_y - 3, term_x - NICKLIST_WIDTH, 1, 0);
+	}
+
+	else
+	{
+		ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
+	}
+
 	scrollok(ga.win_chat, TRUE);		// włącz przewijanie w tym oknie
 
 	// tablica kanałów
@@ -109,6 +122,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// kanał "Status" zawsze pod numerem 0 w tablicy (nie mylić z włączaniem go kombinacją Alt+1)
 	new_chan_status(ga, chan_parm);
+
+	// utwórz okno, w którym będzie wyświetlona lista nicków, a w "Status" informacje o użytkowniku i programie
+	nicklist_on(ga);
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	win_buf_add_str(ga, chan_parm, "Status",
@@ -201,10 +217,27 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		{
 			getmaxyx(stdscr, term_y, term_x);	// pobierz nowe wymiary terminala (okna głównego) po jego zmianie
 			wresize(stdscr, term_y, term_x);	// zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
-			wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
+
+			if(ga.nicklist)
+			{
+				wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);	// j/w, ale dla okna diagnostycznego
+			}
+
+			else
+			{
+				wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
+			}
 
 			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
 			win_buf_refresh(ga, chan_parm);
+
+			if(ga.nicklist)
+			{
+				nicklist_off(ga);
+				nicklist_on(ga);
+			}
+
+			ga.nicklist_refresh = true;
 		}
 
 		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
@@ -357,12 +390,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		// nazwa kanału
 		printw(" [%s]", chan_parm[ga.current]->channel.c_str());
 
-		// liczba osób w pokoju (o ile to nie "Status" lub "Debug")
-		if(ga.current != CHAN_STATUS && ga.current != CHAN_DEBUG_IRC)
-		{
-			printw(" [Osoby: %d]", chan_parm[ga.current]->nick_parm.size());
-		}
-
 		// pokaż lag
 		if(ga.lag > 0)
 		{
@@ -379,6 +406,12 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 /*
 	Koniec informacji na pasku dolnym.
 */
+
+		// pokaż nicki
+		if(ga.nicklist && ga.nicklist_refresh)
+		{
+			nicklist_refresh(ga, chan_parm);
+		}
 
 		// wypisz zawartość bufora klawiatury (utworzonego w programie) w ostatnim wierszu (to, co aktualnie do niego wpisujemy)
 		// oraz ustaw kursor w obecnie przetwarzany znak
@@ -403,6 +436,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			else
 			{
 				delwin(ga.win_chat);
+				delwin(ga.win_info);
 				endwin();	// zakończ tryb ncurses
 				del_all_chan(chan_parm);
 				destroy_my_password(ga);
@@ -476,15 +510,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
-/*
-				// test
-				for(std::map<std::string, struct nick_irc>::iterator i = chan_parm[ga.current]->nick_parm.begin();
-				i != chan_parm[ga.current]->nick_parm.end(); ++i)
-				{
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							i->first + ": " + i->second.zuo + " " + i->second.flags);
-				}
-*/
 			}
 
 			// Alt Left + (...)
@@ -660,6 +685,29 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				}
 			}
 
+			// F2
+			else if(key_code == KEY_F(2))
+			{
+				getmaxyx(stdscr, term_y, term_x);
+
+				if(ga.nicklist)
+				{
+					wresize(ga.win_chat, term_y - 3, term_x);
+					nicklist_off(ga);
+					ga.nicklist = false;
+				}
+
+				else
+				{
+					wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);
+					nicklist_on(ga);
+					nicklist_refresh(ga, chan_parm);
+					ga.nicklist = true;
+				}
+
+				win_buf_refresh(ga, chan_parm);
+			}
+
 			// Enter (0x0A) - wykonaj obsługę bufora klawiatury, ale tylko wtedy, gdy coś w nim jest
 			else if(key_code == '\n' && kbd_buf.size() > 0)
 			{
@@ -755,6 +803,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	}
 
 	delwin(ga.win_chat);
+	delwin(ga.win_info);
 	endwin();	// zakończ tryb ncurses
 	del_all_chan(chan_parm);
 	destroy_my_password(ga);

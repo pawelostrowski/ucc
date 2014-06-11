@@ -113,11 +113,11 @@ void raw_391(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 void raw_396(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
-void raw_372(struct global_args &ga, std::string &buffer_irc_raw);
+void raw_372(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw);
 
-void raw_375(struct global_args &ga);
+void raw_375(struct global_args &ga, struct channel_irc *chan_parm[]);
 
-void raw_376(struct global_args &ga, struct channel_irc *chan_parm[]);
+void raw_376(struct channel_irc *chan_parm[]);
 
 void raw_378(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 

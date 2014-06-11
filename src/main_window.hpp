@@ -11,7 +11,7 @@
 #define PING_TIMEOUT (PING_TIME * 2)
 
 #if PING_TIMEOUT <= PING_TIME
-#error The value PING_TIMEOUT must be greater than the value PING_TIME
+#error The value of PING_TIMEOUT must be greater than the value of PING_TIME
 #endif		// PING_TIMEOUT
 
 // nick na pasku dolnym, gdy nie jesteśmy zalogowani do czata

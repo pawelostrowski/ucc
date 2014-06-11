@@ -4,6 +4,9 @@
 #define UCC_NAME "Ucieszony Chat Client"
 #define UCC_VERSION "v1.0 alpha1"
 
+// szerokość listy nicków
+#define NICKLIST_WIDTH 36
+
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8 (w tym miejscu dodano ze względu na WINDOW)
 #include <map>
 
@@ -69,7 +72,7 @@
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
-	WINDOW *win_chat;
+	WINDOW *win_chat, *win_info;
 	int wcur_y, wcur_x;
 
 	bool use_colors;
@@ -77,6 +80,8 @@ struct global_args
 	bool ucc_dbg_irc;
 
 	bool ucc_quit;
+
+	bool nicklist, nicklist_refresh;
 
 	int socketfd_irc;
 
@@ -99,8 +104,6 @@ struct global_args
 
 	bool busy_state;
 
-	std::string message_day;
-
 	std::string names, cs_homes;
 
 	// używane podczas pobierania wizytówki
@@ -111,6 +114,27 @@ struct global_args
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
 	bool command_card, command_join, command_names, command_vhost;
+};
+
+// wybrane flagi nicka na czacie (wszystkie nie będą używane)
+struct nick_flags
+{
+	bool owner;
+	bool op;
+	bool halfop;
+	bool moderator;
+	bool voice;
+	bool public_webcam;
+	bool private_webcam;
+	bool busy;
+};
+
+// struktura nicka na czacie
+struct nick_irc
+{
+	std::string nick;
+	std::string zuo;
+	struct nick_flags flags;
 };
 
 // struktura kanału
@@ -127,13 +151,6 @@ struct channel_irc
 	std::string topic;
 
         std::map<std::string, struct nick_irc> nick_parm;
-};
-
-// struktura nicka na czacie
-struct nick_irc
-{
-	std::string zuo;
-	std::string flags;
 };
 
 #endif		// UCC_GLOBAL_HPP

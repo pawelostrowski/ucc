@@ -25,6 +25,14 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, bool add_time = true);
 
+void nicklist_on(struct global_args &ga);
+
+std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick);
+
+void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void nicklist_off(struct global_args &ga);
+
 void chan_act_add(struct channel_irc *chan_parm[], std::string chan_name, int act_type);
 
 void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[]);
@@ -37,10 +45,11 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 
 void del_all_chan(struct channel_irc *chan_parm[]);
 
-void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick_chan, std::string nick_zuo,
-				std::string nick_flags);
+void new_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo);
 
-void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick_chan);
+void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, struct nick_flags flags);
+
+void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick);
 
 void destroy_my_password(struct global_args &ga);
 

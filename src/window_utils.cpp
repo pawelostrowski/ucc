@@ -320,12 +320,15 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 
 void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_buf_start)
 {
-	int clr_y, clr_x;
+	int wcur_x;
 	int win_buf_len = win_buf.size();
 
 	// wypisywanie w pętli
 	for(int i = pos_win_buf_start; i < win_buf_len; ++i)
 	{
+		// pobierz pozycję X kursora, aby przy wyświetlaniu kolejnych znaków wykryć, czy należy pominąć wyświetlanie kodu \n
+		wcur_x = getcurx(ga.win_chat);
+
 		// wykryj formatowanie kolorów w buforze (kod xCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
 		if(win_buf[i] == dCOLOR)
 		{
@@ -379,29 +382,22 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 			wattrset(ga.win_chat, A_NORMAL);
 		}
 
-		else
+		// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem), wykryj też czy pozycja
+		// kursora jest na początku wiersza i jest wtedy kod \n, w takiej sytuacji nie wyświetlaj go, aby nie tworzyć pustego wiersza
+		else if(win_buf[i] != '\r' && (wcur_x != 0 || win_buf[i] != '\n'))
 		{
-			// jeśli jest kod \n, wyczyść pozostałą część wiersza (czasami pojawiają się śmieci podczas przełączania buforów lub zmiany
-			// rozmiaru okna terminala)
-			if(win_buf[i] == '\n')
-			{
-				getyx(ga.win_chat, clr_y, clr_x);		// zachowaj pozycję kursora
-				clrtoeol();
-				wmove(ga.win_chat, clr_y, clr_x);		// przywróć pozycję kursora
-			}
-
-			// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem)
-			if(win_buf[i] != '\r')
-			{
-				// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-				wprintw(ga.win_chat, "%c", win_buf[i]);
-			}
+			// wyświetl aktualną zawartość bufora dla pozycji w 'i'
+			wprintw(ga.win_chat, "%c", win_buf[i]);
 		}
-
-	}	// for()
+	}
 
 	// zapamiętaj pozycję kursora w oknie "wirtualnym"
 	getyx(ga.win_chat, ga.wcur_y, ga.wcur_x);
+
+	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
+	refresh();
+	wrefresh(ga.win_chat);
+	refresh();
 }
 
 
@@ -411,17 +407,20 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	Odśwież zawartość okna aktualnie otwartego pokoju (ga.current).
 */
 
-	int wterm_y, wterm_x;		// wymiary okna "wirtualnego"
-	int clr_y, clr_x;		// pozycja kursora używana podczas "czyszczenia" ekranu
+	int wterm_y;		// wymiar Y okna "wirtualnego"
 
 	size_t pos_win_buf_start;
 	int rows = 1;
 
-	// zacznij od początku okna "wirtualnego"
+	// usuń starą zawartość okna, aby uniknąć ewentualnych "śmieci" na ekranie
+	wclear(ga.win_chat);
+
+	// zacznij od początku okna "wirtualnego" (co prawda wclear() powinien przenieść kursor na początek okna, ale nie jest to udokumentowane w każdej
+	// implementacji ncurses, dlatego na wszelki wypadek bezpieczniej jest przenieść kursor)
 	wmove(ga.win_chat, 0, 0);
 
 	// pobierz wymiary okna "wirtualnego" (tutaj chodzi o Y)
-	getmaxyx(ga.win_chat, wterm_y, wterm_x);
+	wterm_y = getmaxy(ga.win_chat);
 
 	// wykryj początek, od którego należy zacząć wyświetlać zawartość bufora (na podstawie kodu \n)
 	pos_win_buf_start = chan_parm[ga.current]->win_buf.rfind("\n");
@@ -451,19 +450,7 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyświetl ustaloną część bufora
 	win_buf_common(ga, chan_parm[ga.current]->win_buf, pos_win_buf_start);
 
-	// wyczyść pozostałą część ekranu
-	getyx(ga.win_chat, clr_y, clr_x);	// potrzebna jest pozycja Y, aby wiedzieć, kiedy koniec okna "wirtualnego"
-	while(clr_y < wterm_y)
-	{
-		wclrtoeol(ga.win_chat);
-		++clr_y;
-		wmove(ga.win_chat, clr_y, 0);
-	}
-
-	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
-	refresh();
-	wrefresh(ga.win_chat);
-	refresh();
+	ga.nicklist_refresh = true;
 }
 
 
@@ -541,11 +528,253 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 
 	// wyświetl otrzymaną część bufora
 	win_buf_common(ga, buffer_str, 0);
+}
 
-	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
+
+void nicklist_on(struct global_args &ga)
+{
+	int term_y, term_x;
+
+	getmaxyx(stdscr, term_y, term_x);
+
+	ga.win_info = newwin(term_y - 3, NICKLIST_WIDTH, 1, term_x - NICKLIST_WIDTH);
+	wattron_color(ga.win_info, ga.use_colors, pBLUE);
+	wborder(ga.win_info, ACS_VLINE, ' ', ' ', ' ', ACS_VLINE, ' ', ACS_VLINE, ' ');
+
 	refresh();
 	wrefresh(ga.win_chat);
+	wrefresh(ga.win_info);
 	refresh();
+
+	ga.nicklist = true;
+}
+
+
+std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick)
+{
+	std::string nick_tmp;
+
+	auto it = chan_parm[ga.current]->nick_parm.find(nick);
+
+	if(it != chan_parm[ga.current]->nick_parm.end())
+	{
+		if(it->second.flags.busy)
+		{
+			nick_tmp = xWHITE;
+		}
+
+		if(it->second.flags.owner)
+		{
+			nick_tmp += "`";
+		}
+
+		if(it->second.flags.op)
+		{
+			nick_tmp += "@";
+		}
+
+		if(it->second.flags.halfop)
+		{
+			nick_tmp += "%";
+		}
+
+		if(it->second.flags.moderator)
+		{
+			nick_tmp += "!";
+		}
+
+		if(it->second.flags.voice)
+		{
+			nick_tmp += "+";
+		}
+
+		if(it->second.flags.public_webcam)
+		{
+			nick_tmp += "=";
+		}
+
+		if(it->second.flags.private_webcam)
+		{
+			nick_tmp += ".";
+		}
+	}
+
+	return nick_tmp;
+}
+
+
+void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	int y = 0;
+	int wterm_y, wterm_x;
+	int wcur_x;
+	std::string nicklist, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
+
+	// zacznij od wyczyszczenia listy
+	wattrset(ga.win_info, A_NORMAL);
+	wclear(ga.win_info);
+
+	// narysuj linię z lewej strony od góry do dołu (jeśli jest obsługa kolorów, to na niebiesko)
+	wattron_color(ga.win_info, ga.use_colors, pBLUE);
+	wborder(ga.win_info, ACS_VLINE, ' ', ' ', ' ', ACS_VLINE, ' ', ACS_VLINE, ' ');
+
+	// pasek na szaro dla napisu "Osoby:"
+	wmove(ga.win_info, y, 1);
+	wattron_color(ga.win_info, ga.use_colors, pWHITE);
+	wattron(ga.win_info, A_REVERSE);
+	getmaxyx(ga.win_info, wterm_y, wterm_x);
+
+	for(int i = 1; i < wterm_x; ++i)
+	{
+		wprintw(ga.win_info, " ");
+	}
+
+	// liczba osób w pokoju
+	wmove(ga.win_info, y, 1);
+	nicklist = "[Osoby: " + std::to_string(chan_parm[ga.current]->nick_parm.size()) + "]\n";
+
+	// pobierz nicki w kolejności zależnej od uprawnień
+	for(std::map<std::string, struct nick_irc>::iterator it = chan_parm[ga.current]->nick_parm.begin();
+	it != chan_parm[ga.current]->nick_parm.end(); ++it)
+	{
+		if(it->second.flags.owner)
+		{
+			nick_owner += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.op)
+		{
+			nick_op += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.halfop)
+		{
+			nick_halfop += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.moderator)
+		{
+			nick_moderator += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.voice)
+		{
+			nick_voice += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.public_webcam)
+		{
+			nick_pub_webcam += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else if(it->second.flags.private_webcam)
+		{
+			nick_priv_webcam += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+
+		else
+		{
+			nick_normal += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+		}
+	}
+
+	// połącz w nicki w jedną listę
+	nicklist += nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
+
+	++y;
+
+	// wyświetl listę
+	for(int i = 0; i >= 0 && i < static_cast<int>(nicklist.size()) - 1 && y <= wterm_y; ++i)	// - 1, bo bez ostatniego kodu \n z listy
+	{
+		if(nicklist[i] == '\n')
+		{
+			// nowy wiersz
+			wmove(ga.win_info, y, 1);
+			wattrset(ga.win_info, A_NORMAL);	// nowy wiersz przywraca domyślne ustawienia
+			++y;
+		}
+
+		else
+		{
+			// wykryj formatowanie kolorów i bolda (uproszczone w stosunku do win_buf_refresh(), bo na liście nie trzeba tylu możliwości)
+			if(nicklist[i] == dCOLOR)
+			{
+				// nie czytaj poza bufor
+				if(i + 1 < static_cast<int>(nicklist.size()))
+				{
+					++i;	// przejdź na kod koloru
+					wattron_color(ga.win_info, ga.use_colors, static_cast<short>(nicklist[i]));
+				}
+			}
+
+			else if(nicklist[i] == dBOLD_ON)
+			{
+				wattron(ga.win_info, A_BOLD);
+			}
+
+			else if(nicklist[i] == dBOLD_OFF)
+			{
+				wattroff(ga.win_info, A_BOLD);
+			}
+
+			else if(nicklist[i] == dREVERSE_ON)
+			{
+				wattron(ga.win_info, A_REVERSE);
+			}
+
+			else if(nicklist[i] == dREVERSE_OFF)
+			{
+				wattroff(ga.win_info, A_REVERSE);
+			}
+
+			else if(nicklist[i] == dNORMAL)
+			{
+				wattrset(ga.win_info, A_NORMAL);
+			}
+
+			else
+			{
+				wcur_x = getcurx(ga.win_info);
+
+				if(wcur_x < wterm_x - 1)
+				{
+					wprintw(ga.win_info, "%c", nicklist[i]);
+				}
+
+				else
+				{
+					wprintw(ga.win_info, "→");
+
+					wmove(ga.win_info, y, 1);
+					wattrset(ga.win_info, A_NORMAL);
+					++y;
+
+					for(++i; i < static_cast<int>(nicklist.size()) - 1; ++i)
+					{
+						if(nicklist[i] == '\n')
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	refresh();
+	wrefresh(ga.win_chat);
+	wrefresh(ga.win_info);
+	refresh();
+
+	ga.nicklist_refresh = false;
+}
+
+
+void nicklist_off(struct global_args &ga)
+{
+	delwin(ga.win_info);
+
+	ga.nicklist = false;
 }
 
 
@@ -695,15 +924,36 @@ void del_all_chan(struct channel_irc *chan_parm[])
 }
 
 
-void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick_chan, std::string nick_zuo,
-				std::string nick_flags)
+void new_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo)
 {
+	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
+	std::string nick_key = nick;
+
+	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
+	{
+		if(islower(nick_key[i]))
+		{
+			nick_key[i] = toupper(nick_key[i]);
+		}
+	}
+
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie będą wrzucani użytkownicy
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
-			chan_parm[i]->nick_parm[nick_chan] = {nick_zuo, nick_flags};
+			// jeśli nick istniał, posiadał ZUO na liście i nie podano nowego ZUO, to nie nadpisuj ZUO
+			if(zuo.size() == 0)
+			{
+				auto it = chan_parm[i]->nick_parm.find(nick_key);
+
+				if(it != chan_parm[i]->nick_parm.end() && it->second.zuo.size() > 0)
+				{
+					zuo = it->second.zuo;
+				}
+			}
+
+			chan_parm[i]->nick_parm[nick_key] = {nick, zuo};
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}
@@ -711,14 +961,53 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 }
 
 
-void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick_chan)
+void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, struct nick_flags flags)
 {
+	std::string nick_key = nick;
+
+	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
+	{
+		if(islower(nick_key[i]))
+		{
+			nick_key[i] = toupper(nick_key[i]);
+		}
+	}
+
+	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie będą wrzucani użytkownicy
+	{
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		{
+			auto it = chan_parm[i]->nick_parm.find(nick_key);
+
+			if(it != chan_parm[i]->nick_parm.end())
+			{
+				it->second.flags = flags;
+			}
+
+			break;		// po odnalezieniu pokoju przerwij pętlę
+		}
+	}
+}
+
+
+void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick)
+{
+	std::string nick_key = nick;
+
+	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
+	{
+		if(islower(nick_key[i]))
+		{
+			nick_key[i] = toupper(nick_key[i]);
+		}
+	}
+
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie byli wrzucani użytkownicy
 	{
 		// znajdź kanał, którego dotyczy usunięcie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
-			chan_parm[i]->nick_parm.erase(nick_chan);
+			chan_parm[i]->nick_parm.erase(nick_key);
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}
