@@ -39,6 +39,11 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
+	long hist_end = 0;
+	bool hist_mod = false;
+	bool hist_up = false;
+	bool hist_down = false;
+	std::string hist_buf, hist_ignore;
 	int top_excess;
 	bool chan_act_ok = false;
 	short act_color;
@@ -70,7 +75,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	ga.ping = 0;
 	ga.pong = 0;
 	ga.lag = 0;
-//	ga.lag_timeout = false;
 /*
 	Koniec ustalania globalnych zmiennych.
 */
@@ -403,6 +407,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				printw(" [Lag: %.2fs]", ga.lag / 1000.00);
 			}
 		}
+
+		printw(" hist_buf.size() = %d  hist_end = %d", hist_buf.size(), hist_end);
 /*
 	Koniec informacji na pasku dolnym.
 */
@@ -466,6 +472,120 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				if(kbd_buf_pos < kbd_buf_max)
 				{
 					++kbd_buf_pos;
+				}
+			}
+
+			// Up Arrow
+			else if(key_code == KEY_UP)
+			{
+				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
+				{
+					hist_ignore = kbd_buf;
+					hist_buf += kbd_buf + "\n";
+
+					hist_up = true;
+
+					hist_mod = false;
+				}
+
+				if(hist_end > 0)
+				{
+					size_t hist_prev = hist_buf.rfind("\n", hist_end - 1);
+
+					// gdy poprzednio używano Down Arrow, trzeba 2x pominąć \n
+					if(hist_down)
+					{
+						hist_end = hist_prev;
+						hist_prev = hist_buf.rfind("\n", hist_end - 1);
+
+						hist_down = false;
+					}
+
+					if(hist_prev == std::string::npos)
+					{
+						hist_prev = 0;
+					}
+
+					else
+					{
+						++hist_prev;
+					}
+
+					kbd_buf.clear();
+					kbd_buf.insert(0, hist_buf, hist_prev, hist_end - hist_prev);
+
+					kbd_buf_pos = kbd_buf.size();
+					kbd_buf_max = kbd_buf_pos;
+
+					hist_end = hist_prev - 1;
+
+					hist_up = true;
+				}
+			}
+
+			// Down Arrow
+			else if(key_code == KEY_DOWN)
+			{
+				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
+				{
+					hist_ignore = kbd_buf;
+					hist_buf += kbd_buf + "\n";
+
+					hist_end = hist_buf.size() - 1;
+
+					kbd_buf.clear();
+					kbd_buf_pos = 0;
+					kbd_buf_max = 0;
+
+					hist_down = false;
+
+					hist_mod = false;
+				}
+
+				else if(hist_end + 1 < static_cast<long>(hist_buf.size()))
+				{
+					size_t hist_next = hist_buf.find("\n", hist_end + 1);
+
+					// gdy poprzednio używano Up Arrow, trzeba 2x pominąć \n
+					if(hist_up)
+					{
+						hist_end = hist_next;
+						hist_next = hist_buf.find("\n", hist_end + 1);
+
+						hist_up = false;
+					}
+
+					if(hist_next != std::string::npos)
+					{
+						kbd_buf.clear();
+						kbd_buf.insert(0, hist_buf, hist_end + 1, hist_next - hist_end - 1);
+
+						kbd_buf_pos = kbd_buf.size();
+						kbd_buf_max = kbd_buf_pos;
+
+						hist_end = hist_next;
+
+						hist_down = true;
+					}
+
+					else
+					{
+						kbd_buf.clear();
+						kbd_buf_pos = 0;
+						kbd_buf_max = 0;
+
+						hist_down = false;
+					}
+				}
+
+				// gdy to ostatni element historii, wyczyść bufor klawiatury
+				else
+				{
+					kbd_buf.clear();
+					kbd_buf_pos = 0;
+					kbd_buf_max = 0;
+
+					hist_down = false;
 				}
 			}
 
@@ -711,6 +831,78 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Enter (0x0A) - wykonaj obsługę bufora klawiatury, ale tylko wtedy, gdy coś w nim jest
 			else if(key_code == '\n' && kbd_buf.size() > 0)
 			{
+				// zapisz bufor klawiatury do bufora historii (końcowy znak \n mówi o końcu danego elementu historii), pomijaj te same
+				// elementy wpisane poprzednio (dla jednego wpisu historii, a nie wszystkich)
+				if(hist_ignore != kbd_buf)
+				{
+					// gdy wpisano nick z hasłem, w historii nie trzymaj hasła
+					if(kbd_buf.find("/nick") == 0)	// reaguj tylko na wpisanie polecenia, dlatego 0
+					{
+						std::string hist_ignore_nick;
+
+						// początkowo wpisz do bufora "/nick"
+						hist_ignore_nick = "/nick";
+
+						// tu będzie tymczasowa pozycja nicka za spacją lub spacjami
+						int hist_nick = 5;
+
+						// przepisz spację lub spacje (jeśli są)
+						for(int i = 5; i < static_cast<int>(kbd_buf.size()); ++i)	// i = 5, bo pomijamy "/nick"
+						{
+							if(kbd_buf[i] == ' ')
+							{
+								hist_ignore_nick += " ";
+							}
+
+							else
+							{
+								hist_nick = i;
+								break;
+							}
+						}
+
+						// przepisz nick za spacją (lub spacjami), o ile go wpisano
+						if(hist_nick > 5)
+						{
+							for(int i = hist_nick; i < static_cast<int>(kbd_buf.size()); ++i)
+							{
+								// pojawienie się spacji oznacza, że dalej jest hasło
+								if(kbd_buf[i] == ' ')
+								{
+									// przepisz jedną spację za nick
+									hist_ignore_nick += " ";
+									break;
+								}
+
+								else
+								{
+									hist_ignore_nick += kbd_buf[i];
+								}
+							}
+						}
+
+						// jeśli wpisano w ten sam sposób nick (hasło nie jest sprawdzane), pomiń go w historii
+						if(hist_ignore != hist_ignore_nick)
+						{
+							hist_ignore = hist_ignore_nick;
+							hist_buf += hist_ignore_nick + "\n";
+						}
+					}
+
+					// gdy nie wpisano nicka, przepisz cały bufor
+					else
+					{
+						hist_ignore = kbd_buf;
+						hist_buf += kbd_buf + "\n";
+					}
+				}
+
+				hist_end = hist_buf.size() - 1;
+				hist_mod = false;
+
+				// jeśli wciśnięto strzałkę w dół przed Enter, zniweluj jej działanie w powtarzaniu historii
+				hist_down = false;
+
 				// "wyczyść" pole wpisywanego tekstu (aby nie było widać zwłoki, np. podczas pobierania obrazka z kodem do przepisania)
 				move(term_y - 1, ga.zuousername.size() + 3);	// ustaw kursor za nickiem i spacją za nawiasem
 				clrtoeol();
@@ -751,6 +943,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				kbd_buf_max = 0;
 			}
 
+			// Enter, gdy nic nie ma w buforze klawiatury powoduje ustawienie w historii ostatnio wpisanego elementu
+			else if(key_code == '\n' && kbd_buf.size() == 0)
+			{
+				hist_end = hist_buf.size() - 1;
+				hist_mod = false;
+
+				// jeśli wciśnięto strzałkę w dół przed Enter, zniweluj jej działanie w powtarzaniu historii
+				hist_down = false;
+			}
+
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
 			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
 			{
@@ -758,6 +960,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				kbd_buf.insert(kbd_buf_pos, key_utf2iso(key_code));
 				++kbd_buf_pos;
 				++kbd_buf_max;
+
+				hist_mod = true;
 			}
 
 /*

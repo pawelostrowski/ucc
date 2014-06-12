@@ -678,7 +678,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 		}
 	}
 
-	// połącz w nicki w jedną listę
+	// połącz nicki w jedną listę
 	nicklist += nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
 
 	++y;
