@@ -407,8 +407,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				printw(" [Lag: %.2fs]", ga.lag / 1000.00);
 			}
 		}
-
-		printw(" hist_buf.size() = %d  hist_end = %d", hist_buf.size(), hist_end);
 /*
 	Koniec informacji na pasku dolnym.
 */
