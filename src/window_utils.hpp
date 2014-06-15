@@ -51,6 +51,8 @@ void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_par
 
 void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick);
 
+void erase_passwd_nick(std::string &kbd_buf, std::string &hist_buf, std::string &hist_ignore);
+
 void destroy_my_password(struct global_args &ga);
 
 #endif		// WINDOW_UTILS_HPP

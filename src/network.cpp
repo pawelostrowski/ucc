@@ -127,7 +127,6 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 	if(method == "POST")
 	{
-		// użyte std::to_string(content.size())  <--- int na std::string wg standardu C++11
 		data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
 			     "Content-Length: " + std::to_string(content.size()) + "\r\n";
 	}

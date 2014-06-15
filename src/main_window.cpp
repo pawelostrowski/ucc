@@ -478,12 +478,11 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			{
 				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
 				{
-					hist_ignore = kbd_buf;
-					hist_buf += kbd_buf + "\n";
-
-					hist_up = true;
+					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
+					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
 
 					hist_mod = false;
+					hist_up = true;
 				}
 
 				if(hist_end > 0)
@@ -495,7 +494,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					{
 						hist_end = hist_prev;
 						hist_prev = hist_buf.rfind("\n", hist_end - 1);
-
 						hist_down = false;
 					}
 
@@ -516,7 +514,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					kbd_buf_max = kbd_buf_pos;
 
 					hist_end = hist_prev - 1;
-
 					hist_up = true;
 				}
 			}
@@ -526,8 +523,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			{
 				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
 				{
-					hist_ignore = kbd_buf;
-					hist_buf += kbd_buf + "\n";
+					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
+					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
 
 					hist_end = hist_buf.size() - 1;
 
@@ -535,9 +532,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					kbd_buf_pos = 0;
 					kbd_buf_max = 0;
 
-					hist_down = false;
-
 					hist_mod = false;
+					hist_down = false;
 				}
 
 				else if(hist_end + 1 < static_cast<long>(hist_buf.size()))
@@ -549,7 +545,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					{
 						hist_end = hist_next;
 						hist_next = hist_buf.find("\n", hist_end + 1);
-
 						hist_up = false;
 					}
 
@@ -562,7 +557,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 						kbd_buf_max = kbd_buf_pos;
 
 						hist_end = hist_next;
-
 						hist_down = true;
 					}
 
@@ -833,66 +827,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// elementy wpisane poprzednio (dla jednego wpisu historii, a nie wszystkich)
 				if(hist_ignore != kbd_buf)
 				{
-					// gdy wpisano nick z hasłem, w historii nie trzymaj hasła
-					if(kbd_buf.find("/nick") == 0)	// reaguj tylko na wpisanie polecenia, dlatego 0
-					{
-						std::string hist_ignore_nick;
-
-						// początkowo wpisz do bufora "/nick"
-						hist_ignore_nick = "/nick";
-
-						// tu będzie tymczasowa pozycja nicka za spacją lub spacjami
-						int hist_nick = 5;
-
-						// przepisz spację lub spacje (jeśli są)
-						for(int i = 5; i < static_cast<int>(kbd_buf.size()); ++i)	// i = 5, bo pomijamy "/nick"
-						{
-							if(kbd_buf[i] == ' ')
-							{
-								hist_ignore_nick += " ";
-							}
-
-							else
-							{
-								hist_nick = i;
-								break;
-							}
-						}
-
-						// przepisz nick za spacją (lub spacjami), o ile go wpisano
-						if(hist_nick > 5)
-						{
-							for(int i = hist_nick; i < static_cast<int>(kbd_buf.size()); ++i)
-							{
-								// pojawienie się spacji oznacza, że dalej jest hasło
-								if(kbd_buf[i] == ' ')
-								{
-									// przepisz jedną spację za nick
-									hist_ignore_nick += " ";
-									break;
-								}
-
-								else
-								{
-									hist_ignore_nick += kbd_buf[i];
-								}
-							}
-						}
-
-						// jeśli wpisano w ten sam sposób nick (hasło nie jest sprawdzane), pomiń go w historii
-						if(hist_ignore != hist_ignore_nick)
-						{
-							hist_ignore = hist_ignore_nick;
-							hist_buf += hist_ignore_nick + "\n";
-						}
-					}
-
-					// gdy nie wpisano nicka, przepisz cały bufor
-					else
-					{
-						hist_ignore = kbd_buf;
-						hist_buf += kbd_buf + "\n";
-					}
+					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
+					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
 				}
 
 				hist_end = hist_buf.size() - 1;

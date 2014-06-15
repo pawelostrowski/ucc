@@ -629,10 +629,6 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 		wprintw(ga.win_info, " ");
 	}
 
-	// liczba osób w pokoju
-	wmove(ga.win_info, y, 1);
-	nicklist = "[Osoby: " + std::to_string(chan_parm[ga.current]->nick_parm.size()) + "]\n";
-
 	// pobierz nicki w kolejności zależnej od uprawnień
 	for(std::map<std::string, struct nick_irc>::iterator it = chan_parm[ga.current]->nick_parm.begin();
 	it != chan_parm[ga.current]->nick_parm.end(); ++it)
@@ -677,6 +673,10 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 			nick_normal += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 	}
+
+	// liczba osób w pokoju
+	wmove(ga.win_info, y, 1);
+	nicklist = "[Osoby: " + std::to_string(chan_parm[ga.current]->nick_parm.size()) + "]\n";
 
 	// połącz nicki w jedną listę
 	nicklist += nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
@@ -1011,6 +1011,71 @@ void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}
+	}
+}
+
+
+void erase_passwd_nick(std::string &kbd_buf, std::string &hist_buf, std::string &hist_ignore)
+{
+	// gdy wpisano nick z hasłem, w historii nie trzymaj hasła
+	if(kbd_buf.find("/nick") == 0)	// reaguj tylko na wpisanie polecenia, dlatego 0
+	{
+		std::string hist_ignore_nick;
+
+		// początkowo wpisz do bufora "/nick"
+		hist_ignore_nick = "/nick";
+
+		// tu będzie tymczasowa pozycja nicka za spacją lub spacjami
+		int hist_nick = 5;
+
+		// przepisz spację lub spacje (jeśli są)
+		for(int i = 5; i < static_cast<int>(kbd_buf.size()); ++i)	// i = 5, bo pomijamy "/nick"
+		{
+			if(kbd_buf[i] == ' ')
+			{
+				hist_ignore_nick += " ";
+			}
+
+			else
+			{
+				hist_nick = i;
+				break;
+			}
+		}
+
+		// przepisz nick za spacją (lub spacjami), o ile go wpisano
+		if(hist_nick > 5)
+		{
+			for(int i = hist_nick; i < static_cast<int>(kbd_buf.size()); ++i)
+			{
+				// pojawienie się spacji oznacza, że dalej jest hasło
+				if(kbd_buf[i] == ' ')
+				{
+					// przepisz jedną spację za nick
+					hist_ignore_nick += " ";
+					break;
+				}
+
+				else
+				{
+					hist_ignore_nick += kbd_buf[i];
+				}
+			}
+		}
+
+		// jeśli wpisano w ten sam sposób nick (hasło nie jest sprawdzane), pomiń go w historii
+		if(hist_ignore != hist_ignore_nick)
+		{
+			hist_ignore = hist_ignore_nick;
+			hist_buf += hist_ignore_nick + "\n";
+		}
+	}
+
+	// gdy nie wpisano nicka, przepisz cały bufor
+	else
+	{
+		hist_ignore = kbd_buf;
+		hist_buf += kbd_buf + "\n";
 	}
 }
 

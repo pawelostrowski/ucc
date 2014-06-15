@@ -753,13 +753,13 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
-					+ "] zaprasza do rozmowy prywatnej. Szczegóły w \"Status\" (Alt + 1).");
+					+ "] zaprasza Cię do rozmowy prywatnej. Szczegóły w \"Status\" (Alt + 1).");
 		}
 
 		// informacja w "Status"
 		win_buf_add_str(ga, chan_parm, "Status", xBOLD_ON xYELLOW_BLACK "* "
 				+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
-				+ "] zaprasza do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
+				+ "] zaprasza Cię do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
 	}
 
 	// jeśli to zaproszenie do pokoju
@@ -770,7 +770,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
-					+ "] zaprasza do pokoju " + raw_parm[3] + ", szczegóły w \"Status\" (Alt + 1).");
+					+ "] zaprasza Cię do pokoju " + raw_parm[3] + ", szczegóły w \"Status\" (Alt + 1).");
 		}
 
 		// informacja w "Status"
@@ -778,7 +778,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 		win_buf_add_str(ga, chan_parm, "Status", xBOLD_ON xYELLOW_BLACK "* "
 				+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
-				+ "] zaprasza do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[4].erase(0, 1));
+				+ "] zaprasza Cię do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[4].erase(0, 1));
 	}
 
 	// aktywność typu 1 w "Status"
