@@ -70,7 +70,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	ga.zuousername = NICK_NOT_LOGGED;
 
 	ga.nicklist = true;
-	ga.nicklist_refresh = false;
+	ga.nicklist_refresh = true;
 
 	ga.ping = 0;
 	ga.pong = 0;
@@ -194,8 +194,24 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 						ga.socketfd_irc = 0;
 					}
 
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							xRED "# Serwer nie odpowiadał przez ponad " + std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+					// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
+					// pokojach (poza "Debug")
+					for(int i = 0; i < CHAN_MAX - 1; ++i)
+					{
+						if(chan_parm[i])
+						{
+							chan_parm[i]->nick_parm.clear();
+
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+									xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
+									+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+
+							// aktywność typu 1
+							chan_act_add(chan_parm, chan_parm[i]->channel, 1);
+						}
+					}
+
+					ga.nicklist_refresh = true;
 				}
 			}
 

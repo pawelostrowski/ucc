@@ -45,7 +45,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 
 void del_all_chan(struct channel_irc *chan_parm[]);
 
-void new_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo);
+void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo);
 
 void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, struct nick_flags flags);
 

@@ -677,8 +677,8 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 {
 	ga.irc_ok = false;
 
-	// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych pokojach czata
-	for(int i = 1; i < CHAN_MAX - 1; ++i)
+	// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+	for(int i = 0; i < CHAN_MAX - 1; ++i)
 	{
 		if(chan_parm[i])
 		{
@@ -853,7 +853,7 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	ga.command_join = false;
 
 	// dodaj nick do listy
-	new_nick_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"), get_value_from_buf(buffer_irc_raw, "!", " "));
+	new_or_update_nick_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"), get_value_from_buf(buffer_irc_raw, "!", " "));
 
 	// dodaj flagi nicka
 	struct nick_flags flags = {};
@@ -2572,7 +2572,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			}
 
 			// wpisz nick na listę
-			new_nick_chan(ga, chan_parm, raw_parm[3], nick, "");
+			new_or_update_nick_chan(ga, chan_parm, raw_parm[3], nick, "");
 
 			// wpisz flagi nicka
 			update_nick_flags_chan(ga, chan_parm, raw_parm[3], nick, flags);

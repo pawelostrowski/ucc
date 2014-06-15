@@ -8,7 +8,7 @@
 #define PING_TIME 10
 
 // po jakim czasie braku odpowiedzi zerwać połączenie (w sekundach)
-#define PING_TIMEOUT (PING_TIME * 2)
+#define PING_TIMEOUT (PING_TIME * 6)
 
 #if PING_TIMEOUT <= PING_TIME
 #error The value of PING_TIMEOUT must be greater than the value of PING_TIME
