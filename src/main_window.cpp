@@ -69,7 +69,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	ga.zuousername = NICK_NOT_LOGGED;
 
-	ga.nicklist = true;
+	ga.nicklist = true;		// domyślnie włącz listę nicków
 	ga.nicklist_refresh = true;
 
 	ga.ping = 0;
@@ -157,6 +157,74 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 */
 	while(! ga.ucc_quit)
 	{
+		// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
+		// oraz o aktualizację aktywności pokoi)
+		tv.tv_sec = 0;
+		tv.tv_usec = 250000;
+
+		// wykryj zmianę rozmiaru okna terminala
+		if(is_term_resized(term_y, term_x))
+		{
+			getmaxyx(stdscr, term_y, term_x);	// pobierz nowe wymiary terminala (okna głównego) po jego zmianie
+			wresize(stdscr, term_y, term_x);	// zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
+
+			if(ga.nicklist)
+			{
+				wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);	// j/w, ale dla okna diagnostycznego
+			}
+
+			else
+			{
+				wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
+			}
+
+			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
+			win_buf_refresh(ga, chan_parm);
+
+			if(ga.nicklist)
+			{
+				nicklist_off(ga);
+				nicklist_on(ga);
+			}
+
+			ga.nicklist_refresh = true;
+		}
+
+/*
+	Narysuj paski.
+*/
+		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
+		if(ga.use_colors)
+		{
+			wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
+		}
+
+		else
+		{
+			attrset(A_NORMAL);
+			attron(A_REVERSE);
+		}
+
+		// pasek górny
+		move(0, 0);
+		for(int i = 0; i < term_x; ++i)
+		{
+			printw(" ");
+		}
+
+		// pasek dolny
+		move(term_y - 2, 0);
+		for(int i = 0; i < term_x; ++i)
+		{
+			printw(" ");
+		}
+/*
+	Koniec rysowania pasków.
+*/
+
+/*
+	Obsługa PING.
+*/
 		// licznik dla PING
 		if(ga.irc_ok)
 		{
@@ -167,7 +235,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		{
 			ping_counter = 0;
 			ga.lag = 0;
-
 			ga.lag_timeout = false;
 		}
 
@@ -226,65 +293,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				irc_send(ga, chan_parm, "PING :" + std::to_string(ga.ping));
 			}
 		}
-
-		// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
-		// oraz o aktualizację aktywności pokoi)
-		tv.tv_sec = 0;
-		tv.tv_usec = 250000;
-
-		// wykryj zmianę rozmiaru okna terminala
-		if(is_term_resized(term_y, term_x))
-		{
-			getmaxyx(stdscr, term_y, term_x);	// pobierz nowe wymiary terminala (okna głównego) po jego zmianie
-			wresize(stdscr, term_y, term_x);	// zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
-
-			if(ga.nicklist)
-			{
-				wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);	// j/w, ale dla okna diagnostycznego
-			}
-
-			else
-			{
-				wresize(ga.win_chat, term_y - 3, term_x);	// j/w, ale dla okna diagnostycznego
-			}
-
-			// po zmianie wielkości okna terminala należy uaktualnić jego zawartość
-			win_buf_refresh(ga, chan_parm);
-
-			if(ga.nicklist)
-			{
-				nicklist_off(ga);
-				nicklist_on(ga);
-			}
-
-			ga.nicklist_refresh = true;
-		}
-
-		// paski (jeśli terminal obsługuje kolory, paski będą niebieskie)
-		if(ga.use_colors)
-		{
-			wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
-		}
-
-		else
-		{
-			attrset(A_NORMAL);
-			attron(A_REVERSE);
-		}
-
-		// pasek górny
-		move(0, 0);
-		for(int i = 0; i < term_x; ++i)
-		{
-			printw(" ");
-		}
-
-		// pasek dolny
-		move(term_y - 2, 0);
-		for(int i = 0; i < term_x; ++i)
-		{
-			printw(" ");
-		}
+/*
+	Koniec obsługi PING.
+*/
 
 /*
 	Informacje na pasku górnym.
@@ -472,21 +483,15 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			key_code = getch();	// pobierz kod wciśniętego klawisza
 
 			// Left Arrow
-			if(key_code == KEY_LEFT)
+			if(key_code == KEY_LEFT && kbd_buf_pos > 0)
 			{
-				if(kbd_buf_pos > 0)
-				{
-					--kbd_buf_pos;
-				}
+				--kbd_buf_pos;
 			}
 
 			// Right Arrow
-			else if(key_code == KEY_RIGHT)
+			else if(key_code == KEY_RIGHT && kbd_buf_pos < kbd_buf_max)
 			{
-				if(kbd_buf_pos < kbd_buf_max)
-				{
-					++kbd_buf_pos;
-				}
+				++kbd_buf_pos;
 			}
 
 			// Up Arrow
@@ -598,24 +603,18 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 
 			// Backspace
-			else if(key_code == KEY_BACKSPACE)
+			else if(key_code == KEY_BACKSPACE && kbd_buf_pos > 0)
 			{
-				if(kbd_buf_pos > 0)
-				{
-					--kbd_buf_pos;
-					--kbd_buf_max;
-					kbd_buf.erase(kbd_buf_pos, 1);
-				}
+				--kbd_buf_pos;
+				--kbd_buf_max;
+				kbd_buf.erase(kbd_buf_pos, 1);
 			}
 
 			// Delete
-			else if(key_code == KEY_DC)
+			else if(key_code == KEY_DC && kbd_buf_pos < kbd_buf_max)
 			{
-				if(kbd_buf_pos < kbd_buf_max)
-				{
-					--kbd_buf_max;
-					kbd_buf.erase(kbd_buf_pos, 1);
-				}
+				--kbd_buf_max;
+				kbd_buf.erase(kbd_buf_pos, 1);
 			}
 
 			// Home
@@ -646,130 +645,102 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// lewy Alt generuje też kod klawisza, z którym został wciśnięty (dla poniższych sprawdzeń), dlatego pobierz ten kod
 				key_code = getch();
 
-				if(key_code >= '1' && key_code <= '9')	// okna od 1 do 9
+				// okna od 1 do 9 (jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08))
+				if(key_code >= '1' && key_code <= '9' && chan_parm[key_code - '1'])
 				{
-					if(chan_parm[key_code - '1'])	// jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08)
-					{
-						ga.current = key_code - '1';
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = key_code - '1';
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == '0')	// okno 10 (0 jest traktowane jak 10)
+				// okno 10 (0 jest traktowane jak 10) (to nie pomyłka, że 9, bo numery są od 0)
+				else if(key_code == '0' && chan_parm[9])
 				{
-					if(chan_parm[9])	// to nie pomyłka, że 9, bo numery są od 0
-					{
-						ga.current = 9;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 9;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'q')	// okno 11
+				// okno 11
+				else if(key_code == 'q' && chan_parm[10])
 				{
-					if(chan_parm[10])
-					{
-						ga.current = 10;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 10;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'w')	// okno 12
+				// okno 12
+				else if(key_code == 'w' && chan_parm[11])
 				{
-					if(chan_parm[11])
-					{
-						ga.current = 11;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 11;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'e')	// okno 13
+				// okno 13
+				else if(key_code == 'e' && chan_parm[12])
 				{
-					if(chan_parm[12])
-					{
-						ga.current = 12;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 12;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'r')	// okno 14
+				// okno 14
+				else if(key_code == 'r' && chan_parm[13])
 				{
-					if(chan_parm[13])
-					{
-						ga.current = 13;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 13;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 't')	// okno 15
+				// okno 15
+				else if(key_code == 't' && chan_parm[14])
 				{
-					if(chan_parm[14])
-					{
-						ga.current = 14;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 14;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'y')	// okno 16
+				// okno 16
+				else if(key_code == 'y' && chan_parm[15])
 				{
-					if(chan_parm[15])
-					{
-						ga.current = 15;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 15;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'u')	// okno 17
+				// okno 17
+				else if(key_code == 'u' && chan_parm[16])
 				{
-					if(chan_parm[16])
-					{
-						ga.current = 16;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 16;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'i')	// okno 18
+				// okno 18
+				else if(key_code == 'i' && chan_parm[17])
 				{
-					if(chan_parm[17])
-					{
-						ga.current = 17;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 17;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'o')	// okno 19
+				// okno 19
+				else if(key_code == 'o' && chan_parm[18])
 				{
-					if(chan_parm[18])
-					{
-						ga.current = 18;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 18;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'p')	// okno 20
+				// okno 20
+				else if(key_code == 'p' && chan_parm[19])
 				{
-					if(chan_parm[19])
-					{
-						ga.current = 19;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 19;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 'a')	// okno 21
+				// okno 21
+				else if(key_code == 'a' && chan_parm[20])
 				{
-					if(chan_parm[20])
-					{
-						ga.current = 20;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 20;
+					win_buf_refresh(ga, chan_parm);
 				}
 
-				else if(key_code == 's')	// okno 22
+				// okno 22
+				else if(key_code == 's' && chan_parm[21])
 				{
-					if(chan_parm[21])
-					{
-						ga.current = 21;
-						win_buf_refresh(ga, chan_parm);
-					}
+					ga.current = 21;
+					win_buf_refresh(ga, chan_parm);
 				}
 			}
 
@@ -926,7 +897,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		}	// if(FD_ISSET(0, &readfds_tmp))
 
-		// gniazdo (socket), sprawdzaj tylko, gdy socket jest aktywny
+		// gniazdo (socket), sprawdzaj tylko wtedy, gdy socket jest aktywny
 		if(ga.socketfd_irc > 0 && FD_ISSET(ga.socketfd_irc, &readfds_tmp))
 		{
 			// pobierz dane z serwera oraz zinterpretuj odpowiedź (obsłuż otrzymane dane)

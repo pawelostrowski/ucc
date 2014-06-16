@@ -924,7 +924,8 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 		// komunikat o wyrzuceniu pokaż w kanale "Status"
 		win_buf_add_str(ga, chan_parm, "Status",
-				xRED "* Zostajesz wyrzucony(a) z pokoju " + raw_parm[2] + " przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
+				xRED "* Zostajesz wyrzucony(-na) z pokoju " + raw_parm[2] + " przez " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ reason);
 	}
 
 	else
@@ -965,7 +966,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		}
 
 		// wyświetl powód wyrzucenia w kanale, w którym wyrzucono nick
-		win_buf_add_str(ga, chan_parm, raw_parm[2], xRED "* " + raw_parm[3] + nick_zuo + " zostaje wyrzucony(a) z pokoju " + raw_parm[2]
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xRED "* " + raw_parm[3] + nick_zuo + " zostaje wyrzucony(-na) z pokoju " + raw_parm[2]
 				+ " przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + reason);
 
 		// usuń nick z listy
@@ -2262,7 +2263,7 @@ void raw_266()
 void raw_301(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xGREEN + raw_parm[3] + xNORMAL " jest nieobecny(a) z powodu: " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+			"* " xGREEN + raw_parm[3] + xNORMAL " jest nieobecny(-na) z powodu: " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 }
 
 
@@ -2294,7 +2295,7 @@ void raw_304(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_305(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Nie jesteś już oznaczony(a) jako nieobecny(a).");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Nie jesteś już oznaczony(-na) jako nieobecny(-na).");
 }
 
 
@@ -2304,7 +2305,7 @@ void raw_305(struct global_args &ga, struct channel_irc *chan_parm[])
 */
 void raw_306(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Jesteś teraz oznaczony(a) jako nieobecny(a).");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Jesteś teraz oznaczony(-na) jako nieobecny(-na).");
 }
 
 
@@ -2364,7 +2365,7 @@ void raw_312(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 		get_raw_parm(whowas, time_parm);
 
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xCYAN + raw_parm[3] + xNORMAL " używał(a) serwera: " + raw_parm[4] + "\n"
-				+ "* " xCYAN + raw_parm[3] + xNORMAL " był(a) zalogowany(a) od: " + dayen2daypl(time_parm[0]) + ", " + time_parm[2]
+				+ "* " xCYAN + raw_parm[3] + xNORMAL " był(a) zalogowany(-na) od: " + dayen2daypl(time_parm[0]) + ", " + time_parm[2]
 				+ " " + monthen2monthpl(time_parm[1]) + " " + time_parm[4] + ", " + time_parm[3]);
 	}
 }
@@ -2390,8 +2391,8 @@ void raw_314(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 void raw_317(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
         win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xGREEN + raw_parm[3] + xNORMAL " jest nieaktywny(a) przez: " + time_sec2time(raw_parm[4]) + "\n"
-			+ "* " xGREEN + raw_parm[3] + xNORMAL " jest zalogowany(a) od: " + time_unixtimestamp2local_full(raw_parm[5]));
+			"* " xGREEN + raw_parm[3] + xNORMAL " jest nieaktywny(-na) przez: " + time_sec2time(raw_parm[4]) + "\n"
+			+ "* " xGREEN + raw_parm[3] + xNORMAL " jest zalogowany(-na) od: " + time_unixtimestamp2local_full(raw_parm[5]));
 }
 
 
@@ -2664,7 +2665,7 @@ void raw_376(struct channel_irc *chan_parm[])
 void raw_378(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xGREEN + raw_parm[3] + xNORMAL " jest połączony(a) z: " + get_value_from_buf(buffer_irc_raw, "from ", "\n"));
+			"* " xGREEN + raw_parm[3] + xNORMAL " jest połączony(-na) z: " + get_value_from_buf(buffer_irc_raw, "from ", "\n"));
 }
 
 
@@ -2863,7 +2864,7 @@ void raw_433(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_451(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + raw_parm[2] + " - nie jesteś zarejestrowany(a).");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + raw_parm[2] + " - nie jesteś zarejestrowany(-na).");
 }
 
 
@@ -3001,7 +3002,8 @@ void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	if(authkey.size() == 0)
 	{
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# authKey nie zawiera oczekiwanych 16 znaków (zmiana autoryzacji?).");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# authKey nie zawiera oczekiwanych 16 znaków (możliwa zmiana autoryzacji).");
 	}
 
 	else
@@ -3020,7 +3022,7 @@ void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 void raw_807(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xWHITE "* Jesteś teraz oznaczony(a) jako zajęty(a) i nie będziesz otrzymywać zaproszeń do rozmów prywatnych.");
+			xWHITE "* Jesteś teraz oznaczony(-na) jako zajęty(-ta) i nie będziesz otrzymywać zaproszeń do rozmów prywatnych.");
 }
 
 
@@ -3031,7 +3033,7 @@ void raw_807(struct global_args &ga, struct channel_irc *chan_parm[])
 void raw_808(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xWHITE "* Nie jesteś już oznaczony(a) jako zajęty(a) i możesz otrzymywać zaproszenia do rozmów prywatnych.");
+			xWHITE "* Nie jesteś już oznaczony(-na) jako zajęty(-ta) i możesz otrzymywać zaproszenia do rozmów prywatnych.");
 }
 
 
@@ -3042,7 +3044,7 @@ void raw_808(struct global_args &ga, struct channel_irc *chan_parm[])
 void raw_809(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xGREEN + raw_parm[3] + xNORMAL " jest zajęty(a) i nie przyjmuje zaproszeń do rozmów prywatnych.");
+			"* " xGREEN + raw_parm[3] + xNORMAL " jest zajęty(-ta) i nie przyjmuje zaproszeń do rozmów prywatnych.");
 }
 
 
@@ -3188,7 +3190,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		else
 		{
 			win_buf_add_str(ga, chan_parm, raw_parm[2],
-					xWHITE "* " + raw_parm[6] + " został(a) zaproszony(a) do pokoju " + raw_parm[2] + " przez " + raw_parm[4]);
+					xWHITE "* " + raw_parm[6] + " został(a) zaproszony(-na) do pokoju " + raw_parm[2] + " przez " + raw_parm[4]);
 
 			// aktywność typu 1
 			chan_act_add(chan_parm, raw_parm[2], 1);
@@ -3436,7 +3438,7 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 			else if(ga.card_offmsg == "none")
 			{
-				ga.card_offmsg = "nie przyjmuje wiadomości offline od nikogo";
+				ga.card_offmsg = "nie przyjmuje wiadomości offline";
 			}
 
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm[4] + xNORMAL " " + ga.card_offmsg + ".");
@@ -3647,7 +3649,7 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_220(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) dodany(a) do listy przyjaciół.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) dodany(-na) do listy przyjaciół.");
 }
 
 
@@ -3657,7 +3659,7 @@ void raw_notice_220(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_221(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) usunięty(a) z listy przyjaciół.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " został(a) usunięty(-ta) z listy przyjaciół.");
 }
 
 

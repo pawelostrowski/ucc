@@ -375,62 +375,62 @@ std::string monthen2monthpl(std::string &month_en)
 {
 	if(month_en == "Jan")
 	{
-		return "styczeń";
+		return "stycznia";
 	}
 
 	else if(month_en == "Feb")
 	{
-		return "luty";
+		return "lutego";
 	}
 
 	else if(month_en == "Mar")
 	{
-		return "marzec";
+		return "marca";
 	}
 
 	else if(month_en == "Apr")
 	{
-		return "kwiecień";
+		return "kwietnia";
 	}
 
 	else if(month_en == "May")
 	{
-		return "maj";
+		return "maja";
 	}
 
 	else if(month_en == "Jun")
 	{
-		return "czerwiec";
+		return "czerwca";
 	}
 
 	else if(month_en == "Jul")
 	{
-		return "lipiec";
+		return "lipca";
 	}
 
 	else if(month_en == "Aug")
 	{
-		return "sierpień";
+		return "sierpnia";
 	}
 
 	else if(month_en == "Sep")
 	{
-		return "wrzesień";
+		return "września";
 	}
 
 	else if(month_en == "Oct")
 	{
-		return "październik";
+		return "października";
 	}
 
 	else if(month_en == "Nov")
 	{
-		return "listopad";
+		return "listopada";
 	}
 
 	else if(month_en == "Dec")
 	{
-		return "grudzień";
+		return "grudnia";
 	}
 
 	// gdyby zmieniono sposób zapisu, zwróć oryginalną formę

@@ -23,7 +23,7 @@ bool check_colors()
 	short font_color = COLOR_WHITE;
 	short background_color = COLOR_BLACK;
 
-	// jeśli się da, dopasuj kolory do ustawień terminala
+	// jeśli da się, dopasuj kolory do ustawień terminala
 	if(use_default_colors() == OK)
 	{
 		font_color = -1;
@@ -87,7 +87,7 @@ std::string time_unixtimestamp2local(std::string &time_unixtimestamp)
 {
 	char time_hms[25];
 
-	time_t time_g = std::stoi("0" + time_unixtimestamp);
+	time_t time_g = std::stol("0" + time_unixtimestamp);
 	struct tm *time_l;	// czas lokalny
 
 	time_l = localtime(&time_g);
@@ -100,14 +100,114 @@ std::string time_unixtimestamp2local(std::string &time_unixtimestamp)
 std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 {
 	char time_date[100];
+	std::string time_date_str;
+	size_t month;
 
-	time_t time_date_g = std::stoi("0" + time_unixtimestamp);
+	time_t time_date_g = std::stol("0" + time_unixtimestamp);
 	struct tm *time_date_l;	// czas lokalny
 
 	time_date_l = localtime(&time_date_g);
-	strftime(time_date, 95, "%A, %-d %B %Y, %H:%M:%S", time_date_l);	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
+	strftime(time_date, 95, "%A, %-1d %B %Y, %H:%M:%S", time_date_l);	// %-1d, aby nie było nieznaczącego zera w dniu miesiąca
 
-	return std::string(time_date);
+	time_date_str = std::string(time_date);
+
+	month = time_date_str.find("styczeń");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("styczeń") - 1);
+		time_date_str.insert(month, "stycznia");
+	}
+
+	month = time_date_str.find("luty");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("luty") - 1);
+		time_date_str.insert(month, "lutego");
+	}
+
+	month = time_date_str.find("marzec");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("marzec") - 1);
+		time_date_str.insert(month, "marca");
+	}
+
+	month = time_date_str.find("kwiecień");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("kwiecień") - 1);
+		time_date_str.insert(month, "kwietnia");
+	}
+
+	month = time_date_str.find("maj");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("maj") - 1);
+		time_date_str.insert(month, "maja");
+	}
+
+	month = time_date_str.find("czerwiec");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("czerwiec") - 1);
+		time_date_str.insert(month, "czerwca");
+	}
+
+	month = time_date_str.find("lipiec");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("lipiec") - 1);
+		time_date_str.insert(month, "lipca");
+	}
+
+	month = time_date_str.find("sierpień");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("sierpień") - 1);
+		time_date_str.insert(month, "sierpnia");
+	}
+
+	month = time_date_str.find("wrzesień");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("wrzesień") - 1);
+		time_date_str.insert(month, "września");
+	}
+
+	month = time_date_str.find("październik");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("październik") - 1);
+		time_date_str.insert(month, "października");
+	}
+
+	month = time_date_str.find("listopad");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("listopad") - 1);
+		time_date_str.insert(month, "listopada");
+	}
+
+	month = time_date_str.find("grudzień");
+
+	if(month != std::string::npos)
+	{
+		time_date_str.erase(month, sizeof("grudzień") - 1);
+		time_date_str.insert(month, "grudnia");
+	}
+
+	return time_date_str;
 }
 
 
