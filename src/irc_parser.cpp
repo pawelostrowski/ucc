@@ -849,9 +849,6 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] wchodzi do pokoju " + raw_parm[2]);
 	}
 
-	// skasuj ewentualne użycie /join
-	ga.command_join = false;
-
 	// dodaj nick do listy
 	new_or_update_nick_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"), get_value_from_buf(buffer_irc_raw, "!", " "));
 
@@ -875,6 +872,22 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	}
 
 	update_nick_flags_chan(ga, chan_parm, raw_parm[2], get_value_from_buf(buffer_irc_raw, ":", "!"), flags);
+
+	// jeśli nick ma kamerkę, wyświetl o tym informację
+	if(flags.public_webcam)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] ma włączoną publiczną kamerkę.");
+	}
+
+	else if(flags.private_webcam)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] ma włączoną prywatną kamerkę.");
+	}
+
+	// skasuj ewentualne użycie /join
+	ga.command_join = false;
 
 	// aktywność typu 1
 	chan_act_add(chan_parm, raw_parm[2], 1);
