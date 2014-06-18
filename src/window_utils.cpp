@@ -107,39 +107,39 @@ std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 	struct tm *time_date_l;	// czas lokalny
 
 	time_date_l = localtime(&time_date_g);
-	strftime(time_date, 95, "%A, %-1d %B %Y, %H:%M:%S", time_date_l);	// %-1d, aby nie było nieznaczącego zera w dniu miesiąca
+	strftime(time_date, 95, "%A, %-1d %b %Y, %H:%M:%S", time_date_l);	// %-1d, aby nie było nieznaczącego zera w dniu miesiąca
 
 	time_date_str = std::string(time_date);
 
-	month = time_date_str.find("styczeń");
+	month = time_date_str.find("sty");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("styczeń") - 1);
+		time_date_str.erase(month, sizeof("sty") - 1);	// - 1, aby nie liczyć kodu NULL
 		time_date_str.insert(month, "stycznia");
 	}
 
-	month = time_date_str.find("luty");
+	month = time_date_str.find("lut");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("luty") - 1);
+		time_date_str.erase(month, sizeof("lut") - 1);
 		time_date_str.insert(month, "lutego");
 	}
 
-	month = time_date_str.find("marzec");
+	month = time_date_str.find("mar");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("marzec") - 1);
+		time_date_str.erase(month, sizeof("mar") - 1);
 		time_date_str.insert(month, "marca");
 	}
 
-	month = time_date_str.find("kwiecień");
+	month = time_date_str.find("kwi");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("kwiecień") - 1);
+		time_date_str.erase(month, sizeof("kwi") - 1);
 		time_date_str.insert(month, "kwietnia");
 	}
 
@@ -151,59 +151,59 @@ std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 		time_date_str.insert(month, "maja");
 	}
 
-	month = time_date_str.find("czerwiec");
+	month = time_date_str.find("cze");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("czerwiec") - 1);
+		time_date_str.erase(month, sizeof("cze") - 1);
 		time_date_str.insert(month, "czerwca");
 	}
 
-	month = time_date_str.find("lipiec");
+	month = time_date_str.find("lip");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("lipiec") - 1);
+		time_date_str.erase(month, sizeof("lip") - 1);
 		time_date_str.insert(month, "lipca");
 	}
 
-	month = time_date_str.find("sierpień");
+	month = time_date_str.find("sie");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("sierpień") - 1);
+		time_date_str.erase(month, sizeof("sie") - 1);
 		time_date_str.insert(month, "sierpnia");
 	}
 
-	month = time_date_str.find("wrzesień");
+	month = time_date_str.find("wrz");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("wrzesień") - 1);
+		time_date_str.erase(month, sizeof("wrz") - 1);
 		time_date_str.insert(month, "września");
 	}
 
-	month = time_date_str.find("październik");
+	month = time_date_str.find("paź");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("październik") - 1);
+		time_date_str.erase(month, sizeof("paź") - 1);
 		time_date_str.insert(month, "października");
 	}
 
-	month = time_date_str.find("listopad");
+	month = time_date_str.find("lis");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("listopad") - 1);
+		time_date_str.erase(month, sizeof("lis") - 1);
 		time_date_str.insert(month, "listopada");
 	}
 
-	month = time_date_str.find("grudzień");
+	month = time_date_str.find("gru");
 
 	if(month != std::string::npos)
 	{
-		time_date_str.erase(month, sizeof("grudzień") - 1);
+		time_date_str.erase(month, sizeof("gru") - 1);
 		time_date_str.insert(month, "grudnia");
 	}
 
@@ -430,14 +430,10 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 		wcur_x = getcurx(ga.win_chat);
 
 		// wykryj formatowanie kolorów w buforze (kod xCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
-		if(win_buf[i] == dCOLOR)
+		if(win_buf[i] == dCOLOR && i + 1 < win_buf_len)		// i + 1 < win_buf_len - nie czytaj poza bufor
 		{
-			// nie czytaj poza bufor
-			if(i + 1 < win_buf_len)
-			{
-				++i;	// przejdź na kod koloru
-				wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(win_buf[i]));
-			}
+			++i;	// przejdź na kod koloru
+			wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(win_buf[i]));
 		}
 
 		// wykryj włączenie pogrubienia tekstu
@@ -797,14 +793,10 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 		else
 		{
 			// wykryj formatowanie kolorów i bolda (uproszczone w stosunku do win_buf_refresh(), bo na liście nie trzeba tylu możliwości)
-			if(nicklist[i] == dCOLOR)
+			if(nicklist[i] == dCOLOR && i + 1 < static_cast<int>(nicklist.size()))
 			{
-				// nie czytaj poza bufor
-				if(i + 1 < static_cast<int>(nicklist.size()))
-				{
-					++i;	// przejdź na kod koloru
-					wattron_color(ga.win_info, ga.use_colors, static_cast<short>(nicklist[i]));
-				}
+				++i;	// przejdź na kod koloru
+				wattron_color(ga.win_info, ga.use_colors, static_cast<short>(nicklist[i]));
 			}
 
 			else if(nicklist[i] == dBOLD_ON)

@@ -1,6 +1,6 @@
 #include <string>		// std::string
 #include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
-#include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), malloc(), realloc(), memcpy()
+#include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), memcpy()
 #include <unistd.h>		// close() - socket
 
 #include "network.hpp"
@@ -17,12 +17,12 @@
 bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 {
 	size_t pos_cookie_start, pos_cookie_end;
-	std::string cookie_string;
 
-	cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
+	std::string cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
 
 	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
 	pos_cookie_start = std::string(buffer_recv).find(cookie_string);	// std::string(buffer_recv) zamienia C string na std::string
+
 	if(pos_cookie_start == std::string::npos)
 	{
 		msg_err = "Nie znaleziono żadnego cookie.";
@@ -33,6 +33,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 	{
 		// szukaj ";" od pozycji początku cookie
 		pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
+
 		if(pos_cookie_end == std::string::npos)
 		{
 			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
@@ -46,7 +47,7 @@ bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
 		// znajdź kolejne cookie
 		pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
 
-	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie znaleziono kolejnego cookie
+	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie zostanie znalezione kolejne cookie
 
 	return true;
 }
@@ -65,6 +66,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 	// pobierz adres IP hosta
 	host_info = gethostbyname(host.c_str());
+
 	if(host_info == NULL)
 	{
 		msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
@@ -73,6 +75,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 	// utwórz deskryptor gniazda (socket)
 	socketfd = socket(AF_INET, SOCK_STREAM, 0);	// SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+
 	if(socketfd == -1)
 	{
 		msg_err = "Nie udało się utworzyć deskryptora gniazda.";
@@ -120,15 +123,15 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	}
 
 	// utwórz dane do wysłania do hosta
-	data_send =  method + " " + stock + " HTTP/1.1\r\n"
-		    "Host: " + host + "\r\n"
-		    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:29.0) Gecko/20100101 Firefox/29.0\r\n"
-		    "Accept-Language: pl\r\n";
+	data_send =	method + " " + stock + " HTTP/1.1\r\n"
+			"Host: " + host + "\r\n"
+			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0\r\n"
+			"Accept-Language: pl\r\n";
 
 	if(method == "POST")
 	{
-		data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
-			     "Content-Length: " + std::to_string(content.size()) + "\r\n";
+		data_send +=	"Content-Type: application/x-www-form-urlencoded\r\n"
+				"Content-Length: " + std::to_string(content.size()) + "\r\n";
 	}
 
 	if(cookies.size() > 0)
@@ -151,6 +154,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	{
 		// wyślij dane do hosta
 		bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
+
 		if(bytes_sent == -1)
 		{
 			close(socketfd);
@@ -158,7 +162,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			return NULL;
 		}
 
-		if(bytes_sent == 0)
+		else if(bytes_sent == 0)
 		{
 			close(socketfd);
 			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie.";
@@ -166,7 +170,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 		}
 
 		// sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-		if(bytes_sent != static_cast<int>(data_send.size()))	// static_cast<int> - rzutowanie size_t (w tym przypadku) na int
+		else if(bytes_sent != static_cast<int>(data_send.size()))	// static_cast<int> - rzutowanie size_t (w tym przypadku) na int
 		{
 			close(socketfd);
 			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
@@ -180,8 +184,8 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			// wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
 			if(buffer_recv == NULL)
 			{
-				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));	// reinterpret_cast<char *> - rzutowanie void*
-												// (w tym przypadku) na char*
+				// reinterpret_cast<char *> - rzutowanie void* (w tym przypadku) na char*
+				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
 
 				if(buffer_recv == NULL)
 				{
@@ -194,6 +198,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			else
 			{
 				buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
+
 				if(buffer_recv == NULL)
 				{
 					msg_err = "Błąd podczas realokacji pamięci przez realloc()";
@@ -214,15 +219,12 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			}
 
 			// sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
-			if(first_recv)
+			else if(first_recv && bytes_recv == 0)
 			{
-				if(bytes_recv == 0)
-				{
-					close(socketfd);
-					free(buffer_recv);
-					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
-					return NULL;
-				}
+				close(socketfd);
+				free(buffer_recv);
+				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
+				return NULL;
 			}
 
 			first_recv = false;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
@@ -247,6 +249,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 		OpenSSL_add_all_algorithms();
 
 		ssl_context = SSL_CTX_new(SSLv23_client_method());
+
 		if(ssl_context == NULL)
 		{
 			msg_err = "Błąd podczas tworzenia obiektu SSL_CTX";
@@ -254,6 +257,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 		}
 
 		ssl_handle = SSL_new(ssl_context);
+
 		if(ssl_handle == NULL)
 		{
 			msg_err = "Błąd podczas tworzenia struktury SSL";
@@ -274,19 +278,22 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 		// wyślij dane do hosta
 		bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+
 		if(bytes_sent <= -1)
 		{
 			close(socketfd);
 			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
 			return NULL;
 		}
-		if(bytes_sent == 0)
+
+		else if(bytes_sent == 0)
 		{
 			close(socketfd);
 			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie [SSL]";
 			return NULL;
 		}
-		if(bytes_sent != static_cast<int>(data_send.size()))
+
+		else if(bytes_sent != static_cast<int>(data_send.size()))
 		{
 			close(socketfd);
 			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
@@ -299,6 +306,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			if(buffer_recv == NULL)
 			{
 				buffer_recv = reinterpret_cast<char *>(malloc(BUF_SIZE));
+
 				if(buffer_recv == NULL)
 				{
 					msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
@@ -309,6 +317,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			else
 			{
 				buffer_recv = reinterpret_cast<char *>(realloc(buffer_recv, offset_recv + BUF_SIZE));
+
 				if(buffer_recv == NULL)
 				{
 					msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
@@ -317,6 +326,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			}
 
 			bytes_recv = SSL_read(ssl_handle, buffer_tmp, BUF_SIZE);
+
 			if(bytes_recv <= -1)
 			{
 				close(socketfd);
@@ -325,15 +335,12 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 				return NULL;
 			}
 
-			if(first_recv)
+			else if(first_recv && bytes_recv == 0)
 			{
-				if(bytes_recv == 0)
-				{
-					close(socketfd);
-					free(buffer_recv);
-					msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL]";
-					return NULL;
-				}
+				close(socketfd);
+				free(buffer_recv);
+				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL]";
+				return NULL;
 			}
 
 			first_recv = false;
@@ -357,7 +364,6 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 /*
 	Jeśli trzeba, zapisz wysłane i pobrane dane do pliku. Przydatne podczas debugowania.
 */
-
 #if DBG_HTTP == 1
 
 	static bool dbg_first_save = true;	// pierwszy zapis nadpisuje starą zawartość pliku
@@ -370,6 +376,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	{
 		file_dbg.open(FILE_DBG_HTTP, std::ios::out);
 	}
+
 	else
 	{
 		file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
@@ -390,9 +397,11 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	std::string con_str = "Content-Length: ";
 
 	exp_start = data_sent.find(pwd_str);
+
 	if(exp_start != std::string::npos)
 	{
 		exp_end = data_sent.find("&", exp_start);
+
 		if(exp_end != std::string::npos)
 		{
 			data_sent.erase(exp_start + pwd_str.size(), exp_end - exp_start - pwd_str.size());
@@ -400,24 +409,25 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 			// było hasło, więc ukryj długość zapytania
 			exp_start = data_sent.find(con_str);
+
 			if(exp_start != std::string::npos)
 			{
 				exp_end = data_sent.find("\r\n", exp_start);
+
 				if(exp_end != std::string::npos)
 				{
 					data_sent.erase(exp_start + con_str.size(), exp_end - exp_start - con_str.size());
 					data_sent.insert(exp_start + con_str.size(), "[hidden]");
 				}
 			}
-
 		}
-
 	}
 
 	// jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
 	std::string gif_str = "GIF";
 
 	exp_start = data_recv.find(gif_str);
+
 	if(exp_start != std::string::npos)
 	{
 		data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
@@ -457,7 +467,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 	file_dbg << ">>> RECV:\n\n";
 
-	file_dbg << data_recv + "\n";
+	file_dbg << buf_iso2utf(data_recv) + "\n";
 
 	if(data_recv[data_recv.size() - 1] != '\n')
 	{
@@ -467,19 +477,15 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	file_dbg.close();
 
 #endif		// DBG_HTTP
-
 /*
 	Koniec części odpowiedzialnej za zapis do pliku.
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
-	if(get_cookies)
+	if(get_cookies && ! find_cookies(buffer_recv, cookies, msg_err))
 	{
-		if(! find_cookies(buffer_recv, cookies, msg_err))
-		{
-			free(buffer_recv);
-			return NULL;	// zwróć komunikat błędu w msg_err
-		}
+		free(buffer_recv);
+		return NULL;	// zwróć komunikat błędu w msg_err
 	}
 
 	return buffer_recv;	// zwróć wskaźnik do bufora pobranych danych
@@ -530,24 +536,21 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
 	}
 
 	else if(bytes_sent == 0)
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
 	}
 
 	else if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
 	}
 }
 

@@ -410,7 +410,7 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	if(! ga.captcha_ready)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Najpierw wpisz /connect");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Najpierw wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
 		return;
 	}
 
@@ -547,7 +547,8 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		}
 
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xGREEN "# Przepisz kod z obrazka, w tym celu wpisz /captcha kod_z_obrazka");
+				xGREEN "# Przepisz kod z obrazka, w tym celu wpisz " xCYAN "/captcha kod_z_obrazka " xGREEN "lub "
+				xCYAN "/cap kod_z_obrazka");
 
 		ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
 	}
@@ -788,14 +789,12 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 		// wyświetl wpisany nick
 		if(ga.my_password.size() == 0)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xGREEN "# Nowy nick tymczasowy: " + buf_iso2utf(ga.my_nick));
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xGREEN "# Nowy nick tymczasowy: " + buf_iso2utf(ga.my_nick));
 		}
 
 		else
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xGREEN "# Nowy nick stały: " + buf_iso2utf(ga.my_nick));
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xGREEN "# Nowy nick stały: " + buf_iso2utf(ga.my_nick));
 		}
 	}
 }

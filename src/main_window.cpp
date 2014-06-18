@@ -1,8 +1,9 @@
 #include <string>		// std::string, setlocale()
-#include <cerrno>		// errno
 #include <sys/select.h>		// select()
 #include <sys/time.h>		// gettimeofday()
 #include <unistd.h>		// close() - socket
+
+// -std=gnu++11 - errno
 
 #include "main_window.hpp"
 #include "window_utils.hpp"
@@ -914,6 +915,22 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					close(ga.socketfd_irc);
 					ga.socketfd_irc = 0;
 				}
+
+				// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat (z wyjątkiem "Debug")
+				for(int i = 0; i < CHAN_MAX - 1; ++i)
+				{
+					if(chan_parm[i])
+					{
+						chan_parm[i]->nick_parm.clear();
+
+						win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xRED "# Rozłączono.");
+
+						// aktywność typu 1
+						chan_act_add(chan_parm, chan_parm[i]->channel, 1);
+					}
+				}
+
+				ga.nicklist_refresh = true;
 			}
 		}
 

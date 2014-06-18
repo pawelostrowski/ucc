@@ -1,5 +1,4 @@
 #include <iostream>			// std::string, std::cout, std::cerr, std::endl
-//#include <cstdio>			// perror()
 
 // -std=gnu++11 - perror()
 

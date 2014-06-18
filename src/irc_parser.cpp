@@ -1,4 +1,5 @@
 #include <string>		// std::string
+#include <fstream>		// std::ifstream
 #include <sys/time.h>		// gettimeofday()
 
 #include "irc_parser.hpp"
@@ -677,7 +678,7 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 {
 	ga.irc_ok = false;
 
-	// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+	// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
 	for(int i = 0; i < CHAN_MAX - 1; ++i)
 	{
 		if(chan_parm[i])
@@ -685,14 +686,12 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 			chan_parm[i]->nick_parm.clear();
 
 			win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-					xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n") + "\n" xBOLD_ON xRED "# Rozłączono.");
+					xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 
 			// aktywność typu 1
 			chan_act_add(chan_parm, chan_parm[i]->channel, 1);
 		}
 	}
-
-	ga.nicklist_refresh = true;
 }
 
 
@@ -1063,7 +1062,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	Zmiany flag pokoju.
 */
 		// wykrycie bana można rozpoznać po # w trzecim parametrze RAW (i - x + 3 < RAW_PARM_MAX zabezpiecza przed czytaniem poza bufor)
-		if(raw_parm[3][i] == 'b' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		if(raw_parm[3][i] == 'b' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1081,7 +1080,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'q' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'q' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			// klucz nicka trzymany jest wielkimi literami
 			std::string nick_key2 = raw_parm[i - x + 3];
@@ -1154,7 +1153,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'o' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'o' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			// klucz nicka trzymany jest wielkimi literami
 			std::string nick_key2 = raw_parm[i - x + 3];
@@ -1227,7 +1226,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'h' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'h' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			// klucz nicka trzymany jest wielkimi literami
 			std::string nick_key2 = raw_parm[i - x + 3];
@@ -1300,7 +1299,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'e' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'e' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1318,7 +1317,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'v' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'v' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			// klucz nicka trzymany jest wielkimi literami
 			std::string nick_key2 = raw_parm[i - x + 3];
@@ -1391,7 +1390,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'X' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'X' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			// klucz nicka trzymany jest wielkimi literami
 			std::string nick_key2 = raw_parm[i - x + 3];
@@ -1464,7 +1463,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'm' && raw_parm[2][0] == '#')
+		else if(raw_parm[3][i] == 'm' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1482,7 +1481,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'I' && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
+		else if(raw_parm[3][i] == 'I' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#' && i - x + 3 < RAW_PARM_MAX)
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1500,7 +1499,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'i' && raw_parm[2][0] == '#')
+		else if(raw_parm[3][i] == 'i' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1518,7 +1517,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 'p' && raw_parm[2][0] == '#')
+		else if(raw_parm[3][i] == 'p' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1536,7 +1535,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			chan_act_add(chan_parm, raw_parm[2], 1);
 		}
 
-		else if(raw_parm[3][i] == 's' && raw_parm[2][0] == '#')
+		else if(raw_parm[3][i] == 's' && raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1557,7 +1556,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 /*
 	Zmiany flag osób.
 */
-		else if(raw_parm[3][i] == 'O' && raw_parm[2][0] != '#')
+		else if(raw_parm[3][i] == 'O' && raw_parm[2].size() > 0 && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1596,7 +1595,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 
-		else if(raw_parm[3][i] == 'W' && raw_parm[2][0] != '#')
+		else if(raw_parm[3][i] == 'W' && raw_parm[2].size() > 0 && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1658,7 +1657,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 
-		else if(raw_parm[3][i] == 'V' && raw_parm[2][0] != '#')
+		else if(raw_parm[3][i] == 'V' && raw_parm[2].size() > 0 && raw_parm[2][0] != '#')
 		{
 			if(raw_parm[3][s] == '+')
 			{
@@ -1816,6 +1815,26 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// - po +x dla nicka tymczasowego
 	if(my_flag_r || (my_flag_x && ga.zuousername.size() > 0 && ga.zuousername[0] == '~'))
 	{
+		// test - znajdź plik vhost, jeśli jest, wczytaj go i wyślij na serwer, aby zmienić swój host (do poprawy jeszcze)
+		std::ifstream vhost_file;
+		vhost_file.open("/tmp/vhost.txt");
+
+		if(vhost_file.good())
+		{
+			// uwaga - nie jest sprawdzana poprawność zapisu pliku (jedynie, że coś jest w nim), zakłada się, że plik zawiera login i hasło
+			// (do poprawy)
+			std::string vhost_str;
+			std::getline(vhost_file, vhost_str);
+
+			if(vhost_str.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, "Status", xWHITE "# Znaleziono plik VHost, wczytuję...");
+				irc_send(ga, chan_parm, "VHOST " + vhost_str);
+			}
+
+			vhost_file.close();
+		}
+
 		for(int i = 1; i < CHAN_MAX - 1; ++i)	// od 1, bo pomijamy "Status" oraz - 1, bo pomijamy "Debug"
 		{
 			if(chan_parm[i] && chan_parm[i]->channel.size() > 0)

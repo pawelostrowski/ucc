@@ -104,8 +104,7 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
-					ga.cookies, true, offset_recv, msg_err, "[init]");
+	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "", ga.cookies, true, offset_recv, msg_err, "init:");
 
 	if(buffer_recv == NULL)
 	{
@@ -128,11 +127,10 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	long offset_recv;
 	char *buffer_recv;
-	char *buffer_gif_ptr;
-	int system_status;
+	char *cap_ptr;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "[getCaptcha]");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "getCaptcha:");
 
 	if(buffer_recv == NULL)
 	{
@@ -141,42 +139,44 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	}
 
 	// daj wskaźnik na początek obrazka
-	buffer_gif_ptr = strstr(buffer_recv, "GIF");
+	cap_ptr = strstr(buffer_recv, "GIF");
 
-	if(buffer_gif_ptr == NULL)
+	if(cap_ptr == NULL)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
+
 		free(buffer_recv);
 		return false;
 	}
 
 	// zapisz obrazek z captcha na dysku
-	std::ofstream file_gif(FILE_GIF, std::ios::binary);
+	std::ofstream cap_file(CAPTCHA_FILE, std::ios::binary);
 
-	if(file_gif == NULL)
+	if(cap_file.good())
+	{
+		// &buffer_recv[offset_recv] - cap_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
+		cap_file.write(cap_ptr, &buffer_recv[offset_recv] - cap_ptr);
+
+		cap_file.close();
+
+		free(buffer_recv);
+	}
+
+	else
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Nie udało się zapisać obrazka z kodem do przepisania (" FILE_GIF "), sprawdź uprawnienia do zapisu.");
+				xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).");
+
 		free(buffer_recv);
 		return false;
 	}
 
-	// &buffer_recv[offset_recv] - buffer_gif_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
-	file_gif.write(buffer_gif_ptr, &buffer_recv[offset_recv] - buffer_gif_ptr);
-
-	// zamknij plik po zapisaniu
-	file_gif.close();
-
-	free(buffer_recv);
-
 	// wyświetl obrazek z kodem do przepisania
-	system_status = system("/usr/bin/eog " FILE_GIF " 2>/dev/null &");	// to do poprawy, rozwiązanie tymczasowe!!!
-
-	if(system_status != 0)
+	if(int system_stat = system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// to do poprawy, rozwiązanie tymczasowe!!!
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + std::to_string(system_status));
-		return false;
+				xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
+				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
 
 	return true;
@@ -194,7 +194,7 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "[getSk]");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "getSk:");
 
 	if(buffer_recv == NULL)
 	{
@@ -215,9 +215,9 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	std::string err_code;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-				     ga.cookies, false, offset_recv, msg_err, "[checkCode]");
+	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+					"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+					ga.cookies, false, offset_recv, msg_err, "checkCode:");
 
 	if(buffer_recv == NULL)
 	{
@@ -229,19 +229,20 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	// czyli pobierz wartość między wyrażeniami: err_code=" oraz " (np. err_code="TRUE" zwraca TRUE)
 	err_code = get_value_from_buf(std::string(buffer_recv), "err_code=\"", "\"");
 
+	free(buffer_recv);
+
 	if(err_code.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# checkCode: Serwer nie zwrócił err_code.");
-		free(buffer_recv);
 		return false;
 	}
-
-	free(buffer_recv);
 
 	// jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
 	if(err_code == "FALSE")
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz /connect");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
+
 		return false;
 	}
 
@@ -250,6 +251,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# checkCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
+
 		return false;
 	}
 
@@ -267,9 +269,9 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
-				    "r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
-				     ga.cookies, true, offset_recv, msg_err, "[mLogin]");
+	buffer_recv =	http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
+					"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
+					ga.cookies, true, offset_recv, msg_err, "mLogin:");
 
 	if(buffer_recv == NULL)
 	{
@@ -294,9 +296,9 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size()) + ":\"" + ga.my_nick + "\";}",
-				     ga.cookies, false, offset_recv, msg_err, "[userOverride]");
+	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+					"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size())
+					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "userOverride:");
 
 	if(buffer_recv == NULL)
 	{
@@ -325,9 +327,10 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.my_password.size() == 0)
 	{
 		nick_i = "1";	// tymczasowy
+
 		// jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje,
 		//  mimo iż potem taki nick zwraca po zalogowaniu się
-		if(my_nick_c[0] == '~')
+		if(my_nick_c.size() > 0 && my_nick_c[0] == '~')
 		{
 			my_nick_c.erase(0, 1);
 		}
@@ -338,10 +341,10 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 		nick_i = "0";	// stały
 	}
 
-	buffer_recv = http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-				    "api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
-				     + "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:22:\"1.1(20130621-0052 - R)\";}",
-				     ga.cookies, false, offset_recv, msg_err, "[getUoKey]");
+	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+					"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
+					+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(APPLET_VER) - 1)
+					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "getUoKey:");
 
 	if(buffer_recv == NULL)
 	{
@@ -355,6 +358,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(err_code.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił err_code.");
+
 		free(buffer_recv);
 		return false;
 	}
@@ -387,6 +391,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.uokey.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił uoKey.");
+
 		free(buffer_recv);
 		return false;
 	}
@@ -397,6 +402,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.zuousername.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił zuoUsername.");
+
 		free(buffer_recv);
 		return false;
 	}
