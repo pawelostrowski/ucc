@@ -3040,6 +3040,8 @@ void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_807(struct global_args &ga, struct channel_irc *chan_parm[])
 {
+	ga.busy_state = true;
+
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			xWHITE "* Jesteś teraz oznaczony(-na) jako zajęty(-ta) i nie będziesz otrzymywać zaproszeń do rozmów prywatnych.");
 }
@@ -3051,6 +3053,8 @@ void raw_807(struct global_args &ga, struct channel_irc *chan_parm[])
 */
 void raw_808(struct global_args &ga, struct channel_irc *chan_parm[])
 {
+	ga.busy_state = false;
+
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			xWHITE "* Nie jesteś już oznaczony(-na) jako zajęty(-ta) i możesz otrzymywać zaproszenia do rozmów prywatnych.");
 }

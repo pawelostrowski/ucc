@@ -240,44 +240,47 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		}
 
 		// PING do serwera co liczbę sekund w PING_TIME (gdy klient jest zalogowany)
-		if(ga.irc_ok && ping_counter == PING_TIME * 4 && ga.lag_timeout)
+		if(ga.irc_ok && ping_counter == PING_TIME * 4)
 		{
-			gettimeofday(&t_pong, NULL);
-			ga.pong = t_pong.tv_sec * 1000;
-			ga.pong += t_pong.tv_usec / 1000;
-
-			ga.lag += ga.pong - ga.ping;
-
-			if(ga.lag >= PING_TIMEOUT * 1000)
+			if(ga.lag_timeout)
 			{
-				ga.irc_ok = false;
-				FD_CLR(ga.socketfd_irc, &readfds);
-				ga.zuousername = NICK_NOT_LOGGED;
+				gettimeofday(&t_pong, NULL);
+				ga.pong = t_pong.tv_sec * 1000;
+				ga.pong += t_pong.tv_usec / 1000;
 
-				if(ga.socketfd_irc > 0)
-				{
-					close(ga.socketfd_irc);
-					ga.socketfd_irc = 0;
-				}
+				ga.lag += ga.pong - ga.ping;
 
-				// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
-				// pokojach (poza "Debug")
-				for(int i = 0; i < CHAN_MAX - 1; ++i)
+				if(ga.lag >= PING_TIMEOUT * 1000)
 				{
-					if(chan_parm[i])
+					ga.irc_ok = false;
+					FD_CLR(ga.socketfd_irc, &readfds);
+					ga.zuousername = NICK_NOT_LOGGED;
+
+					if(ga.socketfd_irc > 0)
 					{
-						chan_parm[i]->nick_parm.clear();
-
-						win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-								xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
-								+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
-
-						// aktywność typu 1
-						chan_act_add(chan_parm, chan_parm[i]->channel, 1);
+						close(ga.socketfd_irc);
+						ga.socketfd_irc = 0;
 					}
-				}
 
-				ga.nicklist_refresh = true;
+					// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
+					// pokojach (poza "Debug")
+					for(int i = 0; i < CHAN_MAX - 1; ++i)
+					{
+						if(chan_parm[i])
+						{
+							chan_parm[i]->nick_parm.clear();
+
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+									xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
+									+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+
+							// aktywność typu 1
+							chan_act_add(chan_parm, chan_parm[i]->channel, 1);
+						}
+					}
+
+					ga.nicklist_refresh = true;
+				}
 			}
 
 			ga.lag_timeout = true;

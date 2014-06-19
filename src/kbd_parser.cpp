@@ -383,13 +383,11 @@ void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
 		// zmień stan flagi busy
 		if(ga.busy_state)
 		{
-			ga.busy_state = false;
 			irc_send(ga, chan_parm, "BUSY 0");
 		}
 
 		else
 		{
-			ga.busy_state = true;
 			irc_send(ga, chan_parm, "BUSY 1");
 		}
 	}

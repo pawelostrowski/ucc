@@ -664,7 +664,7 @@ std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm
 			nick_tmp += "`";
 		}
 
-		if(it->second.flags.op)
+		else if(it->second.flags.op)	// jeśli był ` to nie pokazuj @
 		{
 			nick_tmp += "@";
 		}
@@ -691,7 +691,8 @@ std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.private_webcam)
 		{
-			nick_tmp += ".";
+			//nick_tmp += "≠";
+			nick_tmp += "\xE2\x89\xA0";
 		}
 	}
 
