@@ -49,16 +49,16 @@ bool check_colors()
 }
 
 
-void wattron_color(WINDOW *win_chat, bool use_colors, short color_p)
+void wattron_color(WINDOW *win, bool use_colors, short color_p)
 {
 	if(use_colors)
 	{
-		wattron(win_chat, COLOR_PAIR(color_p));	// wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
+		wattron(win, COLOR_PAIR(color_p));	// wattrset() nadpisuje atrybuty, wattron() dodaje atrybuty do istniejących
 	}
 
 	else
 	{
-		wattron(win_chat, A_NORMAL);
+		wattron(win, A_NORMAL);
 	}
 }
 
@@ -99,7 +99,7 @@ std::string time_unixtimestamp2local(std::string &time_unixtimestamp)
 
 std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 {
-	char time_date[100];
+	char time_date[50];
 	std::string time_date_str;
 	size_t month;
 
@@ -107,7 +107,8 @@ std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp)
 	struct tm *time_date_l;	// czas lokalny
 
 	time_date_l = localtime(&time_date_g);
-	strftime(time_date, 95, "%A, %-1d %b %Y, %H:%M:%S", time_date_l);	// %-1d, aby nie było nieznaczącego zera w dniu miesiąca
+
+	strftime(time_date, 45, "%A, %-d %b %Y, %H:%M:%S", time_date_l);	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
 
 	time_date_str = std::string(time_date);
 
@@ -429,8 +430,8 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 		// pobierz pozycję X kursora, aby przy wyświetlaniu kolejnych znaków wykryć, czy należy pominąć wyświetlanie kodu \n
 		wcur_x = getcurx(ga.win_chat);
 
-		// wykryj formatowanie kolorów w buforze (kod xCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
-		if(win_buf[i] == dCOLOR && i + 1 < win_buf_len)		// i + 1 < win_buf_len - nie czytaj poza bufor
+		// wykryj formatowanie kolorów w buforze (kod dCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
+		if(win_buf[i] == dCOLOR && i + 1 < win_buf_len)		// i + 1 < win_buf_len - nie czytaj poza bufor (przy czytaniu kodu koloru)
 		{
 			++i;	// przejdź na kod koloru
 			wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(win_buf[i]));
@@ -691,8 +692,7 @@ std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.private_webcam)
 		{
-			//nick_tmp += "≠";
-			nick_tmp += "\xE2\x89\xA0";
+			nick_tmp += "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
 		}
 	}
 
@@ -936,6 +936,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	Utwórz nowy kanał czata w programie. Poniższa pętla wyszukuje pierwsze wolne miejsce w tablicy i wtedy tworzy kanał.
 */
 
+	// pierwsza pętla wyszukuje, czy kanał o podanej nazwie istnieje, jeśli tak, nie będzie tworzony drugi o takiej samej nazwie
 	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo tutaj nie będą tworzone kanały "Status" oraz "Debug" (tylko kanały czata)
 	{
 		// nie twórz dwóch kanałów o takiej samej nazwie
@@ -943,8 +944,12 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		{
 			return true;	// co prawda nie utworzono nowego kanału, ale nie jest to błąd, bo kanał już istnieje
 		}
+	}
 
-		else if(chan_parm[i] == 0)
+	// druga pętla szuka pierwszego wolnego kanału w tablicy pokoi i jeśli są wolne miejsca, to go tworzy
+	for(int i = 1; i < CHAN_MAX - 1; ++i)
+	{
+		if(chan_parm[i] == 0)
 		{
 			chan_parm[i] = new channel_irc;
 			chan_parm[i]->channel = chan_name;	// nazwa kanału czata

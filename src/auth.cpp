@@ -176,7 +176,7 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	if(int system_stat = system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// to do poprawy, rozwiązanie tymczasowe!!!
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Proces uruchamiający obrazek do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
+				xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
 				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
 

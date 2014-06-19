@@ -5,7 +5,7 @@
 
 bool check_colors();
 
-void wattron_color(WINDOW *win_chat, bool use_colors, short color_p);
+void wattron_color(WINDOW *win, bool use_colors, short color_p);
 
 std::string get_time();
 
