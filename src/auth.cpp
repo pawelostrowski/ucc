@@ -104,11 +104,12 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	buffer_recv = http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "", ga.cookies, true, offset_recv, msg_err, "init:");
+	buffer_recv = 	http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
+					ga.cookies, true, offset_recv, msg_err, "httpAuthInit:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# init: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
 		return false;
 	}
 
@@ -130,11 +131,11 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	char *cap_ptr;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "getCaptcha:");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getCaptcha: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetCaptcha: " + msg_err);
 		return false;
 	}
 
@@ -194,11 +195,11 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "getSk:");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getSk: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetSk: " + msg_err);
 		return false;
 	}
 
@@ -217,11 +218,11 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-					ga.cookies, false, offset_recv, msg_err, "checkCode:");
+					ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# checkCode: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: " + msg_err);
 		return false;
 	}
 
@@ -233,7 +234,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# checkCode: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.");
 		return false;
 	}
 
@@ -250,7 +251,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	if(err_code != "TRUE")
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# checkCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
+				xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
 
 		return false;
 	}
@@ -271,11 +272,11 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	buffer_recv =	http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
 					"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
-					ga.cookies, true, offset_recv, msg_err, "mLogin:");
+					ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# mLogin: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthMLogin: " + msg_err);
 		return false;
 	}
 
@@ -298,11 +299,11 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size())
-					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "userOverride:");
+					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# userOverride: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthUserOverride: " + msg_err);
 		return false;
 	}
 
@@ -344,11 +345,11 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
 					+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(APPLET_VER) - 1)
-					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "getUoKey:");
+					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey:");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: " + msg_err);
 		return false;
 	}
 
@@ -357,7 +358,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.");
 
 		free(buffer_recv);
 		return false;
@@ -366,19 +367,22 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	// sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
 	if(err_code != "TRUE")
 	{
-		if(err_code == "-2")		// -2 oznacza nieprawidłowy nick (stały) lub hasło
+		// -2 oznacza nieprawidłowy nick (stały) lub hasło
+		if(err_code == "-2")
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.");
 		}
 
-		else if(err_code == "-4")	// -4 oznacza nieprawidłowe znaki w nicku tymczasowym
+		// -4 oznacza nieprawidłowe znaki w nicku tymczasowym (lub błędne parametry funkcji, ale zakłada się, że są prawidłowe)
+		else if(err_code == "-4")
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.");
 		}
 
 		else
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
 		}
 
 		free(buffer_recv);
@@ -390,7 +394,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(ga.uokey.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił uoKey.");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.");
 
 		free(buffer_recv);
 		return false;
@@ -401,7 +405,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(ga.zuousername.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# getUoKey: Serwer nie zwrócił zuoUsername.");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.");
 
 		free(buffer_recv);
 		return false;
@@ -434,7 +438,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.socketfd_irc == 0)
 	{
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# ircAuth1: " + msg_err);
 		return;
 	}
 

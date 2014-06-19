@@ -326,6 +326,91 @@ std::string form_from_chat(std::string &buffer_irc_recv)
 }
 
 
+std::string form_to_chat(std::string &kbd_buf)
+{
+/*
+	Konwersja danych do serwera. Przekształcaj //emotikona na %Iemotikona%, kolory i bold będą dodawane inaczej.
+	W przyszłości dodać konwersję wybranych skrótów, np. ;d ;o ;x na %Iemotikona%
+*/
+
+	bool was_form;		// czy było formatowanie
+	bool colon = false;	// wykrycie dwukropka przed // (zacznij od braku dwukropka)
+	int j;
+	int buffer_len = kbd_buf.size();
+	std::string buffer_converted, onet_emoticon;
+
+	for(int i = 0; i < buffer_len; ++i)
+	{
+		was_form = false;	// domyślnie załóż, że nie było formatowania
+		j = i;			// nie zmieniaj aktualnej pozycji podczas sprawdzania (zmieniona zostanie, gdy było poprawne formatowanie)
+
+		// znak / rozpoczyna formatowanie (jeśli wcześniej był dwukropek, nie konwertuj emotikony, ma to znaczenie np. przy wstawianiu http://adres)
+		if(! colon && kbd_buf[j] == '/')
+		{
+			++j;		// kolejny znak
+
+			// wykryj drugi /
+			if(j < buffer_len && kbd_buf[j] == '/')
+			{
+				++j;
+
+				// nie przekształcaj emotikony jeśli za // jest spacja lub kolejny /
+				if(j < buffer_len && kbd_buf[j] != ' ' && kbd_buf[j] != '/')
+				{
+					onet_emoticon.clear();
+
+					while(true)
+					{
+						// koniec bufora przerywa (kończy formatowanie emotikony)
+						if(j == buffer_len)
+						{
+							was_form = true;
+							i = j;		// to już koniec bufora, więc pętla for() się zakończy
+							buffer_converted += "%I" + onet_emoticon + "%";
+
+							break;
+						}
+
+						// spacja oraz / przerywa (kończy formatowanie emotikony)
+						else if(kbd_buf[j] == ' ' || kbd_buf[j] == '/')
+						{
+							was_form = true;
+							i = j - 1;	// kolejny obieg pętli ma wczytać spację lub / do bufora
+							buffer_converted += "%I" + onet_emoticon + "%";
+
+							break;
+						}
+
+						// pobierz kolejne znaki emotikony
+						onet_emoticon += kbd_buf[j];
+
+						++j;	// kolejny znak emotikony
+					}
+				}
+			}
+		}
+
+		if(kbd_buf[i] == ':')
+		{
+			colon = true;
+		}
+
+		else
+		{
+			colon = false;
+		}
+
+		// wpisuj znaki, które nie należą do formatowania
+		if(! was_form)
+		{
+			buffer_converted += kbd_buf[i];
+		}
+	}
+
+	return buffer_converted;
+}
+
+
 std::string dayen2daypl(std::string &day_en)
 {
 	if(day_en == "Mon")

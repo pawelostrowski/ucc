@@ -117,6 +117,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 	// utwórz gniazdo (socket) oraz połącz się z hostem
 	socketfd = socket_init(host, port, msg_err);
+
 	if(socketfd == 0)
 	{
 		return NULL;	// zwróć komunikat błędu w msg_err
@@ -266,7 +267,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 		if(! SSL_set_fd(ssl_handle, socketfd))
 		{
-			msg_err = "Błąd podczas łączenia desktyptora SSL";
+			msg_err = "Błąd podczas łączenia deskryptora SSL";
 			return NULL;
 		}
 
@@ -536,7 +537,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać danych do serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać danych do serwera [IRC]");
 	}
 
 	else if(bytes_sent == 0)
@@ -550,7 +551,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać wszystkich danych do serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać wszystkich danych do serwera [IRC]");
 	}
 }
 
@@ -572,7 +573,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	{
 		close(ga.socketfd_irc);
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać danych z serwera, rozłączono [IRC]");
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać danych z serwera [IRC]");
 		return;
 	}
 

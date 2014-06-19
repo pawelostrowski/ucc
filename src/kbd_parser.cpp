@@ -2,6 +2,7 @@
 
 #include "kbd_parser.hpp"
 #include "window_utils.hpp"
+#include "form_conv.hpp"
 #include "enc_str.hpp"
 #include "network.hpp"
 #include "auth.hpp"
@@ -186,12 +187,15 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			return;
 		}
 
-		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu
+		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu (jeśli wpisano coś w formatowaniu
+		// zwracanym przez serwer, funkcja form_from_chat() przekształci to tak, aby w terminalu wyświetlić to, jakby było to odebrane z serwera)
+		std::string term_buf = buf_iso2utf(kbd_buf);
+
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xBOLD_ON "<" + buf_iso2utf(ga.zuousername) + "> " xBOLD_OFF + buf_iso2utf(kbd_buf));
+				xBOLD_ON "<" + buf_iso2utf(ga.zuousername) + ">" xNORMAL " " + form_from_chat(term_buf));
 
 		// wyślij też komunikat do serwera IRC
-		irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + kbd_buf);
+		irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + form_to_chat(kbd_buf));
 
 		return;		// gdy wpisano zwykły tekst, zakończ
 	}

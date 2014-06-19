@@ -1901,7 +1901,7 @@ void raw_modermsg(struct global_args &ga, struct channel_irc *chan_parm[], std::
 	// jeśli tak, wyświetl inaczej wiadomość
 	if(action_me.size() > 0)
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[4], xMAGENTA "* " + form_start + raw_parm[2] + " " + xNORMAL + action_me
+		win_buf_add_str(ga, chan_parm, raw_parm[4], xMAGENTA "* " + form_start + raw_parm[2] + xNORMAL " " + action_me
 				+ " " xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]");
 	}
 
@@ -2039,7 +2039,7 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::s
 	if(action_me.size() > 0)
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[2],
-				xBOLD_ON xMAGENTA "* " + form_start + get_value_from_buf(buffer_irc_raw, ":", "!") + " " + xNORMAL + action_me);
+				xBOLD_ON xMAGENTA "* " + form_start + get_value_from_buf(buffer_irc_raw, ":", "!") + xNORMAL " " + action_me);
 	}
 
 	// a jeśli nie było /me wyświetl wiadomość w normalny sposób
@@ -3123,14 +3123,13 @@ void raw_817(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	if(action_me.size() > 0)
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[3],
-				time_unixtimestamp2local(raw_parm[4]) + xMAGENTA "* " + raw_parm[5] + " " + xNORMAL
-				+ action_me, false);
+				time_unixtimestamp2local(raw_parm[4]) + xMAGENTA "* " + raw_parm[5] + xNORMAL " " + action_me, false);
 	}
 
 	else
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[3],
-				time_unixtimestamp2local(raw_parm[4]) + xWHITE "<" + raw_parm[5] + "> " xNORMAL
+				time_unixtimestamp2local(raw_parm[4]) + xWHITE "<" + raw_parm[5] + ">" xNORMAL " "
 				+ get_value_from_buf(buffer_irc_raw, " :", "\n"), false);
 	}
 }
@@ -3184,14 +3183,14 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	if(raw_parm[2] == "Auth")
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 	}
 
 	// jeśli to "Setting your VHost" (ignoruj tę sekwencję dla zwykłych nicków, czyli takich, które mają ! w raw_parm[0])
 	else if(buffer_irc_raw.find("Setting your VHost") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL "Ustawiam Twój VHost:"
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Ustawiam Twój VHost:"
 				+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n"));
 	}
 
@@ -3220,14 +3219,14 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	else if(raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[2],
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 	}
 
 	// jeśli to wiadomość dla nicka (mojego), komunikat skieruj do aktualnie otwartego pokoju
 	else
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "- " xNORMAL + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 	}
 }
 
@@ -3245,7 +3244,7 @@ void raw_notice_100(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	// ogłoszenia serwera wrzucaj do "Status"
 	win_buf_add_str(ga, chan_parm, "Status",
-			"* " xBOLD_ON "-" xMAGENTA + get_value_from_buf(buffer_irc_raw, ":", "!") + xTERMC "- " xNORMAL + "W pokoju " + raw_parm[4]
+			"* " xBOLD_ON "-" xMAGENTA + get_value_from_buf(buffer_irc_raw, ":", "!") + xTERMC "-" xNORMAL + " W pokoju " + raw_parm[4]
 			+ " (" + time_unixtimestamp2local_full(raw_parm[5]) + "): " + get_value_from_buf(buffer_irc_raw, raw_parm[5] + " :", "\n"));
 
 	// aktywność typu 1
@@ -3262,7 +3261,7 @@ void raw_notice_109(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	win_buf_add_str(ga, chan_parm, raw_parm[4],
 			"* " xBOLD_ON "-" xMAGENTA + get_value_from_buf(buffer_irc_raw, ":", "!")
-			+ xTERMC "- " xNORMAL + get_value_from_buf(buffer_irc_raw, raw_parm[4] + " :", "\n"));
+			+ xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, raw_parm[4] + " :", "\n"));
 }
 
 
