@@ -518,7 +518,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 				raw_notice(ga, chan_parm, raw_parm, buffer_irc_raw);
 			}
 
-			else if(raw_numeric > 0)
+			else
 			{
 				switch(raw_numeric)
 				{
@@ -642,16 +642,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_421(ga, chan_parm, raw_parm);
 					break;
 
-				// nieznany lub niezaimplementowany jeszcze RAW NOTICE numeryczny
+				// nieznany lub niezaimplementowany jeszcze RAW NOTICE
 				default:
 					raw_unknown = true;
 				}
-			}
-
-			// nieznany lub niezaimplementowany jeszcze RAW NOTICE zwykły
-			else
-			{
-				raw_unknown = true;
 			}
 		}
 
@@ -661,7 +655,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_unknown = true;
 		}
 
-		// jeśli były nieznane lub niezaimplementowane RAW (każdego typu), to je wyświetl bez zmian w aktywnym kanale
+		// jeśli były nieznane lub niezaimplementowane RAW (każdego typu), to je wyświetl bez zmian w aktualnie otwartym pokoju
 		if(raw_unknown)
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
@@ -715,7 +709,7 @@ void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 
 /*
-	Poniżej obsługa RAW z nazwami, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności alfabetycznej).
+	Poniżej obsługa RAW nienumerycznych, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności alfabetycznej).
 */
 
 
@@ -2124,7 +2118,7 @@ void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 
 
 /*
-	Poniżej obsługa RAW z liczbami, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności numerycznej).
+	Poniżej obsługa RAW numerycznych, które występują w odpowiedzi serwera na drugiej pozycji (w kolejności numerycznej).
 */
 
 
@@ -3163,7 +3157,7 @@ void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
-	Poniżej obsługa RAW NOTICE bez liczb.
+	Poniżej obsługa RAW NOTICE nienumerycznych.
 */
 
 
