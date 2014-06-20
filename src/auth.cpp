@@ -438,7 +438,7 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.socketfd_irc == 0)
 	{
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# ircAuth1: " + msg_err);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1");
 		return;
 	}
 

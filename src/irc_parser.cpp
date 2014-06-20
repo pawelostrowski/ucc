@@ -634,6 +634,14 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_416(ga, chan_parm, raw_parm);
 					break;
 
+				case 420:
+					raw_notice_420(ga, chan_parm, raw_parm);
+					break;
+
+				case 421:
+					raw_notice_421(ga, chan_parm, raw_parm);
+					break;
+
 				// nieznany lub niezaimplementowany jeszcze RAW NOTICE numeryczny
 				default:
 					raw_unknown = true;
@@ -3852,4 +3860,24 @@ void raw_notice_416(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			"* " xBOLD_ON + raw_parm[4] + xNORMAL " - dostęp do informacji zabroniony.");
+}
+
+
+/*
+	NOTICE 420 (NS FRIENDS ADD nick - gdy nick już dodano do listy)
+	:NickServ!service@service.onet NOTICE ucieszony86 :420 legionella :is already on your friend list
+*/
+void raw_notice_420(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " jest już na liście przyjaciół.");
+}
+
+
+/*
+	NOTICE 421 (NS FRIENDS DEL nick - gdy nicka nie było na liście)
+	:NickServ!service@service.onet NOTICE ucieszony86 :421 abc :is not on your friend list
+*/
+void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " nie był(a) dodany(-na) do listy przyjaciół.");
 }

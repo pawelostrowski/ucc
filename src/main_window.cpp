@@ -23,8 +23,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		return 1;
 	}
 
-	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo
-	setlocale(LC_ALL, "");
+	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo, przy okazji pl_PL ustawi polskie dni i miesiące
+	setlocale(LC_ALL, "pl_PL.UTF-8");
 
 	// inicjalizacja ncurses
 	if(! initscr())

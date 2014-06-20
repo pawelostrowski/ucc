@@ -14,45 +14,6 @@
 #endif		// DBG_HTTP
 
 
-bool find_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
-{
-	size_t pos_cookie_start, pos_cookie_end;
-
-	std::string cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
-
-	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
-	pos_cookie_start = std::string(buffer_recv).find(cookie_string);	// std::string(buffer_recv) zamienia C string na std::string
-
-	if(pos_cookie_start == std::string::npos)
-	{
-		msg_err = "Nie znaleziono żadnego cookie.";
-		return false;
-	}
-
-	do
-	{
-		// szukaj ";" od pozycji początku cookie
-		pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
-
-		if(pos_cookie_end == std::string::npos)
-		{
-			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
-			return false;
-		}
-
-		// dopisz kolejne cookie do bufora
-		cookies.insert(cookies.size(), std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
-						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
-
-		// znajdź kolejne cookie
-		pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
-
-	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie zostanie znalezione kolejne cookie
-
-	return true;
-}
-
-
 int socket_init(std::string host, short port, std::string &msg_err)
 {
 /*
@@ -96,6 +57,45 @@ int socket_init(std::string host, short port, std::string &msg_err)
 	}
 
 	return socketfd;
+}
+
+
+bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
+{
+	size_t pos_cookie_start, pos_cookie_end;
+
+	std::string cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
+
+	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
+	pos_cookie_start = std::string(buffer_recv).find(cookie_string);	// std::string(buffer_recv) zamienia C string na std::string
+
+	if(pos_cookie_start == std::string::npos)
+	{
+		msg_err = "Nie znaleziono żadnego cookie.";
+		return false;
+	}
+
+	do
+	{
+		// szukaj ";" od pozycji początku cookie
+		pos_cookie_end = std::string(buffer_recv).find(";", pos_cookie_start);
+
+		if(pos_cookie_end == std::string::npos)
+		{
+			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
+			return false;
+		}
+
+		// dopisz kolejne cookie do bufora
+		cookies.insert(cookies.size(), std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
+						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+
+		// znajdź kolejne cookie
+		pos_cookie_start = std::string(buffer_recv).find(cookie_string, pos_cookie_start + cookie_string.size());
+
+	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie zostanie znalezione kolejne cookie
+
+	return true;
 }
 
 
@@ -483,7 +483,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
-	if(get_cookies && ! find_cookies(buffer_recv, cookies, msg_err))
+	if(get_cookies && ! http_get_cookies(buffer_recv, cookies, msg_err))
 	{
 		free(buffer_recv);
 		return NULL;	// zwróć komunikat błędu w msg_err
