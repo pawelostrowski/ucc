@@ -1,11 +1,11 @@
 #ifndef KBD_PARSER_HPP
 #define KBD_PARSER_HPP
 
-int find_command(std::string &kbd_buf, std::string &f_command, std::string &f_command_org, size_t &pos_arg_start);
+int get_command(std::string &kbd_buf, std::string &g_command, std::string &g_command_org, size_t &pos_arg_start);
 
-void find_arg(std::string &kbd_buf, std::string &f_arg, size_t &pos_arg_start, bool lower2upper);
+std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2upper);
 
-bool rest_args(std::string &kbd_buf, size_t pos_arg_start, std::string &f_rest);
+std::string get_rest_args(std::string &kbd_buf, size_t pos_arg_start);
 
 void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf);
 

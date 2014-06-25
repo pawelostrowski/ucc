@@ -18,7 +18,7 @@ std::string get_value_from_buf(std::string buffer_str, std::string expr_before, 
 */
 
 	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
-	std::string f_value_from_buf;
+	std::string g_value_from_buf;
 
 	// znajdź pozycję początku szukanego wyrażenia
 	pos_expr_before = buffer_str.find(expr_before);
@@ -31,12 +31,12 @@ std::string get_value_from_buf(std::string buffer_str, std::string expr_before, 
 		if(pos_expr_after != std::string::npos)
 		{
 			// wstaw szukaną wartość
-			f_value_from_buf.insert(0, buffer_str, pos_expr_before + expr_before.size(),
+			g_value_from_buf.insert(0, buffer_str, pos_expr_before + expr_before.size(),
 						pos_expr_after - pos_expr_before - expr_before.size());
 		}
 	}
 
-	return f_value_from_buf;	// zwróć szukaną wartość między wyrażeniami lub pusty bufor, gdy nie znaleziono początku lub końca
+	return g_value_from_buf;	// zwróć szukaną wartość między wyrażeniami lub pusty bufor, gdy nie znaleziono początku lub końca
 }
 
 
@@ -820,7 +820,7 @@ void raw_invreject(struct global_args &ga, struct channel_irc *chan_parm[], std:
 */
 void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	// jeśli to ja wchodzę, utwórz nowy kanał (jeśli to /join, przechodź od razu do tego okna - ga.command_join)
+	// jeśli to ja wchodzę, utwórz nowy kanał (jeśli wpisano /join, przechodź od razu do tego pokoju - ga.command_join)
 	if(get_value_from_buf(buffer_irc_raw, ":", "!") == buf_iso2utf(ga.zuousername) && ! new_chan_chat(ga, chan_parm, raw_parm[2], ga.command_join))
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się utworzyć nowego pokoju (brak pamięci w tablicy pokoi).");
@@ -3164,7 +3164,12 @@ void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 /*
 	NOTICE nienumeryczne
 	:cf1f4.onet NOTICE Auth :*** Looking up your hostname...
+	:cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
+	:cf1f1.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl) -- cached
+	:cf1f2.onet NOTICE Auth :*** Could not resolve your hostname: Domain name not found; using your IP address (93.159.185.10) instead.
+	:cf1f3.onet NOTICE Auth :Welcome to OnetCzat!
 	:cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
+	:cf1f1.onet NOTICE ucieszony86 :Invalid username or password.
 	:cf1f1.onet NOTICE ^cf1f1756979 :*** ucc_test invited Kernel_Panic into the channel
 	:cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel
 	:AT89S8253!70914256@aaa2a7.a7f7a6.88308b.464974 NOTICE #ucc :test
@@ -3186,18 +3191,48 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	}
 
 	// jeśli NOTICE Auth, wyświetl go w "Status"
-	if(raw_parm[2] == "Auth")
+	if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Looking up your hostname...") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Przeszukiwanie Twojej nazwy hosta...");
+	}
+
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname ") != std::string::npos)
+	{
+		if(buffer_irc_raw.find(") -- cached") != std::string::npos)
+		{
+			win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
+				+ get_value_from_buf(buffer_irc_raw, "hostname ", " ") + " -- zapisano w pamięci podręcznej.");
+		}
+
+		else
+		{
+			win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
+				+ get_value_from_buf(buffer_irc_raw, "hostname ", "\n") + ".");
+		}
+	}
+
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":Welcome to OnetCzat!") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Witaj na OnetCzat!");
 	}
 
 	// jeśli to "Setting your VHost" (ignoruj tę sekwencję dla zwykłych nicków, czyli takich, które mają ! w raw_parm[0])
-	else if(buffer_irc_raw.find("Setting your VHost") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
+	else if(buffer_irc_raw.find(":Setting your VHost: ") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Ustawiam Twój VHost:"
 				+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n"));
+	}
+
+	// nieprawidłowa nazwa użytkownika lub hasło (np. dla VHost)
+	else if(buffer_irc_raw.find(":Invalid username or password.") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Nieprawidłowa nazwa użytkownika lub hasło.");
 	}
 
 	// jeśli to zaproszenie do pokoju lub do rozmowy prywatnej, komunikat skieruj do właściwego pokoju

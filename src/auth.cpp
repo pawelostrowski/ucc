@@ -180,6 +180,8 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
 
+	ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
+
 	return true;
 }
 
@@ -215,6 +217,8 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	char *buffer_recv;
 	std::string err_code;
 	std::string msg_err;
+
+	ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
 
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
@@ -412,6 +416,8 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	free(buffer_recv);
+
+	ga.irc_ready = true;	// gotowość do połączenia z IRC
 
 	return true;
 }

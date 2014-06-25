@@ -728,7 +728,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	// pobierz nicki w kolejności zależnej od uprawnień
 	for(std::map<std::string, struct nick_irc>::iterator it = chan_parm[ga.current]->nick_parm.begin();
-	it != chan_parm[ga.current]->nick_parm.end(); ++it)
+		it != chan_parm[ga.current]->nick_parm.end(); ++it)
 	{
 		if(it->second.flags.owner)
 		{
@@ -879,14 +879,10 @@ void chan_act_add(struct channel_irc *chan_parm[], std::string chan_name, int ac
 
 	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo w kanale "Debug" nie będzie wyświetlania aktywności
 	{
-		// znajdź kanał, którego dotyczy włączenie aktywności
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		// znajdź kanał, którego dotyczy włączenie aktywności (nie zmieniaj aktywności na "niższą")
+		if(chan_parm[i] && chan_parm[i]->channel == chan_name && act_type > chan_parm[i]->chan_act)
 		{
-			// nie zmieniaj aktywności na "niższą"
-			if(chan_parm[i]->chan_act < act_type)
-			{
-				chan_parm[i]->chan_act = act_type;
-			}
+			chan_parm[i]->chan_act = act_type;
 
 			break;
 		}
