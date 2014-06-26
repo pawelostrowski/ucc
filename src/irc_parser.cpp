@@ -570,6 +570,14 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_152(ga, chan_parm, buffer_irc_raw);
 					break;
 
+				case 210:
+					raw_notice_210(ga, chan_parm, buffer_irc_raw);
+					break;
+
+				case 211:
+					raw_notice_211(ga, chan_parm, raw_parm, buffer_irc_raw);
+					break;
+
 				case 220:
 					raw_notice_220(ga, chan_parm, raw_parm);
 					break;
@@ -610,6 +618,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_401(ga, chan_parm, raw_parm);
 					break;
 
+				case 402:
+					raw_notice_402(ga, chan_parm, raw_parm, buffer_irc_raw);
+					break;
+
 				case 403:
 					raw_notice_403(ga, chan_parm, raw_parm);
 					break;
@@ -622,8 +634,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_406(ga, chan_parm, raw_parm, buffer_irc_raw);
 					break;
 
+				case 407:
+					raw_notice_407(ga, chan_parm, raw_parm, buffer_irc_raw);
+					break;
+
 				case 408:
 					raw_notice_408(ga, chan_parm, raw_parm);
+					break;
+
+				case 411:
+					raw_notice_411(ga, chan_parm, raw_parm, buffer_irc_raw);
 					break;
 
 				case 415:
@@ -640,6 +660,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 
 				case 421:
 					raw_notice_421(ga, chan_parm, raw_parm);
+					break;
+
+				case 468:
+					raw_notice_468(ga, chan_parm, raw_parm, buffer_irc_raw);
 					break;
 
 				// nieznany lub niezaimplementowany jeszcze RAW NOTICE
@@ -3703,6 +3727,28 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 210 (NS SET LONGDESC - gdy nie podano opcji do zmiany)
+	:NickServ!service@service.onet NOTICE ucieszony86 :210 :nothing changed
+*/
+void raw_notice_210(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + " - niczego nie zmieniono");
+}
+
+
+/*
+	NOTICE 211 (NS SET SHORTDESC - gdy nie podano opcji do zmiany, a wcześniej była ustawiona jakaś wartość)
+	:NickServ!service@service.onet NOTICE ucieszony86 :211 shortDesc :value unset
+*/
+void raw_notice_211(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xWHITE "* " + raw_parm[4] + " - wyłączono wartość dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+}
+
+
+/*
 	NOTICE 220 (NS FRIENDS ADD nick)
 	:NickServ!service@service.onet NOTICE ucc_test :220 ucieszony86 :friend added to list
 */
@@ -3827,6 +3873,17 @@ void raw_notice_401(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 402 (CS BAN #pokój ADD anonymous@IP - nieprawidłowa maska)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :402 anonymous@IP!*@* :invalid mask
+*/
+void raw_notice_402(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm[4] + " - nieprawidłowa maska dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+}
+
+
+/*
 	NOTICE 403 (RS INFO nick)
 	:RankServ!service@service.onet NOTICE ucc_test :403 abc :user is not on-line
 */
@@ -3860,6 +3917,17 @@ void raw_notice_406(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 407 (CS SET)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :407 SET :not enough parameters
+*/
+void raw_notice_407(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm[4] + " - brak wystarczającej liczby parametrów dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+}
+
+
+/*
 	NOTICE 408 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucc_test :408 abc :no such channel
 */
@@ -3867,6 +3935,17 @@ void raw_notice_408(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			"* " xBOLD_ON xBLUE + raw_parm[4] + xNORMAL " - nie ma takiego pokoju.");
+}
+
+
+/*
+	NOTICE 411 (NS SET ABC)
+	:NickServ!service@service.onet NOTICE ucieszony86 :411 ABC :no such setting
+*/
+void raw_notice_411(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm[4] + " - nie ma takiego ustawienia dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
 }
 
 
@@ -3909,4 +3988,26 @@ void raw_notice_420(struct global_args &ga, struct channel_irc *chan_parm[], std
 void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm[4] + " nie był(a) dodany(-na) do listy przyjaciół.");
+}
+
+
+/*
+	NOTICE 458 (CS BAN #pokój DEL nick@IP - zdjęcie bana w pokoju z uprawnieniami, gdzie nie istnieje taki ban)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :458 #NIEPELNOSPRAWNI_I_MILOSC b anonymous@IP!*@* :unable to remove non-existent privilege
+*/
+void raw_notice_458()
+{
+	// dodać
+}
+
+
+/*
+	NOTICE 468 (CS BAN #ABC ADD anonymous@IP)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :468 #ABC :permission denied, insufficient privileges
+*/
+void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm[4] + " - dostęp zabroniony, nie masz wystarczających uprawnień dla "
+			+ get_value_from_buf(buffer_irc_raw, ":", "!"));
 }
