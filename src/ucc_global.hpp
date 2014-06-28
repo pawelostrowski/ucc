@@ -2,12 +2,12 @@
 #define UCC_GLOBAL_HPP
 
 #define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VERSION "v1.0 alpha1"
+#define UCC_VERSION "v1.0 alpha2"
 
 // szerokość listy nicków
 #define NICKLIST_WIDTH 36
 
-#include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8 (w tym miejscu dodano ze względu na WINDOW)
+#include <ncursesw/ncurses.h>
 #include <map>
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
@@ -91,8 +91,6 @@ struct global_args
 
 	int current;			// aktualnie otwarty pokój
 
-	std::string chat_user;		// nazwa użytkownika czata używana do zapisu w std::map
-
 	std::string my_nick;
 	std::string my_password;
 	std::string zuousername;
@@ -119,6 +117,7 @@ struct global_args
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)
 struct nick_flags
 {
+	bool busy;
 	bool owner;
 	bool op;
 	bool halfop;
@@ -126,7 +125,6 @@ struct nick_flags
 	bool voice;
 	bool public_webcam;
 	bool private_webcam;
-	bool busy;
 };
 
 // struktura nicka na czacie

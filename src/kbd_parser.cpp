@@ -185,7 +185,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		// jeśli nie jest się w aktywnym pokoju, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 		else if(! chan_parm[ga.current]->channel_ok)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju.");
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
 			return;
 		}
 
@@ -381,7 +381,7 @@ void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
 	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 	if(ga.irc_ok)
 	{
-		// zmień stan flagi busy
+		// zmień stan flagi busy (faktyczna zmiana zostanie odnotowana po odebraniu potwierdzenia z serwera w parserze IRC)
 		if(ga.busy_state)
 		{
 			irc_send(ga, chan_parm, "BUSY 0");
@@ -427,14 +427,18 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 		// jeśli captcha ma 6 znaków, wykonaj sprawdzenie
 		else
 		{
+			std::string msg;
+
 			// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-			if(! http_auth_checkcode(ga, chan_parm, captcha))
+			if(! http_auth_checkcode(ga, captcha, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_getuokey(ga, chan_parm))
+			if(! http_auth_getuokey(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 		}
@@ -485,6 +489,8 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 	// jeśli podano nick i można rozpocząć łączenie z czatem
 	else
 	{
+		std::string msg;
+
 		// komunikat o łączeniu we wszystkich otwartych pokojach z wyjątkiem "Debug"
 		for(int i = 0; i < CHAN_MAX - 1; ++i)
 		{
@@ -504,8 +510,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		ga.command_vhost = false;
 
 		// gdy wpisano nick, rozpocznij łączenie
-		if(! http_auth_init(ga, chan_parm))
+		if(! http_auth_init(ga, msg))
 		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 			return;
 		}
 
@@ -513,8 +520,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		if(ga.my_password.size() == 0)
 		{
 			// pobierz captcha
-			if(! http_auth_getcaptcha(ga, chan_parm))
+			if(! http_auth_getcaptcha(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
@@ -526,25 +534,29 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		// gdy wpisano hasło, wykonaj część dla nicka stałego
 		else
 		{
-			if(! http_auth_getsk(ga, chan_parm))
+			if(! http_auth_getsk(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_mlogin(ga, chan_parm))
+			if(! http_auth_mlogin(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_getuokey(ga, chan_parm))
+			if(! http_auth_getuokey(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
 /*
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! http_auth_useroverride(ga, chan_parm))
+			if(! http_auth_useroverride(ga, msg))
 			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 */
@@ -584,28 +596,28 @@ void kbd_command_disconnect(struct global_args &ga, struct channel_irc *chan_par
 void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
-				xCYAN  "/away\n"
-				xCYAN  "/busy\n"
-				xCYAN  "/captcha " xGREEN "lub " xCYAN "/cap\n"
-				xCYAN  "/card\n"
-				xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
-				xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
-				xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
-				xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
-				xCYAN  "/me\n"
-				xCYAN  "/names " xGREEN "lub " xCYAN "/n\n"
-				xCYAN  "/nick\n"
-				xCYAN  "/part " xGREEN "lub " xCYAN "/p\n"
-				xCYAN  "/priv\n"
-				xCYAN  "/quit " xGREEN "lub " xCYAN "/q\n"
-				xCYAN  "/raw\n"
-				xCYAN  "/time\n"
-				xCYAN  "/topic\n"
-				xCYAN  "/vhost\n"
-				xCYAN  "/whois\n"
-				xCYAN  "/whowas");
-				// dopisać resztę poleceń
+			xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
+			xCYAN  "/away\n"
+			xCYAN  "/busy\n"
+			xCYAN  "/captcha " xGREEN "lub " xCYAN "/cap\n"
+			xCYAN  "/card\n"
+			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
+			xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
+			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
+			xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
+			xCYAN  "/me\n"
+			xCYAN  "/names " xGREEN "lub " xCYAN "/n\n"
+			xCYAN  "/nick\n"
+			xCYAN  "/part " xGREEN "lub " xCYAN "/p\n"
+			xCYAN  "/priv\n"
+			xCYAN  "/quit " xGREEN "lub " xCYAN "/q\n"
+			xCYAN  "/raw\n"
+			xCYAN  "/time\n"
+			xCYAN  "/topic\n"
+			xCYAN  "/vhost\n"
+			xCYAN  "/whois\n"
+			xCYAN  "/whowas");
+			// dopisać resztę poleceń
 }
 
 
@@ -736,7 +748,7 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 
 		if(nick.size() == 0)
 		{
-			// gdy nie wpisano nicka i wcześniej też żadnego nie podano
+			// gdy nie wpisano nicka oraz wcześniej też żadnego nie podano
 			if(ga.my_nick.size() == 0)
 			{
 				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie podano nicka.");
@@ -1008,12 +1020,12 @@ void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], 
 		// jeśli nie podano nicka, użyj własnego
 		if(whois_nick.size() == 0)
 		{
-			irc_send(ga, chan_parm, "WHOIS " + ga.zuousername + " " + ga.zuousername);	// 2x nick, aby pokazało idle
+			irc_send(ga, chan_parm, "WHOIS " + ga.zuousername + " " + ga.zuousername);	// 2x nick, aby zawsze pokazało idle
 		}
 
 		else
 		{
-			irc_send(ga, chan_parm, "WHOIS " + whois_nick + " " + whois_nick);	// 2x nick, aby pokazało idle
+			irc_send(ga, chan_parm, "WHOIS " + whois_nick + " " + whois_nick);	// 2x nick, aby zawsze pokazało idle
 		}
 	}
 

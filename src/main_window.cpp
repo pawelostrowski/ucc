@@ -836,8 +836,13 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// sprawdź gotowość do połączenia z IRC
 				if(ga.irc_ready)
 				{
-					// zaloguj do czata
-					irc_auth(ga, chan_parm);
+					std::string msg;
+
+					// zaloguj się do czata
+					if(! irc_auth_all(ga, chan_parm, msg))
+					{
+						win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
+					}
 
 					// od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
 					if(ga.irc_ok)

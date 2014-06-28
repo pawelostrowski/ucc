@@ -401,11 +401,13 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 			attron(A_REVERSE);	// odwróć kolor tła
 			printw("t");
 			attroff(A_NORMAL);	// przywróć normalne atrybuty
-			continue;		// kod tabulatora wyświetlono jako t z odwróconymi kolorami, więc nie idź dalej, tylko zacznij od początku
 		}
 
 		// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-		printw("%c", kbd_buf[i]);
+		else
+		{
+			printw("%c", kbd_buf[i]);
+		}
 	}
 
 	// pozostałe znaki w wierszu wykasuj
@@ -647,7 +649,7 @@ void nicklist_on(struct global_args &ga)
 }
 
 
-std::string nick_get_flags(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick)
+std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick)
 {
 	std::string nick_tmp;
 
@@ -732,42 +734,42 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	{
 		if(it->second.flags.owner)
 		{
-			nick_owner += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_owner += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.op)
 		{
-			nick_op += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_op += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.halfop)
 		{
-			nick_halfop += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_halfop += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.moderator)
 		{
-			nick_moderator += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_moderator += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.voice)
 		{
-			nick_voice += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_voice += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.public_webcam)
 		{
-			nick_pub_webcam += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_pub_webcam += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else if(it->second.flags.private_webcam)
 		{
-			nick_priv_webcam += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_priv_webcam += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 
 		else
 		{
-			nick_normal += nick_get_flags(ga, chan_parm, it->first) + it->second.nick + "\n";
+			nick_normal += get_flags_nick(ga, chan_parm, it->first) + it->second.nick + "\n";
 		}
 	}
 

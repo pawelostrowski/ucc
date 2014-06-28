@@ -642,6 +642,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 					raw_notice_408(ga, chan_parm, raw_parm);
 					break;
 
+				case 409:
+					raw_notice_409(ga, chan_parm, raw_parm, buffer_irc_raw);
+					break;
+
 				case 411:
 					raw_notice_411(ga, chan_parm, raw_parm, buffer_irc_raw);
 					break;
@@ -660,6 +664,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 
 				case 421:
 					raw_notice_421(ga, chan_parm, raw_parm);
+					break;
+
+				case 461:
+					raw_notice_461(ga, chan_parm, raw_parm);
 					break;
 
 				case 468:
@@ -3440,12 +3448,10 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 			if(card_avatar_full != std::string::npos)
 			{
-				ga.card_avatar.erase(card_avatar_full + 1, 1);
-				ga.card_avatar.insert(card_avatar_full + 1, "0");
+				ga.card_avatar.replace(card_avatar_full + 1, 1, "0");
 			}
 
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm[4] + xNORMAL " awatar: " + ga.card_avatar);
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm[4] + xNORMAL " awatar: " + ga.card_avatar);
 		}
 
 		if(ga.card_birthdate.size() > 0)
@@ -3879,7 +3885,7 @@ void raw_notice_401(struct global_args &ga, struct channel_irc *chan_parm[], std
 void raw_notice_402(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* " + raw_parm[4] + " - nieprawidłowa maska dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": " + raw_parm[4] + " - nieprawidłowa maska.");
 }
 
 
@@ -3923,7 +3929,7 @@ void raw_notice_406(struct global_args &ga, struct channel_irc *chan_parm[], std
 void raw_notice_407(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* " + raw_parm[4] + " - brak wystarczającej liczby parametrów dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": " + raw_parm[4] + " - brak wystarczającej liczby parametrów.");
 }
 
 
@@ -3939,13 +3945,24 @@ void raw_notice_408(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 409 (NS SET OFFMSG - brak argumentu)
+	:NickServ!service@service.onet NOTICE ucieszony86 :409 OFFMSG :invalid argument
+*/
+void raw_notice_409(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": nieprawidłowy argument dla " + raw_parm[4]);
+}
+
+
+/*
 	NOTICE 411 (NS SET ABC)
 	:NickServ!service@service.onet NOTICE ucieszony86 :411 ABC :no such setting
 */
 void raw_notice_411(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* " + raw_parm[4] + " - nie ma takiego ustawienia dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": " + raw_parm[4] + " - nie ma takiego ustawienia.");
 }
 
 
@@ -3993,11 +4010,25 @@ void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 /*
 	NOTICE 458 (CS BAN #pokój DEL nick@IP - zdjęcie bana w pokoju z uprawnieniami, gdzie nie istnieje taki ban)
-	:ChanServ!service@service.onet NOTICE ucieszony86 :458 #NIEPELNOSPRAWNI_I_MILOSC b anonymous@IP!*@* :unable to remove non-existent privilege
+	:ChanServ!service@service.onet NOTICE ucieszony86 :458 #pokój b anonymous@IP!*@* :unable to remove non-existent privilege
 */
 void raw_notice_458()
 {
 	// dodać
+}
+
+
+/*
+	NOTICE 461 (CS BAN #pokój ADD nick - ban na superoperatora/operatora)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :461 #ucc ucc :channel operators cannot be banned
+*/
+void raw_notice_461(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, raw_parm[4],
+			xRED "* " + raw_parm[5] + " jest operatorem lub superoperatorem pokoju " + raw_parm[4] + ", nie może zostać zbanowany(-na).");
+
+	// aktywność typu 1
+	chan_act_add(chan_parm, raw_parm[4], 1);
 }
 
 

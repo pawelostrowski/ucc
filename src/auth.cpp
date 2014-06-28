@@ -6,7 +6,6 @@
 #include "auth.hpp"
 #include "network.hpp"
 #include "irc_parser.hpp"
-#include "window_utils.hpp"
 #include "ucc_global.hpp"
 
 
@@ -91,7 +90,7 @@ void auth_code(std::string &authkey)
 }
 
 
-bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_init(struct global_args &ga, std::string &msg)
 {
 /*
 	Pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn).
@@ -109,7 +108,7 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
+		msg = xRED "# httpAuthInit: " + msg_err;
 		return false;
 	}
 
@@ -120,7 +119,7 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 {
 /*
 	Pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka.
@@ -135,7 +134,7 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetCaptcha: " + msg_err);
+		msg = xRED "# httpAuthInit: " + msg_err;
 		return false;
 	}
 
@@ -144,9 +143,8 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	if(cap_ptr == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
-
 		free(buffer_recv);
+		msg = xRED "# Nie udało się pobrać obrazka z kodem do przepisania.";
 		return false;
 	}
 
@@ -157,7 +155,6 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	{
 		// &buffer_recv[offset_recv] - cap_ptr  <--- <adres końca bufora> - <adres początku obrazka> = <rozmiar obrazka>
 		cap_file.write(cap_ptr, &buffer_recv[offset_recv] - cap_ptr);
-
 		cap_file.close();
 
 		free(buffer_recv);
@@ -165,28 +162,28 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	else
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).");
-
 		free(buffer_recv);
+
+		msg = xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).";
 		return false;
 	}
 
-	// wyświetl obrazek z kodem do przepisania
-	if(int system_stat = system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// to do poprawy, rozwiązanie tymczasowe!!!
-	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
-				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
-	}
-
 	ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
+
+	// wyświetl obrazek z kodem do przepisania
+	if(/* int system_stat = */ system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// to do poprawy, rozwiązanie tymczasowe!!!
+	{
+//		msg =	xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
+//			xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE;
+
+//		return false;
+	}
 
 	return true;
 }
 
 
-bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_getsk(struct global_args &ga, std::string &msg)
 {
 /*
 	W przypadku nicka stałego nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać,
@@ -201,7 +198,7 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetSk: " + msg_err);
+		msg = xRED "# httpAuthGetSk: " + msg_err;
 		return false;
 	}
 
@@ -211,7 +208,7 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[], std::string &captcha)
+bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::string &msg)
 {
 	long offset_recv;
 	char *buffer_recv;
@@ -226,7 +223,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: " + msg_err);
+		msg = xRED "# httpAuthCheckCode: " + msg_err;
 		return false;
 	}
 
@@ -238,25 +235,21 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.");
+		msg = xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.";
 		return false;
 	}
 
 	// jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
 	if(err_code == "FALSE")
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
-
+		msg = xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c";
 		return false;
 	}
 
 	// brak TRUE (lub wcześniejszego FALSE) oznacza błąd w odpowiedzi serwera
 	if(err_code != "TRUE")
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
-
+		msg = xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code;
 		return false;
 	}
 
@@ -264,7 +257,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 }
 
 
-bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_mlogin(struct global_args &ga, std::string &msg)
 {
 /*
 	W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid).
@@ -280,7 +273,7 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthMLogin: " + msg_err);
+		msg = xRED "# httpAuthMLogin: " + msg_err;
 		return false;
 	}
 
@@ -290,7 +283,7 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_useroverride(struct global_args &ga, std::string &msg)
 {
 /*
 	Funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku),
@@ -307,7 +300,7 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthUserOverride: " + msg_err);
+		msg = xRED "# httpAuthUserOverride: " + msg_err;
 		return false;
 	}
 
@@ -317,7 +310,7 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 }
 
 
-bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
+bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 {
 	long offset_recv;
 	char *buffer_recv;
@@ -353,7 +346,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: " + msg_err);
+		msg = xRED "# httpAuthGetUoKey: " + msg_err;
 		return false;
 	}
 
@@ -362,34 +355,34 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.");
-
 		free(buffer_recv);
+
+		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.";
 		return false;
 	}
 
 	// sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
 	if(err_code != "TRUE")
 	{
+		free(buffer_recv);
+
 		// -2 oznacza nieprawidłowy nick (stały) lub hasło
 		if(err_code == "-2")
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.");
+			msg = xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.";
 		}
 
 		// -4 oznacza nieprawidłowe znaki w nicku tymczasowym (lub błędne parametry funkcji, ale zakłada się, że są prawidłowe)
 		else if(err_code == "-4")
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.");
+			msg = xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.";
 		}
 
 		else
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
+			msg = xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code;
 		}
 
-		free(buffer_recv);
 		return false;
 	}
 
@@ -398,24 +391,22 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(ga.uokey.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.");
-
 		free(buffer_recv);
+
+		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.";
 		return false;
 	}
 
 	// pobierz zuoUsername (nick, który zwrócił serwer)
 	ga.zuousername = get_value_from_buf(std::string(buffer_recv), "<zuoUsername>", "</zuoUsername>");
 
+	free(buffer_recv);
+
 	if(ga.zuousername.size() == 0)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.");
-
-		free(buffer_recv);
+		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.";
 		return false;
 	}
-
-	free(buffer_recv);
 
 	ga.irc_ready = true;	// gotowość do połączenia z IRC
 
@@ -423,7 +414,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
+bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::string &msg)
 {
 	std::string msg_err;
 
@@ -440,23 +431,23 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// zainicjalizuj gniazdo oraz połącz z IRC
 	ga.socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
 
-	// w przypadku błędu pokaż komunikat oraz zakończ
+	// w przypadku błędu zwróć komunikat oraz zakończ
 	if(ga.socketfd_irc == 0)
 	{
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1");
-		return;
+		msg = xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1";
+		return false;
 	}
 
 	// pobierz pierwszą odpowiedź serwera po połączeniu:
 	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth1");
-		return;
+		msg = xRED "# Błąd wystąpił w: ircAuth1";
+		return false;
 	}
 
 /*
@@ -466,22 +457,22 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// NICK <zuoUsername>
 	irc_send(ga, chan_parm, "NICK " + ga.zuousername);
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth2");
-		return;
+		msg = xRED "# Błąd wystąpił w: ircAuth2";
+		return false;
 	}
 
 	// pobierz drugą odpowiedź serwera:
 	// :cf1f4.onet NOTICE Auth :*** Found your hostname (ajs7.neoplus.adsl.tpnet.pl) -- cached
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth2");
-		return;
+		msg = xRED "# Błąd wystąpił w: ircAuth2";
+		return false;
 	}
 
 /*
@@ -491,11 +482,11 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// AUTHKEY
 	irc_send(ga, chan_parm, "AUTHKEY");
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth3a");
-		return;
+		msg = xRED "# Błąd wystąpił w: ircAuth3a";
+		return false;
 	}
 
 	// pobierz trzecią odpowiedź serwera:
@@ -504,11 +495,11 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// AUTHKEY <nowy_authKey>
 	irc_parser(ga, chan_parm);
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, wyświetl drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth3b");
-		return;
+		msg = xRED "# Błąd wystąpił w: ircAuth3b";
+		return false;
 	}
 
 /*
@@ -519,12 +510,14 @@ void irc_auth(struct global_args &ga, struct channel_irc *chan_parm[])
 	// PROTOCTL ONETNAMESX
 	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX");
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz pokaż drugi komunikat, gdzie wystąpił błąd i zakończ
+	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
 	if(! ga.irc_ok)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd wystąpił w: ircAuth4");
-		// bez return; bo to i tak koniec funkcji
+		msg = xRED "# Błąd wystąpił w: ircAuth4";
+		return false;
 	}
 
 	// jeśli na którymś etapie wystąpił błąd, funkcja irc_auth() zakończy się z ga.irc_ok = false
+
+	return true;
 }
