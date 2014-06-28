@@ -23,7 +23,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		return 1;
 	}
 
-	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo, przy okazji pl_PL ustawi polskie dni i miesiące
+	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo, przy okazji pl_PL ustawi polskie dni i miesiące przy pobieraniu daty z unixtimestamp
 	setlocale(LC_ALL, "pl_PL.UTF-8");
 
 	// inicjalizacja ncurses
@@ -58,6 +58,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 */
 	struct global_args ga;
 
+	ga.use_colors = use_colors_main;
 	ga.ucc_dbg_irc = ucc_dbg_irc_main;
 
 	ga.ucc_quit = false;		// aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
@@ -96,15 +97,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// sprawdź, czy terminal obsługuje kolory, jeśli tak, włącz kolory oraz zainicjalizuj podstawową parę kolorów, ale tylko wtedy,
 	// gdy uruchomiliśmy main_window() z use_colors_main = true, gdy terminal nie obsługuje kolorów, check_colors() zwróci false
-	if(use_colors_main)
+	if(ga.use_colors)
 	{
 		ga.use_colors = check_colors();
-	}
-
-	// przy wyłączonych kolorach wyłącz je w zmiennej
-	else
-	{
-		ga.use_colors = false;
 	}
 
 	// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, "Status" i "Debug" (jeśli włączony jest tryb debugowania IRC)
@@ -133,7 +128,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	win_buf_add_str(ga, chan_parm, "Status",
-			xBOLD_ON xGREEN "# Witaj w programie Ucieszony Chat Client\n"
 			xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
 			xCYAN  "/nick nazwa_nicka\n"
 			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"

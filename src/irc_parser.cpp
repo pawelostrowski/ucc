@@ -3195,16 +3195,6 @@ void raw_951(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 /*
 	NOTICE nienumeryczne
-	:cf1f4.onet NOTICE Auth :*** Looking up your hostname...
-	:cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
-	:cf1f1.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl) -- cached
-	:cf1f2.onet NOTICE Auth :*** Could not resolve your hostname: Domain name not found; using your IP address (93.159.185.10) instead.
-	:cf1f3.onet NOTICE Auth :Welcome to OnetCzat!
-	:cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
-	:cf1f1.onet NOTICE ucieszony86 :Invalid username or password.
-	:cf1f1.onet NOTICE ^cf1f1756979 :*** ucc_test invited Kernel_Panic into the channel
-	:cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel
-	:AT89S8253!70914256@aaa2a7.a7f7a6.88308b.464974 NOTICE #ucc :test
 */
 void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
@@ -3222,77 +3212,110 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		nick_notice = raw_parm[0];
 	}
 
-	// jeśli NOTICE Auth, wyświetl go w "Status"
-	if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Looking up your hostname...") != std::string::npos)
+	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
+	if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Looking up your hostname...\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Przeszukiwanie Twojej nazwy hosta...");
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Wyszukiwanie Twojej nazwy hosta...");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, "Status", 1);
 	}
 
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname ") != std::string::npos)
+	// :cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ")\n")
+		+ ")\n") != std::string::npos)
 	{
-		if(buffer_irc_raw.find(") -- cached") != std::string::npos)
-		{
-			win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
-				+ get_value_from_buf(buffer_irc_raw, "hostname ", " ") + " -- zapisano w pamięci podręcznej.");
-		}
-
-		else
-		{
-			win_buf_add_str(ga, chan_parm, "Status",
+		win_buf_add_str(ga, chan_parm, "Status",
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
 				+ get_value_from_buf(buffer_irc_raw, "hostname ", "\n") + ".");
-		}
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, "Status", 1);
 	}
 
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":Welcome to OnetCzat!") != std::string::npos)
+	// :cf1f1.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl) -- cached
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ") ")
+		+ ") -- cached\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Witaj na OnetCzat!");
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
+				+ get_value_from_buf(buffer_irc_raw, "hostname ", " ") + " -- była zbuforowana na serwerze.");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, "Status", 1);
 	}
 
-	// jeśli to "Setting your VHost" (ignoruj tę sekwencję dla zwykłych nicków, czyli takich, które mają ! w raw_parm[0])
-	else if(buffer_irc_raw.find(":Setting your VHost: ") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
+	// :cf1f2.onet NOTICE Auth :*** Could not resolve your hostname: Domain name not found; using your IP address (93.159.185.10) instead.
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Could not resolve your hostname: Domain name not found; using your IP address ("
+		+ get_value_from_buf(buffer_irc_raw, " address (", ") instead.") + ") instead.\n") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL
+				" Nie można rozwiązać Twojej nazwy hosta: Nie znaleziono nazwy domeny; zamiast tego użyto Twojego adresu IP "
+				+ get_value_from_buf(buffer_irc_raw, " address ", " instead.") + ".");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, "Status", 1);
+	}
+
+	// :cf1f3.onet NOTICE Auth :Welcome to OnetCzat!
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":Welcome to OnetCzat!\n") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Witaj na Onet Czacie!");
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, "Status", 1);
+	}
+
+	// :cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
+	// ignoruj tę sekwencję dla zwykłych nicków, czyli takich, które mają ! w raw_parm[0]
+	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(":Setting your VHost: "
+		+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n") + "\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Ustawiam Twój VHost:"
 				+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n"));
 	}
 
-	// nieprawidłowa nazwa użytkownika lub hasło (np. dla VHost)
-	else if(buffer_irc_raw.find(":Invalid username or password.") != std::string::npos && raw_parm[0].find("!") == std::string::npos)
+	// :cf1f1.onet NOTICE ucieszony86 :Invalid username or password.
+	// np. dla VHost
+	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(":Invalid username or password.\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Nieprawidłowa nazwa użytkownika lub hasło.");
 	}
 
-	// jeśli to zaproszenie do pokoju lub do rozmowy prywatnej, komunikat skieruj do właściwego pokoju
-	else if(buffer_irc_raw.find(":*** " +  raw_parm[4] + " invited " + raw_parm[6] + " into the channel") != std::string::npos
-		&& raw_parm[0].find("!") == std::string::npos)
+	// :cf1f1.onet NOTICE ^cf1f1756979 :*** ucc_test invited Kernel_Panic into the channel
+	// jeśli to zaproszenie do rozmowy prywatnej, komunikat skieruj do pokoju z tą rozmową (pojawia się po wysłaniu zaproszenia dla nicka)
+	else if(raw_parm[0].find("!") == std::string::npos && raw_parm[2].size() > 0 && raw_parm[2][0] == '^'
+		&& buffer_irc_raw.find(":*** " +  raw_parm[4] + " invited " + raw_parm[6] + " into the channel") != std::string::npos)
 	{
-		// rozmowa prywatna
-		if(raw_parm[2][0] == '^')
-		{
-			win_buf_add_str(ga, chan_parm, raw_parm[2], xWHITE "* Wysłano zaproszenie do rozmowy prywatnej dla " + raw_parm[6]);
-		}
-
-		// pokój
-		else
-		{
-			win_buf_add_str(ga, chan_parm, raw_parm[2],
-					xWHITE "* " + raw_parm[6] + " został(a) zaproszony(-na) do pokoju " + raw_parm[2] + " przez " + raw_parm[4]);
-
-			// aktywność typu 1
-			chan_act_add(chan_parm, raw_parm[2], 1);
-		}
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xWHITE "* Wysłano zaproszenie do rozmowy prywatnej dla " + raw_parm[6]);
 	}
 
+	// :cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel
+	// jeśli to zaproszenie do pokoju, komunikat skieruj do właściwego pokoju
+	else if(raw_parm[0].find("!") == std::string::npos && raw_parm[2].size() > 0 && raw_parm[2][0] == '#'
+		&& buffer_irc_raw.find(":*** " +  raw_parm[4] + " invited " + raw_parm[6] + " into the channel") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2],
+				xWHITE "* " + raw_parm[6] + " został(a) zaproszony(-na) do pokoju " + raw_parm[2] + " przez " + raw_parm[4]);
+
+		// aktywność typu 1
+		chan_act_add(chan_parm, raw_parm[2], 1);
+	}
+
+	// :AT89S8253!70914256@aaa2a7.a7f7a6.88308b.464974 NOTICE #ucc :test
 	// jeśli to wiadomość dla pokoju, a nie nicka, komunikat skieruj do właściwego pokoju
 	else if(raw_parm[2].size() > 0 && raw_parm[2][0] == '#')
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[2],
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+
+		// aktywność typu 1 (pomimo, że to najczęściej jest wypowiedź użytkownika, to NOTICE nie jest normalną formą komunikacji, dlatego 1)
+		chan_act_add(chan_parm, raw_parm[2], 1);
 	}
 
 	// jeśli to wiadomość dla nicka (mojego), komunikat skieruj do aktualnie otwartego pokoju
