@@ -23,7 +23,8 @@ void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_bu
 
 void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, bool add_time = true);
+void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, int act_type = 1,
+			bool add_time = true);
 
 void nicklist_on(struct global_args &ga);
 
@@ -32,8 +33,6 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void nicklist_off(struct global_args &ga);
-
-void chan_act_add(struct channel_irc *chan_parm[], std::string chan_name, int act_type);
 
 void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[]);
 

@@ -553,7 +553,7 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, bool add_time)
+void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, int act_type, bool add_time)
 {
 /*
 	Dodaj string do bufora danego kanału oraz wyświetl jego zawartość (jeśli to aktywny pokój) wraz z dodaniem przed wyrażeniem aktualnego czasu
@@ -575,6 +575,13 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	if(which_chan == -1)
 	{
 		return;
+	}
+
+	// ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym (z wyjątkiem "Debug"),
+	// domyślnie aktywność typu 1
+	if(ga.current != CHAN_DEBUG_IRC && act_type > chan_parm[which_chan]->chan_act)	// nie zmieniaj aktywności na "niższą"
+	{
+		chan_parm[which_chan]->chan_act = act_type;
 	}
 
 	// jeśli trzeba, wstaw czas na początku każdego wiersza (opcja domyślna)
@@ -870,25 +877,6 @@ void nicklist_off(struct global_args &ga)
 	delwin(ga.win_info);
 
 	ga.nicklist = false;
-}
-
-
-void chan_act_add(struct channel_irc *chan_parm[], std::string chan_name, int act_type)
-{
-/*
-	Ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym.
-*/
-
-	for(int i = 0; i < CHAN_MAX - 1; ++i)	// - 1, bo w kanale "Debug" nie będzie wyświetlania aktywności
-	{
-		// znajdź kanał, którego dotyczy włączenie aktywności (nie zmieniaj aktywności na "niższą")
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name && act_type > chan_parm[i]->chan_act)
-		{
-			chan_parm[i]->chan_act = act_type;
-
-			break;
-		}
-	}
 }
 
 

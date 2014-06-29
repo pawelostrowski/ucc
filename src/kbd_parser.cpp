@@ -497,9 +497,6 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(chan_parm[i])
 			{
 				win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xGREEN "# Łączę z czatem...");
-
-				// aktywność typu 1
-				chan_act_add(chan_parm, chan_parm[i]->channel, 1);
 			}
 		}
 

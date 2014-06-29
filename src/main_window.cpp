@@ -267,9 +267,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
 									+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
-
-							// aktywność typu 1
-							chan_act_add(chan_parm, chan_parm[i]->channel, 1);
 						}
 					}
 
@@ -923,9 +920,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 						chan_parm[i]->nick_parm.clear();
 
 						win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xRED "# Rozłączono.");
-
-						// aktywność typu 1
-						chan_act_add(chan_parm, chan_parm[i]->channel, 1);
 					}
 				}
 
