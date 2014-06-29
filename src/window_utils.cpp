@@ -562,7 +562,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 
 	int which_chan = -1;		// kanał, do którego należy dopisać bufor (-1 przy braku kanału powoduje wyjście)
 
-	// znajdź kanał, do którego należy dopisać bufor
+	// znajdź numer kanału w tablicy na podstawie jego nazwy
 	for(int i = 0; i < CHAN_MAX; ++i)
 	{
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
@@ -572,14 +572,14 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		}
 	}
 
+	// jeśli pokój o szukanej nazwie nie istnieje, zakończ
 	if(which_chan == -1)
 	{
 		return;
 	}
 
-	// ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym (z wyjątkiem "Debug"),
-	// domyślnie aktywność typu 1
-	if(ga.current != CHAN_DEBUG_IRC && act_type > chan_parm[which_chan]->chan_act)	// nie zmieniaj aktywności na "niższą"
+	// ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym (domyślnie aktywność typu 1)
+	if(act_type > chan_parm[which_chan]->chan_act)	// nie zmieniaj aktywności na "niższą"
 	{
 		chan_parm[which_chan]->chan_act = act_type;
 	}

@@ -8,7 +8,10 @@
 #define NICKLIST_WIDTH 36
 
 #include <ncursesw/ncurses.h>
+#include <fstream>
 #include <map>
+
+#define FILE_DBG_IRC "/tmp/ucc_dbg_irc.log"
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define pRED		0x01
@@ -78,6 +81,8 @@ struct global_args
 	bool use_colors;
 
 	bool ucc_dbg_irc;
+
+	std::fstream f_dbg_irc;
 
 	bool ucc_quit;
 

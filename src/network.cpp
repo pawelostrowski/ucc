@@ -505,7 +505,6 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 	std::string data_sent = buffer_irc_send;
 	data_sent = buf_iso2utf(data_sent);	// zapis w UTF-8
-	std::fstream file_dbg;
 
 	while(data_sent.find("\r") != std::string::npos)
 	{
@@ -514,11 +513,16 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 	data_sent.insert(0, ">>> ");
 
-	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
+	size_t next_n = data_sent.find("\n");
 
-	file_dbg << data_sent;
+	while(next_n != std::string::npos && next_n < data_sent.size() - 1)
+	{
+		data_sent.insert(next_n + 1, ">>> ");
+		next_n = data_sent.find("\n", next_n + 1);
+	}
 
-	file_dbg.close();
+	ga.f_dbg_irc << data_sent;
+	ga.f_dbg_irc.flush();
 /*
 	DBG IRC END
 */
@@ -604,21 +608,6 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
 	buffer_irc_recv = buf_iso2utf(buffer_irc_recv);
 
-/*
-	DBG IRC START
-*/
-	std::fstream file_dbg;
-
-	file_dbg.open("/tmp/ucc_dbg_irc.log", std::ios::app | std::ios::out);
-
-//		file_dbg << "<---new--->";
-	file_dbg << buffer_irc_recv;
-
-	file_dbg.close();
-/*
-	DBG IRC END
-*/
-
 	// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
 	if(buffer_irc_recv_incomplete.size() > 0)
 	{
@@ -639,6 +628,15 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		// oraz usuń go z głównego bufora
 		buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
 	}
+
+/*
+	DBG IRC START
+*/
+	ga.f_dbg_irc << buffer_irc_recv;
+	ga.f_dbg_irc.flush();
+/*
+	DBG IRC END
+*/
 
 	// debug w oknie
 	if(ga.ucc_dbg_irc)

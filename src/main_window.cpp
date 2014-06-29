@@ -77,6 +77,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	ga.ping = 0;
 	ga.pong = 0;
 	ga.lag = 0;
+
+	ga.f_dbg_irc.open(FILE_DBG_IRC, std::ios::app | std::ios::out);
 /*
 	Koniec ustalania globalnych zmiennych.
 */
@@ -458,6 +460,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// inny błąd select() powoduje zakończenie działania programu
 			else
 			{
+				ga.f_dbg_irc.close();
 				delwin(ga.win_chat);
 				delwin(ga.win_info);
 				endwin();	// zakończ tryb ncurses
@@ -937,6 +940,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		close(ga.socketfd_irc);
 	}
 
+	ga.f_dbg_irc.close();
 	delwin(ga.win_chat);
 	delwin(ga.win_info);
 	endwin();	// zakończ tryb ncurses

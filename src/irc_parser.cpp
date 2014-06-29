@@ -3063,7 +3063,6 @@ void raw_816(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 }
 
 
-
 /*
 	817 (historia)
 	:cf1f4.onet 817 ucc_test #scc 1401032138 Damian - :bardzo korzystne oferty maja i w sumie dosc rozwiniety jak na Polskie standardy panel chmury
@@ -3127,14 +3126,14 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	}
 
 	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
-	if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Looking up your hostname...\n") != std::string::npos)
+	if(raw_parm[2] == "Auth" && buffer_irc_raw.find(" :*** Looking up your hostname...\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Wyszukiwanie Twojej nazwy hosta...");
 	}
 
 	// :cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ")\n")
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(" :*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ")\n")
 		+ ")\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
@@ -3143,7 +3142,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	}
 
 	// :cf1f1.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl) -- cached
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ") ")
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(" :*** Found your hostname (" + get_value_from_buf(buffer_irc_raw, "hostname (", ") ")
 		+ ") -- cached\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
@@ -3152,7 +3151,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	}
 
 	// :cf1f2.onet NOTICE Auth :*** Could not resolve your hostname: Domain name not found; using your IP address (93.159.185.10) instead.
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":*** Could not resolve your hostname: Domain name not found; using your IP address ("
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(" :*** Could not resolve your hostname: Domain name not found; using your IP address ("
 		+ get_value_from_buf(buffer_irc_raw, " address (", ") instead.") + ") instead.\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
@@ -3162,7 +3161,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	}
 
 	// :cf1f3.onet NOTICE Auth :Welcome to OnetCzat!
-	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(":Welcome to OnetCzat!\n") != std::string::npos)
+	else if(raw_parm[2] == "Auth" && buffer_irc_raw.find(" :Welcome to OnetCzat!\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, "Status",
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Witaj na Onet Czacie!");
@@ -3170,7 +3169,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 	// :cf1f4.onet NOTICE ucc_test :Setting your VHost: ucc
 	// ignoruj tę sekwencję dla zwykłych nicków, czyli takich, które mają ! w raw_parm[0]
-	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(":Setting your VHost: "
+	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(":Setting your VHost:"
 		+ get_value_from_buf(buffer_irc_raw, "VHost:", "\n") + "\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
@@ -3180,7 +3179,7 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 	// :cf1f1.onet NOTICE ucieszony86 :Invalid username or password.
 	// np. dla VHost
-	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(":Invalid username or password.\n") != std::string::npos)
+	else if(raw_parm[0].find("!") == std::string::npos && buffer_irc_raw.find(" :Invalid username or password.\n") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Nieprawidłowa nazwa użytkownika lub hasło.");
