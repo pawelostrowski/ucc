@@ -1,6 +1,8 @@
 #include <string>		// std::string
 
+#include "debug.hpp"
 #include "enc_str.hpp"
+#include "window_utils.hpp"
 #include "ucc_global.hpp"
 
 
@@ -26,8 +28,8 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 	{
 		// jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
 		size_t exp_start, exp_end;
-		std::string pwd_str = "haslo=";
-		std::string con_str = "Content-Length: ";
+		const std::string pwd_str = "haslo=";
+		const std::string con_str = "Content-Length: ";
 
 		exp_start = dbg_sent.find(pwd_str);
 
@@ -57,7 +59,7 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 		}
 
 		// jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
-		std::string gif_str = "GIF";
+		const std::string gif_str = "GIF";
 
 		exp_start = dbg_recv.find(gif_str);
 
@@ -77,6 +79,13 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 			dbg_recv.erase(dbg_recv.find("\r"), 1);
 		}
 
+		// dodaj datę i czas
+		time_t time_g;
+
+		time(&time_g);
+
+		std::string time_str = std::to_string(time_g);
+
 		// zapisz dane
 		std::string s;
 
@@ -87,7 +96,7 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 
 		file_dbg << "================================================================================\n";
 
-		file_dbg << msg_dbg_http + "\n\n\n";
+		file_dbg << msg_dbg_http + " (" + time_unixtimestamp2local_full(time_str) + "):\n\n\n";
 
 		file_dbg << "--> SENT (http" + s + "://" + host + stock + "):\n\n";
 
@@ -108,5 +117,42 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 		}
 
 		file_dbg.close();
+	}
+}
+
+
+void dbg_irc_sent_to_file(struct global_args &ga, std::string dbg_sent)
+{
+	if(ga.f_dbg_irc.good())
+	{
+		dbg_sent = buf_iso2utf(dbg_sent);	// zapis w UTF-8
+
+		while(dbg_sent.find("\r") != std::string::npos)
+		{
+			dbg_sent.erase(dbg_sent.find("\r"), 1);
+		}
+
+		dbg_sent.insert(0, "--> ");
+
+		size_t next_n = dbg_sent.find("\n");
+
+		while(next_n != std::string::npos && next_n < dbg_sent.size() - 1)
+		{
+			dbg_sent.insert(next_n + 1, "--> ");
+			next_n = dbg_sent.find("\n", next_n + 1);
+		}
+
+		ga.f_dbg_irc << dbg_sent;
+		ga.f_dbg_irc.flush();
+	}
+}
+
+
+void dbg_irc_recv_to_file(struct global_args &ga, std::string &dbg_recv)
+{
+	if(ga.f_dbg_irc.good())
+	{
+		ga.f_dbg_irc << dbg_recv;
+		ga.f_dbg_irc.flush();
 	}
 }

@@ -39,12 +39,12 @@ void auth_code(std::string &authkey)
 
 	const int p2[] = { 1, 13,  5,  8,  7, 10,  0, 15, 12,  3, 14, 11,  2,  9,  6,  4};
 
-	char c;
-	char ai[16], ai1[16];
+	int c;
+	int ai[16], ai1[16];
 
 	for(int i = 0; i < 16; ++i)
 	{
-		c = authkey[i];		// std::string na char (po jednym znaku)
+		c = authkey[i];		// std::string na int (po jednym znaku)
 		// ASCII:    9        Z        =        7        0
 		ai[i] = c > 57 ? c > 90 ? c - 61 : c - 55 : c - 48;
 	}
@@ -85,7 +85,7 @@ void auth_code(std::string &authkey)
 		c = ai[i];
 		// ASCII:    \n         $        =        7        0
 		ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
-		authkey += ai[i];	// char na std::string (po jednym znaku)
+		authkey += ai[i];	// int na std::string (po jednym znaku)
 	}
 }
 
@@ -104,7 +104,7 @@ bool http_auth_init(struct global_args &ga, std::string &msg)
 	ga.cookies.clear();
 
 	buffer_recv = 	http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
-					ga.cookies, true, offset_recv, msg_err, "httpAuthInit:");
+					ga.cookies, true, offset_recv, msg_err, "httpAuthInit");
 
 	if(buffer_recv == NULL)
 	{
@@ -130,7 +130,7 @@ bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 	char *cap_ptr;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha:");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha");
 
 	if(buffer_recv == NULL)
 	{
@@ -194,7 +194,7 @@ bool http_auth_getsk(struct global_args &ga, std::string &msg)
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk:");
+	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk");
 
 	if(buffer_recv == NULL)
 	{
@@ -219,7 +219,7 @@ bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::stri
 
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-					ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode:");
+					ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode");
 
 	if(buffer_recv == NULL)
 	{
@@ -269,7 +269,7 @@ bool http_auth_mlogin(struct global_args &ga, std::string &msg)
 
 	buffer_recv =	http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
 					"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
-					ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin:");
+					ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin");
 
 	if(buffer_recv == NULL)
 	{
@@ -296,7 +296,7 @@ bool http_auth_useroverride(struct global_args &ga, std::string &msg)
 
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size())
-					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride:");
+					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride");
 
 	if(buffer_recv == NULL)
 	{
@@ -342,7 +342,7 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 					"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
 					+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(APPLET_VER) - 1)
-					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey:");
+					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey");
 
 	if(buffer_recv == NULL)
 	{

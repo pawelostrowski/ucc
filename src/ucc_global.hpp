@@ -1,25 +1,17 @@
 #ifndef UCC_GLOBAL_HPP
 #define UCC_GLOBAL_HPP
 
-#define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VERSION "v1.0 alpha2"
-
-// szerokość listy nicków
-#define NICKLIST_WIDTH 36
-
 #include <ncursesw/ncurses.h>
 #include <fstream>
 #include <map>
 
+#define UCC_NAME "Ucieszony Chat Client"
+#define UCC_VERSION "v1.0 alpha2"
+
 #define FILE_DBG_IRC "/tmp/ucc_dbg_irc.log"
 
-// debugowanie HTTP (1 - zapisuje plik na dysku)
-#define DBG_HTTP 1
-
-#if DBG_HTTP == 1
-//#include <fstream>		// std::fstream
-#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
-#endif		// DBG_HTTP
+// szerokość listy nicków
+#define NICKLIST_WIDTH 36
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define pRED		0x01

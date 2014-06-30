@@ -60,7 +60,7 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 {
 	size_t pos_cookie_start, pos_cookie_end;
 
-	std::string cookie_string = "Set-Cookie:";		// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
+	const std::string cookie_string = "Set-Cookie:";	// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
 
 	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
 	pos_cookie_start = std::string(buffer_recv).find(cookie_string);	// std::string(buffer_recv) zamienia C string na std::string
@@ -122,7 +122,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	// utwórz dane do wysłania do hosta
 	data_send =	method + " " + stock + " HTTP/1.1\r\n"
 			"Host: " + host + "\r\n"
-			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0\r\n"
+			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:" FF_VER ") Gecko/20100101 Firefox/" FF_VER "\r\n"
 			"Accept-Language: pl\r\n";
 
 	if(method == "POST")
@@ -257,19 +257,19 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 		if(ssl_handle == NULL)
 		{
-			msg_err = "Błąd podczas tworzenia struktury SSL";
+			msg_err = "Błąd podczas tworzenia struktury SSL.";
 			return NULL;
 		}
 
 		if(! SSL_set_fd(ssl_handle, socketfd))
 		{
-			msg_err = "Błąd podczas łączenia deskryptora SSL";
+			msg_err = "Błąd podczas łączenia deskryptora SSL.";
 			return NULL;
 		}
 
 		if(SSL_connect(ssl_handle) != 1)
 		{
-			msg_err = "Błąd podczas łączenia się z " + host + " przez SSL";
+			msg_err = "Błąd podczas łączenia się z " + host + " przez SSL.";
 			return NULL;
 		}
 
@@ -279,21 +279,21 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 		if(bytes_sent <= -1)
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
+			msg_err = "Nie udało się wysłać danych do hosta: " + host + " (SSL).";
 			return NULL;
 		}
 
 		else if(bytes_sent == 0)
 		{
 			close(socketfd);
-			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie [SSL]";
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie (SSL).";
 			return NULL;
 		}
 
 		else if(bytes_sent != static_cast<int>(data_send.size()))
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " (SSL).";
 			return NULL;
 		}
 
@@ -306,7 +306,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas alokacji pamięci przez malloc() [SSL]";
+					msg_err = "Błąd podczas alokacji pamięci przez malloc() (SSL).";
 					return NULL;
 				}
 			}
@@ -317,7 +317,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas realokacji pamięci przez realloc() [SSL]";
+					msg_err = "Błąd podczas realokacji pamięci przez realloc() (SSL).";
 					return NULL;
 				}
 			}
@@ -328,7 +328,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL]";
+				msg_err = "Nie udało się pobrać danych z hosta: " + host + " (SSL).";
 				return NULL;
 			}
 
@@ -336,7 +336,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie [SSL]";
+				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie (SSL).";
 				return NULL;
 			}
 
@@ -356,18 +356,14 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 	}	// else if(port == 443)
 
 	// zakończ bufor kodem NULL
-	buffer_recv[offset_recv] = '\0';
+	buffer_recv[offset_recv] = '\x00';
 
 /*
-	Jeśli trzeba, zapisz wysłane i pobrane dane do pliku. Przydatne podczas debugowania.
+	DBG HTTP START
 */
-#if DBG_HTTP == 1
-
 	dbg_http_to_file(data_send, std::string(buffer_recv), host, port, stock, msg_dbg_http);
-
-#endif		// DBG_HTTP
 /*
-	Koniec części odpowiedzialnej za zapis do pliku.
+	DBG HTTP END
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
@@ -391,29 +387,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 /*
 	DBG IRC START
 */
-	std::string data_sent = buffer_irc_send;
-	data_sent = buf_iso2utf(data_sent);	// zapis w UTF-8
-
-	while(data_sent.find("\r") != std::string::npos)
-	{
-		data_sent.erase(data_sent.find("\r"), 1);
-	}
-
-	data_sent.insert(0, "--> ");
-
-	size_t next_n = data_sent.find("\n");
-
-	while(next_n != std::string::npos && next_n < data_sent.size() - 1)
-	{
-		data_sent.insert(next_n + 1, "--> ");
-		next_n = data_sent.find("\n", next_n + 1);
-	}
-
-	ga.f_dbg_irc << data_sent;
-	ga.f_dbg_irc.flush();
-/*
-	DBG IRC END
-*/
+	dbg_irc_sent_to_file(ga, buffer_irc_send);
 
 	// debug w oknie
 	if(ga.ucc_dbg_irc)
@@ -421,6 +395,9 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		std::string buffer_irc_send_dbg = buf_iso2utf(buffer_irc_send);
 		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + buffer_irc_send_dbg.erase(buffer_irc_send_dbg.size() - 1, 1));
 	}
+/*
+	DBG IRC END
+*/
 
 	// wyślij dane do hosta
 	bytes_sent = send(ga.socketfd_irc, buffer_irc_send.c_str(), buffer_irc_send.size(), 0);
@@ -459,6 +436,8 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 	// pobierz dane od hosta
 	bytes_recv = recv(ga.socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
+
+	// zakończ bufor kodem NULL
 	buffer_tmp[bytes_recv] = '\x00';
 
 	if(bytes_recv == -1)
@@ -520,11 +499,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 /*
 	DBG IRC START
 */
-	ga.f_dbg_irc << buffer_irc_recv;
-	ga.f_dbg_irc.flush();
-/*
-	DBG IRC END
-*/
+	dbg_irc_recv_to_file(ga, buffer_irc_recv);
 
 	// debug w oknie
 	if(ga.ucc_dbg_irc)
@@ -532,4 +507,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		std::string buffer_irc_rec_dbg = buffer_irc_recv;
 		win_buf_add_str(ga, chan_parm, "Debug", xWHITE + buffer_irc_rec_dbg.erase(buffer_irc_rec_dbg.size() - 1, 1));
 	}
+/*
+	DBG IRC END
+*/
 }
