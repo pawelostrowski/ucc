@@ -3,9 +3,6 @@
 
 #define BUF_SIZE (1500 * sizeof(char))
 
-// debugowanie HTTP (1 - zapisuje plik na dysku)
-#define DBG_HTTP 1
-
 int socket_init(std::string host, short port, std::string &msg_err);
 
 bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err);

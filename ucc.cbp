@@ -39,6 +39,8 @@
 		</Linker>
 		<Unit filename="src/auth.cpp" />
 		<Unit filename="src/auth.hpp" />
+		<Unit filename="src/debug.cpp" />
+		<Unit filename="src/debug.hpp" />
 		<Unit filename="src/enc_str.cpp" />
 		<Unit filename="src/enc_str.hpp" />
 		<Unit filename="src/form_conv.cpp" />

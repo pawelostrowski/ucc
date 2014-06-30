@@ -6,12 +6,8 @@
 #include "network.hpp"
 #include "window_utils.hpp"
 #include "enc_str.hpp"
+#include "debug.hpp"
 #include "ucc_global.hpp"
-
-#if DBG_HTTP == 1
-#include <fstream>		// std::fstream
-#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
-#endif		// DBG_HTTP
 
 
 int socket_init(std::string host, short port, std::string &msg_err)
@@ -367,115 +363,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 */
 #if DBG_HTTP == 1
 
-	static bool dbg_first_save = true;	// pierwszy zapis nadpisuje starą zawartość pliku
-	std::string data_sent = data_send;
-	std::string data_recv = std::string(buffer_recv);
-
-	std::fstream file_dbg;
-
-	if(dbg_first_save)
-	{
-		file_dbg.open(FILE_DBG_HTTP, std::ios::out);
-	}
-
-	else
-	{
-		file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
-	}
-
-	dbg_first_save = false;			// kolejne zapisy dopisują dane do pliku
-
-	if(file_dbg.good() == false)
-	{
-		free(buffer_recv);
-		msg_err = "Błąd podczas dostępu do pliku debugowania HTTP (" FILE_DBG_HTTP "), sprawdź uprawnienia do zapisu.";
-		return NULL;
-	}
-
-	// jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
-	size_t exp_start, exp_end;
-	std::string pwd_str = "haslo=";
-	std::string con_str = "Content-Length: ";
-
-	exp_start = data_sent.find(pwd_str);
-
-	if(exp_start != std::string::npos)
-	{
-		exp_end = data_sent.find("&", exp_start);
-
-		if(exp_end != std::string::npos)
-		{
-			data_sent.erase(exp_start + pwd_str.size(), exp_end - exp_start - pwd_str.size());
-			data_sent.insert(exp_start + pwd_str.size(), "[hidden]");
-
-			// było hasło, więc ukryj długość zapytania
-			exp_start = data_sent.find(con_str);
-
-			if(exp_start != std::string::npos)
-			{
-				exp_end = data_sent.find("\r\n", exp_start);
-
-				if(exp_end != std::string::npos)
-				{
-					data_sent.erase(exp_start + con_str.size(), exp_end - exp_start - con_str.size());
-					data_sent.insert(exp_start + con_str.size(), "[hidden]");
-				}
-			}
-		}
-	}
-
-	// jeśli pobrano obrazek, zakończ string za wyrażeniem GIFxxx
-	std::string gif_str = "GIF";
-
-	exp_start = data_recv.find(gif_str);
-
-	if(exp_start != std::string::npos)
-	{
-		data_recv.erase(exp_start + gif_str.size() + 3, data_recv.size() - exp_start - gif_str.size() - 3);
-	}
-
-	// usuń \r z buforów, aby w pliku nie było go
-	while(data_sent.find("\r") != std::string::npos)
-	{
-		data_sent.erase(data_sent.find("\r"), 1);
-	}
-
-	while(data_recv.find("\r") != std::string::npos)
-	{
-		data_recv.erase(data_recv.find("\r"), 1);
-	}
-
-	// zapisz dane
-	std::string s;
-
-	if(port == 443)
-	{
-		s = "s";
-	}
-
-	file_dbg << "================================================================================\n";
-
-	file_dbg << msg_dbg_http + "\n\n\n";
-
-	file_dbg << ">>> SENT (http" + s + "://" + host + stock + "):\n\n";
-
-	file_dbg << data_sent + "\n";
-
-	if(data_sent[data_sent.size() - 1] != '\n')
-	{
-		file_dbg << "\n\n";
-	}
-
-	file_dbg << ">>> RECV:\n\n";
-
-	file_dbg << buf_iso2utf(data_recv) + "\n";
-
-	if(data_recv[data_recv.size() - 1] != '\n')
-	{
-		file_dbg << "\n\n";
-	}
-
-	file_dbg.close();
+	dbg_http_to_file(data_send, std::string(buffer_recv), host, port, stock, msg_dbg_http);
 
 #endif		// DBG_HTTP
 /*
@@ -511,13 +399,13 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		data_sent.erase(data_sent.find("\r"), 1);
 	}
 
-	data_sent.insert(0, ">>> ");
+	data_sent.insert(0, "--> ");
 
 	size_t next_n = data_sent.find("\n");
 
 	while(next_n != std::string::npos && next_n < data_sent.size() - 1)
 	{
-		data_sent.insert(next_n + 1, ">>> ");
+		data_sent.insert(next_n + 1, "--> ");
 		next_n = data_sent.find("\n", next_n + 1);
 	}
 

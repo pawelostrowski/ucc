@@ -1,5 +1,5 @@
+#include <string>		// std::string
 #include <cstring>		// memcpy(), strstr()
-#include <fstream>		// std::string, std::ofstream
 
 // -std=gnu++11 - free(), system(), std::to_string()
 

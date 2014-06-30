@@ -13,6 +13,14 @@
 
 #define FILE_DBG_IRC "/tmp/ucc_dbg_irc.log"
 
+// debugowanie HTTP (1 - zapisuje plik na dysku)
+#define DBG_HTTP 1
+
+#if DBG_HTTP == 1
+//#include <fstream>		// std::fstream
+#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
+#endif		// DBG_HTTP
+
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 #define pRED		0x01
 #define pGREEN		0x02
@@ -82,7 +90,7 @@ struct global_args
 
 	bool ucc_dbg_irc;
 
-	std::fstream f_dbg_irc;
+	std::ofstream f_dbg_http, f_dbg_irc;
 
 	bool ucc_quit;
 
