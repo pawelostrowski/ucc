@@ -530,7 +530,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// debug w oknie
 	if(ga.ucc_dbg_irc)
 	{
-		std::string buffer_irc_send_dbg = buffer_irc_send;
+		std::string buffer_irc_send_dbg = buf_iso2utf(buffer_irc_send);
 		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + buffer_irc_send_dbg.erase(buffer_irc_send_dbg.size() - 1, 1));
 	}
 
