@@ -201,7 +201,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 
 		else if(raw_parm[1] == "PONG")
 		{
-			raw_pong(ga);
+			raw_pong(ga, raw_parm);
 		}
 
 		else if(raw_parm[1] == "PRIVMSG")
@@ -1949,17 +1949,21 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	PONG (odpowiedź serwera na wysłany PING)
 	:cf1f1.onet PONG cf1f1.onet :1234
 */
-void raw_pong(struct global_args &ga)
+void raw_pong(struct global_args &ga, std::string *raw_parm)
 {
-	struct timeval t_pong;
+	// niereagowanie na wpisanie '/raw PING coś' (trzeba znać wysłaną wartość, a ręcznie niemożliwe jest to do określenia)
+	if(std::to_string(ga.ping) == raw_parm[3])
+	{
+		struct timeval t_pong;
 
-	gettimeofday(&t_pong, NULL);
-	ga.pong = t_pong.tv_sec * 1000;
-	ga.pong += t_pong.tv_usec / 1000;
+		gettimeofday(&t_pong, NULL);
+		ga.pong = t_pong.tv_sec * 1000;
+		ga.pong += t_pong.tv_usec / 1000;
 
-	ga.lag = ga.pong - ga.ping;
+		ga.lag = ga.pong - ga.ping;
 
-	ga.lag_timeout = false;
+		ga.lag_timeout = false;
+	}
 }
 
 

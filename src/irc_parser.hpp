@@ -35,7 +35,7 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
 
-void raw_pong(struct global_args &ga);
+void raw_pong(struct global_args &ga, std::string *raw_parm);
 
 void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw);
 
