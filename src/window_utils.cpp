@@ -889,7 +889,7 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_STATUS] = new channel_irc;
 		chan_parm[CHAN_STATUS]->channel = "Status";
 		chan_parm[CHAN_STATUS]->channel_ok = false;	// w kanale "Status" nie można pisać tekstu jak w kanale czata
-		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VERSION;	// napis wyświetlany na górnym pasku
+		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
 		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
 
 		chan_parm[CHAN_STATUS]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu

@@ -95,8 +95,8 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 }
 
 
-char *http_get_data(std::string method, std::string host, short port, std::string stock, std::string content, std::string &cookies, bool get_cookies,
-                    long &offset_recv, std::string &msg_err, std::string msg_dbg_http)
+char *http_get_data(struct global_args &ga, std::string method, std::string host, short port, std::string stock, std::string content,
+			std::string &cookies, bool get_cookies, long &offset_recv, std::string &msg_err, std::string msg_dbg_http)
 {
 	if(method != "GET" && method != "POST")
 	{
@@ -361,7 +361,7 @@ char *http_get_data(std::string method, std::string host, short port, std::strin
 /*
 	DBG HTTP START
 */
-	dbg_http_to_file(data_send, std::string(buffer_recv), host, port, stock, msg_dbg_http);
+	dbg_http_to_file(ga, data_send, std::string(buffer_recv), host, port, stock, msg_dbg_http);
 /*
 	DBG HTTP END
 */

@@ -103,8 +103,8 @@ bool http_auth_init(struct global_args &ga, std::string &msg)
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	buffer_recv = 	http_get_data("GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
-					ga.cookies, true, offset_recv, msg_err, "httpAuthInit");
+	buffer_recv = http_get_data(ga, "GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
+				ga.cookies, true, offset_recv, msg_err, "httpAuthInit");
 
 	if(buffer_recv == NULL)
 	{
@@ -130,7 +130,7 @@ bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 	char *cap_ptr;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha");
+	buffer_recv = http_get_data(ga, "GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha");
 
 	if(buffer_recv == NULL)
 	{
@@ -194,7 +194,7 @@ bool http_auth_getsk(struct global_args &ga, std::string &msg)
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv = http_get_data("GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk");
+	buffer_recv = http_get_data(ga, "GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk");
 
 	if(buffer_recv == NULL)
 	{
@@ -217,9 +217,9 @@ bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::stri
 
 	ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
 
-	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-					"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-					ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode");
+	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
+				ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode");
 
 	if(buffer_recv == NULL)
 	{
@@ -267,9 +267,9 @@ bool http_auth_mlogin(struct global_args &ga, std::string &msg)
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv =	http_get_data("POST", "secure.onet.pl", 443, "/mlogin.html",
-					"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
-					ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin");
+	buffer_recv = http_get_data(ga, "POST", "secure.onet.pl", 443, "/mlogin.html",
+				"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
+				ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin");
 
 	if(buffer_recv == NULL)
 	{
@@ -294,9 +294,9 @@ bool http_auth_useroverride(struct global_args &ga, std::string &msg)
 	char *buffer_recv;
 	std::string msg_err;
 
-	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-					"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size())
-					+ ":\"" + ga.my_nick + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride");
+	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size()) + ":\"" + ga.my_nick + "\";}",
+				ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride");
 
 	if(buffer_recv == NULL)
 	{
@@ -339,10 +339,10 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 		nick_i = "0";	// stały
 	}
 
-	buffer_recv =	http_get_data("POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
-					"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
-					+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(APPLET_VER) - 1)
-					+ ":\"" + APPLET_VER + "\";}", ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey");
+	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
+				+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}",
+				ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey");
 
 	if(buffer_recv == NULL)
 	{

@@ -683,7 +683,7 @@ void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], s
 			// jeśli wpisano nick do wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju)
 			else
 			{
-				// można podać powód wyrzucenia
+				// opcjonalnie można podać powód wyrzucenia
 				irc_send(ga, chan_parm, "KICK " + buf_utf2iso(chan_parm[ga.current]->channel) + " " + kick_nick
 					+ " :" + get_rest_args(kbd_buf, pos_arg));
 			}

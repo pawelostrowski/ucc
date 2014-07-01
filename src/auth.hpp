@@ -4,7 +4,7 @@
 #define CAPTCHA_FILE "/tmp/ucc_captcha.gif"
 
 // wersja appletu (trzeba ją wysłać podczas autoryzacji), od czasu do czasu można zmodyfikować na nowszą wersję
-#define APPLET_VER "1.1(20130621-0052 - R)"
+#define AP_VER "1.1(20130621-0052 - R)"
 
 void auth_code(std::string &authkey);
 

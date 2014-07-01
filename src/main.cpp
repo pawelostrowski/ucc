@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 		// --help
 		else if(args[i] == "--help")
 		{
-			std::cout << UCC_NAME " " UCC_VERSION << std::endl << std::endl;
+			std::cout << UCC_NAME " " UCC_VER << std::endl << std::endl;
 			std::cout << "Opcje:" << std::endl;
 			std::cout << "  --colors=on/off\twłącza/wyłącza kolory w programie (domyślnie włączone)" << std::endl;
 			std::cout << "  --dbg-irc\t\twłącza debugowanie IRC w oknie \"Debug\"" << std::endl;

@@ -6,25 +6,10 @@
 #include "ucc_global.hpp"
 
 
-void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &host, short port, std::string &stock, std::string &msg_dbg_http)
+void dbg_http_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, short port, std::string &stock,
+			std::string &msg_dbg_http)
 {
-	static bool dbg_first_save = true;	// pierwszy zapis nadpisuje starą zawartość pliku
-
-	std::ofstream file_dbg;
-
-	if(dbg_first_save)
-	{
-		file_dbg.open(FILE_DBG_HTTP, std::ios::out);
-	}
-
-	else
-	{
-		file_dbg.open(FILE_DBG_HTTP, std::ios::app | std::ios::out);
-	}
-
-	dbg_first_save = false;			// kolejne zapisy dopisują dane do pliku
-
-	if(file_dbg.good())
+	if(ga.f_dbg_http.good())
 	{
 		// jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
 		size_t exp_start, exp_end;
@@ -94,29 +79,29 @@ void dbg_http_to_file(std::string dbg_sent, std::string dbg_recv, std::string &h
 			s = "s";
 		}
 
-		file_dbg << "================================================================================\n";
+		ga.f_dbg_http << "================================================================================\n";
 
-		file_dbg << msg_dbg_http + " (" + time_unixtimestamp2local_full(time_str) + "):\n\n\n";
+		ga.f_dbg_http << msg_dbg_http + " (" + time_unixtimestamp2local_full(time_str) + "):\n\n\n";
 
-		file_dbg << "--> SENT (http" + s + "://" + host + stock + "):\n\n";
+		ga.f_dbg_http << "--> SENT (http" + s + "://" + host + stock + "):\n\n";
 
-		file_dbg << dbg_sent + "\n";
+		ga.f_dbg_http << dbg_sent + "\n";
 
 		if(dbg_sent[dbg_sent.size() - 1] != '\n')
 		{
-			file_dbg << "\n\n";
+			ga.f_dbg_http << "\n\n";
 		}
 
-		file_dbg << "--> RECV:\n\n";
+		ga.f_dbg_http << "--> RECV:\n\n";
 
-		file_dbg << buf_iso2utf(dbg_recv) + "\n";
+		ga.f_dbg_http << buf_iso2utf(dbg_recv) + "\n";
 
 		if(dbg_recv[dbg_recv.size() - 1] != '\n')
 		{
-			file_dbg << "\n\n";
+			ga.f_dbg_http << "\n\n";
 		}
 
-		file_dbg.close();
+		ga.f_dbg_http.flush();
 	}
 }
 
@@ -143,6 +128,7 @@ void dbg_irc_sent_to_file(struct global_args &ga, std::string dbg_sent)
 		}
 
 		ga.f_dbg_irc << dbg_sent;
+
 		ga.f_dbg_irc.flush();
 	}
 }
@@ -153,6 +139,7 @@ void dbg_irc_recv_to_file(struct global_args &ga, std::string &dbg_recv)
 	if(ga.f_dbg_irc.good())
 	{
 		ga.f_dbg_irc << dbg_recv;
+
 		ga.f_dbg_irc.flush();
 	}
 }

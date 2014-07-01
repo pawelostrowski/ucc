@@ -6,8 +6,9 @@
 #include <map>
 
 #define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VERSION "v1.0 alpha2"
+#define UCC_VER "v1.0 alpha2"
 
+#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
 #define FILE_DBG_IRC "/tmp/ucc_dbg_irc.log"
 
 // szerokość listy nicków
