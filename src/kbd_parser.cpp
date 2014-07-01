@@ -267,6 +267,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		kbd_command_join(ga, chan_parm, kbd_buf, pos_arg);
 	}
 
+	else if(g_command == "KICK")
+	{
+		kbd_command_kick(ga, chan_parm, kbd_buf, pos_arg);
+	}
+
 	else if(g_command == "ME")
 	{
 		kbd_command_me(ga, chan_parm, kbd_buf, pos_arg);
@@ -600,6 +605,7 @@ void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 			xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
 			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
+			xCYAN  "/kick\n"
 			xCYAN  "/me\n"
 			xCYAN  "/names " xGREEN "lub " xCYAN "/n\n"
 			xCYAN  "/nick\n"
@@ -640,6 +646,47 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 			irc_send(ga, chan_parm, "JOIN " + join_chan + " " + get_arg(kbd_buf, pos_arg, false));
 
 			ga.command_join = true;
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_connect_irc_err(ga, chan_parm);
+	}
+}
+
+
+void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg)
+{
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		// jeśli nie przebywamy w aktywnym pokoju czata, nie można wyrzucić użytkownika, więc pokaż ostrzeżenie
+		if(! chan_parm[ga.current]->channel_ok)
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
+		}
+
+		// w aktywnym pokoju czata można wyrzucić użytkownika
+		else
+		{
+			// pobierz wpisany nick do wyrzucenia
+			std::string kick_nick = get_arg(kbd_buf, pos_arg, false);
+
+			// jeśli nie wpisano nicka, pokaż ostrzeżenie
+			if(kick_nick.size() == 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie podano nicka do wyrzucenia.");
+			}
+
+			// jeśli wpisano nick do wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju)
+			else
+			{
+				// można podać powód wyrzucenia
+				irc_send(ga, chan_parm, "KICK " + buf_utf2iso(chan_parm[ga.current]->channel) + " " + kick_nick
+					+ " :" + get_rest_args(kbd_buf, pos_arg));
+			}
 		}
 	}
 

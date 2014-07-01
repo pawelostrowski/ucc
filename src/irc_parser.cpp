@@ -420,6 +420,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 				raw_433(ga, chan_parm, raw_parm);
 				break;
 
+			case 441:
+				raw_441(ga, chan_parm, raw_parm);
+				break;
+
 			case 451:
 				raw_451(ga, chan_parm, raw_parm);
 				break;
@@ -433,7 +437,11 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 				break;
 
 			case 482:
-				raw_482(ga, chan_parm, raw_parm);
+				raw_482(ga, chan_parm, raw_parm, buffer_irc_raw);
+				break;
+
+			case 484:
+				raw_484(ga, chan_parm, raw_parm, buffer_irc_raw);
 				break;
 
 			case 530:
@@ -1947,11 +1955,12 @@ void raw_part(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 /*
 	PONG (odpowiedź serwera na wysłany PING)
-	:cf1f1.onet PONG cf1f1.onet :1234
+	:cf1f4.onet PONG cf1f4.onet :1404173770345
 */
 void raw_pong(struct global_args &ga, std::string *raw_parm)
 {
-	// niereagowanie na wpisanie '/raw PING coś' (trzeba znać wysłaną wartość, a ręcznie niemożliwe jest to do określenia)
+	// niereagowanie na wpisanie '/raw PING coś' (trzeba znać wysłaną wartość, a ręcznie jest to praktycznie niemożliwe do określenia), aby nie
+	// fałszować informacji o lag wyświetlanej na dolnym pasku
 	if(std::to_string(ga.ping) == raw_parm[3])
 	{
 		struct timeval t_pong;
@@ -2759,7 +2768,7 @@ void raw_404(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	else if(buffer_irc_raw.find("Cannot send to channel (+m)") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "* Nie możesz pisać w pokoju " + raw_parm[3] + " (pokój jest moderowany i nie masz uprawnień).");
+				xRED "* Nie możesz pisać w pokoju " + raw_parm[3] + " (pokój jest moderowany i nie posiadasz uprawnień).");
 	}
 
 	// jeśli inny typ wiadomości, pokaż RAW bez zmian
@@ -2843,6 +2852,16 @@ void raw_433(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
+	441 (KICK #pokój nick :<...> - gdy nie ma nicka w pokoju)
+	:cf1f1.onet 441 ucieszony86 Kernel_Panic #ucc :They are not on that channel
+*/
+void raw_441(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, raw_parm[4], xRED "* Nie możesz wyrzucić " + raw_parm[3] + ", ponieważ nie przebywa w pokoju " + raw_parm[4]);
+}
+
+
+/*
 	451
 	:cf1f4.onet 451 PING :You have not registered
 */
@@ -2869,17 +2888,74 @@ void raw_461(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_473(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* Nie możesz wejść do pokoju " + raw_parm[3] + " (nie masz zaproszenia).");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* Nie możesz wejść do pokoju " + raw_parm[3] + " (nie posiadasz zaproszenia).");
 }
 
 
 /*
-	482 (TOPIC)
-	:cf1f1.onet 482 Kernel_Panic #Suwałki :You must be at least a half-operator to change the topic on this channel
+	482
 */
-void raw_482(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+void raw_482(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* Nie masz uprawnień do zmiany tematu w pokoju " + raw_parm[3]);
+	// TOPIC
+	// :cf1f1.onet 482 Kernel_Panic #Suwałki :You must be at least a half-operator to change the topic on this channel
+	if(buffer_irc_raw.find(" :You must be at least a half-operator to change the topic on this channel\n") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* Nie posiadasz uprawnień do zmiany tematu w pokoju " + raw_parm[3]);
+	}
+
+	// KICK sopa, będąc opem
+	// :cf1f2.onet 482 ucc_test #ucc :You must be a channel operator
+	else if(buffer_irc_raw.find(" :You must be a channel operator\n") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* Musisz być przynajmniej superoperatorem pokoju " + raw_parm[3]);
+	}
+
+	// KICK sopa lub opa, nie mając żadnych uprawnień
+	// :cf1f3.onet 482 ucc_test #irc :You must be a channel half-operator
+	else if(buffer_irc_raw.find(" :You must be a channel half-operator\n") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* Musisz być przynajmniej operatorem pokoju " + raw_parm[3]);
+	}
+
+	// nieznany lub niezaimplementowany powód wyświetl bez zmian
+	else
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+	}
+}
+
+
+/*
+	484
+*/
+void raw_484(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	// KICK #pokój nick :<...> - próba wyrzucenia właściciela
+	// :cf1f1.onet 484 ucieszony86 #ucc :Can't kick ucieszony86 as they're a channel founder
+	if(buffer_irc_raw.find(" :Can't kick " + get_value_from_buf(buffer_irc_raw, "kick ", " as") + " as they're a channel founder\n")
+		!= std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3],
+				xRED "* Nie możesz wyrzucić " + get_value_from_buf(buffer_irc_raw, "kick ", " as")
+				+ ", ponieważ jest właścicielem pokoju " + raw_parm[3]);
+	}
+
+	// KICK #pokój nick :<...> - próba wyrzucenia sopa przez innego sopa, opa przez innego opa lub nicka bez uprawnień, gdy sami ich nie posiadamy
+	// :cf1f1.onet 484 ucieszony86 #Computers :Can't kick AT89S8253 as your spells are not good enough
+	else if(buffer_irc_raw.find(" :Can't kick " + get_value_from_buf(buffer_irc_raw, "kick ", " as") + " as your spells are not good enough\n")
+		!= std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3],
+				xRED "* Nie posiadasz wystarczających uprawnień, aby wyrzucić " + get_value_from_buf(buffer_irc_raw, "kick ", " as")
+				+ " z pokoju " + raw_parm[3]);
+	}
+
+	// nieznany lub niezaimplementowany powód wyświetl bez zmian
+	else
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+	}
 }
 
 
@@ -3036,7 +3112,7 @@ void raw_809(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_811(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* Zignorowano zaproszenia od " + raw_parm[3]);
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* Zignorowano wszelkie zaproszenia od " + raw_parm[3]);
 }
 
 
@@ -3650,7 +3726,7 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	if(buffer_irc_raw.find(" :end of homes list\n") != std::string::npos)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* Pokoje, w których masz uprawnienia: " + ga.cs_homes);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* Pokoje, w których posiadasz uprawnienia: " + ga.cs_homes);
 
 		// po użyciu wyczyść bufor, aby kolejne użycie CS HOMES wpisało wartość od nowa, a nie nadpisało
 		ga.cs_homes.clear();
@@ -3969,5 +4045,5 @@ void raw_notice_461(struct global_args &ga, struct channel_irc *chan_parm[], std
 void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* Dostęp zabroniony, nie masz wystarczających uprawnień w pokoju " + raw_parm[4]);
+			xRED "* Dostęp zabroniony, nie posiadasz wystarczających uprawnień w pokoju " + raw_parm[4]);
 }
