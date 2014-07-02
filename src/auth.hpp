@@ -6,7 +6,7 @@
 // wersja appletu (trzeba ją wysłać podczas autoryzacji), od czasu do czasu można zmodyfikować na nowszą wersję
 #define AP_VER "1.1(20130621-0052 - R)"
 
-void auth_code(std::string &authkey);
+std::string auth_code(std::string &authkey);
 
 bool http_auth_init(struct global_args &ga, std::string &msg);
 
@@ -22,6 +22,6 @@ bool http_auth_useroverride(struct global_args &ga, std::string &msg);
 
 bool http_auth_getuokey(struct global_args &ga, std::string &msg);
 
-bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::string &msg);
+void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 #endif		// AUTH_HPP

@@ -6,87 +6,91 @@
 #include "auth.hpp"
 #include "network.hpp"
 #include "irc_parser.hpp"
+#include "window_utils.hpp"
 #include "ucc_global.hpp"
 
 
-void auth_code(std::string &authkey)
+std::string auth_code(std::string &authkey)
 {
-	if(authkey.size() != 16)	// AUTHKEY musi mieć dokładnie 16 znaków
+	// authKey musi mieć dokładnie 16 znaków, inaczej konwersja nie ma sensu
+	if(authkey.size() == 16)
 	{
-		authkey.clear();	// w przypadku błędu zwróć pusty bufor
-		return;
+		const int f1[] = {29, 43,  7,  5, 52, 58, 30, 59, 26, 35, 35, 49, 45,  4, 22,  4,
+				   0,  7,  4, 30, 51, 39, 16,  6, 32, 13, 40, 44, 14, 58, 27, 41,
+				  52, 33,  9, 30, 30, 52, 16, 45, 43, 18, 27, 52, 40, 52, 10,  8,
+				  10, 14, 10, 38, 27, 54, 48, 58, 17, 34,  6, 29, 53, 39, 31, 35,
+				  60, 44, 26, 34, 33, 31, 10, 36, 51, 44, 39, 53,  5, 56};
+
+		const int f2[] = { 7, 32, 25, 39, 22, 26, 32, 27, 17, 50, 22, 19, 36, 22, 40, 11,
+				  41, 10, 10,  2, 10,  8, 44, 40, 51,  7,  8, 39, 34, 52, 52,  4,
+				  56, 61, 59, 26, 22, 15, 17,  9, 47, 38, 45, 10,  0, 12,  9, 20,
+				  51, 59, 32, 58, 19, 28, 11, 40,  8, 28,  6,  0, 13, 47, 34, 60,
+				   4, 56, 21, 60, 59, 16, 38, 52, 61, 44,  8, 35,  4, 11};
+
+		const int f3[] = {60, 30, 12, 34, 33,  7, 15, 29, 16, 20, 46, 25,  8, 31,  4, 48,
+				   6, 44, 57, 16, 12, 58, 48, 59, 21, 32,  2, 18, 51,  8, 50, 29,
+				  58,  6, 24, 34, 11, 23, 57, 43, 59, 50, 10, 56, 27, 32, 12, 59,
+				  16,  4, 40, 39, 26, 10, 49, 56, 51, 60, 21, 37, 12, 56, 39, 15,
+				  53, 11, 33, 43, 52, 37, 30, 25, 19, 55,  7, 34, 48, 36};
+
+		const int p1[] = {11,  9, 12,  0,  1,  4, 10, 13,  3,  6,  7,  8, 15,  5,  2, 14};
+
+		const int p2[] = { 1, 13,  5,  8,  7, 10,  0, 15, 12,  3, 14, 11,  2,  9,  6,  4};
+
+		int c;
+		int ai[16], ai1[16];
+
+		for(int i = 0; i < 16; ++i)
+		{
+			c = authkey[i];		// std::string na int (po jednym znaku)
+			// ASCII:    9        Z        =        7        0
+			ai[i] = c > 57 ? c > 90 ? c - 61 : c - 55 : c - 48;
+		}
+
+		for(int i = 0; i < 16; ++i)
+		{
+			ai[i] = f1[ai[i] + i];
+		}
+
+		memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
+
+		for(int i = 0; i < 16; ++i)
+		{
+			ai[i] = (ai[i] + ai1[p1[i]]) % 62;
+		}
+
+		for(int i = 0; i < 16; ++i)
+		{
+			ai[i] = f2[ai[i] + i];
+		}
+
+		memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
+
+		for(int i = 0; i < 16; ++i)
+		{
+			ai[i] = (ai[i] + ai1[p2[i]]) % 62;
+		}
+
+		for(int i = 0; i < 16; ++i)
+		{
+			ai[i] = f3[ai[i] + i];
+		}
+
+		authkey.clear();
+
+		for(int i = 0; i < 16; ++i)
+		{
+			c = ai[i];
+			// ASCII:    \n         $        =        7        0
+			ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
+			authkey += ai[i];	// int na std::string (po jednym znaku)
+		}
+
+
 	}
 
-	const int f1[] = {29, 43,  7,  5, 52, 58, 30, 59, 26, 35, 35, 49, 45,  4, 22,  4,
-			   0,  7,  4, 30, 51, 39, 16,  6, 32, 13, 40, 44, 14, 58, 27, 41,
-			  52, 33,  9, 30, 30, 52, 16, 45, 43, 18, 27, 52, 40, 52, 10,  8,
-			  10, 14, 10, 38, 27, 54, 48, 58, 17, 34,  6, 29, 53, 39, 31, 35,
-			  60, 44, 26, 34, 33, 31, 10, 36, 51, 44, 39, 53,  5, 56};
-
-	const int f2[] = { 7, 32, 25, 39, 22, 26, 32, 27, 17, 50, 22, 19, 36, 22, 40, 11,
-			  41, 10, 10,  2, 10,  8, 44, 40, 51,  7,  8, 39, 34, 52, 52,  4,
-			  56, 61, 59, 26, 22, 15, 17,  9, 47, 38, 45, 10,  0, 12,  9, 20,
-			  51, 59, 32, 58, 19, 28, 11, 40,  8, 28,  6,  0, 13, 47, 34, 60,
-			   4, 56, 21, 60, 59, 16, 38, 52, 61, 44,  8, 35,  4, 11};
-
-	const int f3[] = {60, 30, 12, 34, 33,  7, 15, 29, 16, 20, 46, 25,  8, 31,  4, 48,
-			   6, 44, 57, 16, 12, 58, 48, 59, 21, 32,  2, 18, 51,  8, 50, 29,
-			  58,  6, 24, 34, 11, 23, 57, 43, 59, 50, 10, 56, 27, 32, 12, 59,
-			  16,  4, 40, 39, 26, 10, 49, 56, 51, 60, 21, 37, 12, 56, 39, 15,
-			  53, 11, 33, 43, 52, 37, 30, 25, 19, 55,  7, 34, 48, 36};
-
-	const int p1[] = {11,  9, 12,  0,  1,  4, 10, 13,  3,  6,  7,  8, 15,  5,  2, 14};
-
-	const int p2[] = { 1, 13,  5,  8,  7, 10,  0, 15, 12,  3, 14, 11,  2,  9,  6,  4};
-
-	int c;
-	int ai[16], ai1[16];
-
-	for(int i = 0; i < 16; ++i)
-	{
-		c = authkey[i];		// std::string na int (po jednym znaku)
-		// ASCII:    9        Z        =        7        0
-		ai[i] = c > 57 ? c > 90 ? c - 61 : c - 55 : c - 48;
-	}
-
-	for(int i = 0; i < 16; ++i)
-	{
-		ai[i] = f1[ai[i] + i];
-	}
-
-	memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
-
-	for(int i = 0; i < 16; ++i)
-	{
-		ai[i] = (ai[i] + ai1[p1[i]]) % 62;
-	}
-
-	for(int i = 0; i < 16; ++i)
-	{
-		ai[i] = f2[ai[i] + i];
-	}
-
-	memcpy(ai1, ai, sizeof(ai1));	// skopiuj ai do ai1
-
-	for(int i = 0; i < 16; ++i)
-	{
-		ai[i] = (ai[i] + ai1[p2[i]]) % 62;
-	}
-
-	for(int i = 0; i < 16; ++i)
-	{
-		ai[i] = f3[ai[i] + i];
-	}
-
-	authkey.clear();
-
-	for(int i = 0; i < 16; ++i)
-	{
-		c = ai[i];
-		// ASCII:    \n         $        =        7        0
-		ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
-		authkey += ai[i];	// int na std::string (po jednym znaku)
-	}
+	// zwróć przekonwertowany authKey lub niezmieniony, jeśli authKey nie miał 16 znaków (błędny rozmiar zostanie wykryty poza funkcją)
+	return authkey;
 }
 
 
@@ -414,11 +418,11 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 }
 
 
-bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::string &msg)
+void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	std::string msg_err;
 
-	// nie próbuj się znowu łączyć do IRC od zera
+	// nie próbuj ponownie łączyć się do IRC od zera
 	ga.irc_ready = false;
 
 	// zacznij od ustanowienia poprawności połączenia z IRC, zostanie ono zmienione na niepowodzenie,
@@ -435,19 +439,18 @@ bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::
 	if(ga.socketfd_irc == 0)
 	{
 		ga.irc_ok = false;
-		msg = xRED "# " + msg_err + "\n" xRED "# Błąd wystąpił w: ircAuth1";
-		return false;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# ircAuth1: " + msg_err);
+		return;
 	}
 
 	// pobierz pierwszą odpowiedź serwera po połączeniu:
 	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
-	irc_parser(ga, chan_parm);
+	irc_parser(ga, chan_parm, "ircAuth1: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
 	if(! ga.irc_ok)
 	{
-		msg = xRED "# Błąd wystąpił w: ircAuth1";
-		return false;
+		return;
 	}
 
 /*
@@ -455,24 +458,22 @@ bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::
 */
 	// wyślij:
 	// NICK <zuoUsername>
-	irc_send(ga, chan_parm, "NICK " + ga.zuousername);
+	irc_send(ga, chan_parm, "NICK " + ga.zuousername, "ircAuth2: ");
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
+	// w przypadku błędu irc_send() wyświetlił błąd, więc zakończ
 	if(! ga.irc_ok)
 	{
-		msg = xRED "# Błąd wystąpił w: ircAuth2";
-		return false;
+		return;
 	}
 
 	// pobierz drugą odpowiedź serwera:
 	// :cf1f4.onet NOTICE Auth :*** Found your hostname (ajs7.neoplus.adsl.tpnet.pl) -- cached
-	irc_parser(ga, chan_parm);
+	irc_parser(ga, chan_parm, "ircAuth2: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
 	if(! ga.irc_ok)
 	{
-		msg = xRED "# Błąd wystąpił w: ircAuth2";
-		return false;
+		return;
 	}
 
 /*
@@ -480,26 +481,24 @@ bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::
 */
 	// wyślij:
 	// AUTHKEY
-	irc_send(ga, chan_parm, "AUTHKEY");
+	irc_send(ga, chan_parm, "AUTHKEY", "ircAuth3a: ");
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
+	// w przypadku błędu irc_send() wyświetlił błąd, więc zakończ
 	if(! ga.irc_ok)
 	{
-		msg = xRED "# Błąd wystąpił w: ircAuth3a";
-		return false;
+		return;
 	}
 
 	// pobierz trzecią odpowiedź serwera:
-	// :cf1f4.onet 801 ucc_test :<authKey>
-	// parser wyszuka kod authKey, przeliczy na nowy kod i wyśle do serwera:
-	// AUTHKEY <nowy_authKey>
-	irc_parser(ga, chan_parm);
+	// :cf1f4.onet 801 ucc_test :authKey
+	// parser wyszuka kod authKey, przekonwertuje i wyśle na serwer:
+	// AUTHKEY authKey
+	irc_parser(ga, chan_parm, "ircAuth3b: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, zwróć drugą część i zakończ
+	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
 	if(! ga.irc_ok)
 	{
-		msg = xRED "# Błąd wystąpił w: ircAuth3b";
-		return false;
+		return;
 	}
 
 /*
@@ -508,16 +507,11 @@ bool irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[], std::
 	// wyślij (zamiast zuoUsername można wysłać inną nazwę):
 	// USER * <uoKey> czat-app.onet.pl :<zuoUsername>
 	// PROTOCTL ONETNAMESX
-	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX");
+	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX", "ircAuth4: ");
 
-	// w przypadku błędu w irc_send() wyświetli błąd oraz zwróć drugi komunikat, gdzie wystąpił błąd i zakończ
-	if(! ga.irc_ok)
-	{
-		msg = xRED "# Błąd wystąpił w: ircAuth4";
-		return false;
-	}
+	// w przypadku błędu irc_send() wyświetlił błąd, ale to koniec funkcji, która zwraca void, więc nie trzeba sprawdzać ga.irc_ok
 
-	// jeśli na którymś etapie wystąpił błąd, funkcja irc_auth() zakończy się z ga.irc_ok = false
+	// jeśli na którymś etapie wystąpił błąd, funkcja irc_auth_all() zakończy się z ga.irc_ok = false
 
-	return true;
+	return;
 }

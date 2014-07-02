@@ -120,14 +120,14 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 	}
 
 	// utwórz dane do wysłania do hosta
-	data_send =	method + " " + stock + " HTTP/1.1\r\n"
+	data_send = method + " " + stock + " HTTP/1.1\r\n"
 			"Host: " + host + "\r\n"
 			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:" FF_VER ") Gecko/20100101 Firefox/" FF_VER "\r\n"
 			"Accept-Language: pl\r\n";
 
 	if(method == "POST")
 	{
-		data_send +=	"Content-Type: application/x-www-form-urlencoded\r\n"
+		data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
 				"Content-Length: " + std::to_string(content.size()) + "\r\n";
 	}
 
@@ -377,7 +377,7 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 }
 
 
-void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send)
+void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send, std::string msg_dbg_irc)
 {
 	int bytes_sent;
 
@@ -405,109 +405,128 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	if(bytes_sent == -1)
 	{
 		close(ga.socketfd_irc);
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać danych do serwera [IRC]");
+
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg_irc + "Nie udało się wysłać danych do serwera (IRC).");
 	}
 
 	else if(bytes_sent == 0)
 	{
 		close(ga.socketfd_irc);
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Podczas próby wysłania danych serwer zakończył połączenie [IRC]");
+
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg_irc + "Podczas próby wysłania danych serwer zakończył połączenie (IRC).");
 	}
 
 	else if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
 	{
 		close(ga.socketfd_irc);
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się wysłać wszystkich danych do serwera [IRC]");
+
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg_irc + "Nie udało się wysłać wszystkich danych do serwera (IRC).");
 	}
 }
 
 
-void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_recv)
+void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_recv, std::string msg_dbg_irc)
 {
 	int bytes_recv;
-	char buffer_tmp[BUF_SIZE];
+	char buffer_irc_recv_tmp[BUF_SIZE];
 
 	// pozycja oraz bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
 	size_t pos_incomplete;
 	static std::string buffer_irc_recv_incomplete;
 
 	// pobierz dane od hosta
-	bytes_recv = recv(ga.socketfd_irc, buffer_tmp, BUF_SIZE - 1, 0);
-
-	// zakończ bufor kodem NULL
-	buffer_tmp[bytes_recv] = '\x00';
+	bytes_recv = recv(ga.socketfd_irc, buffer_irc_recv_tmp, BUF_SIZE - 1, 0);
 
 	if(bytes_recv == -1)
 	{
 		close(ga.socketfd_irc);
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać danych z serwera [IRC]");
-		return;
+
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg_irc + "Nie udało się pobrać danych z serwera (IRC).");
 	}
 
 	else if(bytes_recv == 0)
 	{
 		close(ga.socketfd_irc);
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Podczas próby pobrania danych serwer zakończył połączenie [IRC]");
-		return;
+
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg_irc + "Podczas próby pobrania danych serwer zakończył połączenie (IRC).");
 	}
 
-	// odebrane dane zwróć w buforze std::string
-	buffer_irc_recv.clear();
-	buffer_irc_recv = std::string(buffer_tmp);
-
-	// usuń 0x02 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-	while(buffer_irc_recv.find("\x02") != std::string::npos)
+	// gdy nie było błędu
+	else
 	{
-		buffer_irc_recv.erase(buffer_irc_recv.find("\x02"), 1);
-	}
+		// zakończ tymczasowy bufor kodem NULL
+		buffer_irc_recv_tmp[bytes_recv] = '\x00';
 
-	// usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
-	while(buffer_irc_recv.find("\r") != std::string::npos)
-	{
-		buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
-	}
+		// odebrane dane zwróć w buforze std::string
+		buffer_irc_recv.clear();
+		buffer_irc_recv = std::string(buffer_irc_recv_tmp);
 
-	// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
-	buffer_irc_recv = buf_iso2utf(buffer_irc_recv);
+		// usuń 0x02 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
+		while(buffer_irc_recv.find("\x02") != std::string::npos)
+		{
+			buffer_irc_recv.erase(buffer_irc_recv.find("\x02"), 1);
+		}
 
-	// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
-	if(buffer_irc_recv_incomplete.size() > 0)
-	{
-		buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
-	}
+		// usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
+		while(buffer_irc_recv.find("\r") != std::string::npos)
+		{
+			buffer_irc_recv.erase(buffer_irc_recv.find("\r"), 1);
+		}
 
-	// po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
-	buffer_irc_recv_incomplete.clear();
+		// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
+		buffer_irc_recv = buf_iso2utf(buffer_irc_recv);
 
-	// wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
-	pos_incomplete = buffer_irc_recv.rfind("\n");	// \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej
+		// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
+		if(buffer_irc_recv_incomplete.size() > 0)
+		{
+			buffer_irc_recv.insert(0, buffer_irc_recv_incomplete);
+		}
 
-	if(pos_incomplete != buffer_irc_recv.size() - 1)	// - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
-	{
-		// zachowaj ostatni niepełny wiersz
-		buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+		// po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
+		buffer_irc_recv_incomplete.clear();
 
-		// oraz usuń go z głównego bufora
-		buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
-	}
+		// wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
+		// ( \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej)
+		pos_incomplete = buffer_irc_recv.rfind("\n");
+
+		// - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
+		if(pos_incomplete != buffer_irc_recv.size() - 1)
+		{
+			// zachowaj ostatni niepełny wiersz
+			buffer_irc_recv_incomplete.insert(0, buffer_irc_recv, pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+
+			// oraz usuń go z głównego bufora
+			buffer_irc_recv.erase(pos_incomplete + 1, buffer_irc_recv.size() - pos_incomplete - 1);
+		}
 
 /*
 	DBG IRC START
 */
-	dbg_irc_recv_to_file(ga, buffer_irc_recv);
+		dbg_irc_recv_to_file(ga, buffer_irc_recv);
 
-	// debug w oknie
-	if(ga.ucc_dbg_irc)
-	{
-		std::string buffer_irc_rec_dbg = buffer_irc_recv;
-		win_buf_add_str(ga, chan_parm, "Debug", xWHITE + buffer_irc_rec_dbg.erase(buffer_irc_rec_dbg.size() - 1, 1));
-	}
+		// debug w oknie
+		if(ga.ucc_dbg_irc)
+		{
+			std::string buffer_irc_rec_dbg = buffer_irc_recv;
+			win_buf_add_str(ga, chan_parm, "Debug", xWHITE + buffer_irc_rec_dbg.erase(buffer_irc_rec_dbg.size() - 1, 1));
+		}
 /*
 	DBG IRC END
 */
+	}
 }

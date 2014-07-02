@@ -7,7 +7,7 @@ std::string get_value_from_buf(std::string buffer_str, std::string expr_before, 
 
 void get_raw_parm(std::string &buffer_irc_raw, std::string *raw_parm);
 
-void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[]);
+void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg_dbg_irc = "");
 
 /*
 	Poniżej są funkcje do obsługi RAW.

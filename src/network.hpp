@@ -12,8 +12,8 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 char *http_get_data(struct global_args &ga, std::string method, std::string host, short port, std::string stock, std::string content,
 			std::string &cookies, bool get_cookies, long &offset_recv, std::string &msg_err, std::string msg_dbg_http);
 
-void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send);
+void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send, std::string msg_dbg_irc = "");
 
-void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_recv);
+void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_recv, std::string msg_dbg_irc = "");
 
 #endif		// NETWORK_HPP

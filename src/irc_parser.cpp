@@ -1,5 +1,4 @@
 #include <string>		// std::string
-#include <fstream>		// std::ifstream
 #include <sys/time.h>		// gettimeofday()
 
 #include "irc_parser.hpp"
@@ -91,10 +90,9 @@ void get_raw_parm(std::string &buffer_irc_raw, std::string *raw_parm)
 }
 
 
-void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
+void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg_dbg_irc)
 {
-	std::string buffer_irc_recv;
-	std::string buffer_irc_raw;
+	std::string buffer_irc_recv, buffer_irc_raw;
 	size_t pos_raw_start = 0, pos_raw_end = 0;
 
 	std::string raw_parm[RAW_PARM_MAX];
@@ -102,7 +100,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 	bool raw_unknown;
 
 	// pobierz odpowiedź z serwera
-	irc_recv(ga, chan_parm, buffer_irc_recv);
+	irc_recv(ga, chan_parm, buffer_irc_recv, msg_dbg_irc);
 
 	// w przypadku błędu podczas pobierania danych zakończ
 	if(! ga.irc_ok)
@@ -140,9 +138,8 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 		// pobierz parametry RAW, aby wykryć dalej, jaki to rodzaj RAW
 		get_raw_parm(buffer_irc_raw, raw_parm);
 
-		// dla RAW numerycznych zamień string na int
-		raw_numeric = std::stoi("0" + raw_parm[1]);	// std::string na int ("0" - zabezpieczenie się przed próbą zabronionej konwersji znaków
-								// innych niż cyfry na początku)
+		// dla RAW numerycznych zamień string na int ("0" zabezpiecza przed niedozwoloną konwersją znaków innych niż cyfry, aby nie wywalić programu)
+		raw_numeric = std::stoi("0" + raw_parm[1]);
 
 /*
 	Zależnie od rodzaju RAW wywołaj odpowiednią funkcję.
@@ -189,10 +186,18 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_mode(ga, chan_parm, raw_parm, buffer_irc_raw);
 		}
 
+//		else if(raw_parm[1] == "MODERATE")
+//		{
+//		}
+
 		else if(raw_parm[1] == "MODERMSG")
 		{
 			raw_modermsg(ga, chan_parm, raw_parm, buffer_irc_raw);
 		}
+
+//		else if(raw_parm[1] == "MODERNOTICE")
+//		{
+//		}
 
 		else if(raw_parm[1] == "PART")
 		{
@@ -512,8 +517,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			default:
 				raw_unknown = true;
 			}
-
-		}	// else if(raw_num)
+		}
 
 		// NOTICE ma specjalne znaczenie, bo może również zawierać RAW numeryczny
 		else if(raw_parm[1] == "NOTICE")
@@ -695,7 +699,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[])
 			raw_unknown = true;
 		}
 
-		// jeśli były nieznane lub niezaimplementowane RAW (każdego typu), to je wyświetl bez zmian w aktualnie otwartym pokoju
+		// nieznany lub niezaimplementowany RAW (każdego typu) wyświetl bez zmian w aktualnie otwartym pokoju
 		if(raw_unknown)
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
@@ -720,16 +724,13 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 {
 	ga.irc_ok = false;
 
-	// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+	// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug") i wyczyść listy nicków otwartych pokoi
 	for(int i = 0; i < CHAN_MAX - 1; ++i)
 	{
 		if(chan_parm[i])
 		{
 			chan_parm[i]->nick_parm.clear();
-
-			// aktywność typu 1 (domyślna, więc nie trzeba podawać)
-			win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-					xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+			win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 		}
 	}
 }
@@ -761,7 +762,6 @@ void raw_invignore(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	// jeśli zignorowano zaproszenie do rozmowy prywatnej
 	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
 	{
-		// aktywność typu 1 (domyślna, więc nie trzeba podawać)
 		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
 				+ " zignorował(a) Twoje zaproszenie do rozmowy prywatnej.");
 	}
@@ -785,16 +785,15 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	// jeśli to zaproszenie do rozmowy prywatnej
 	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
 	{
-		// informacja w aktywnym pokoju (o ile to nie "Status")
-		if(chan_parm[ga.current] && chan_parm[ga.current]->channel != "Status")
+		// informacja w aktywnym pokoju (o ile to nie "Status" i nie "Debug")
+		if(chan_parm[ga.current] && ga.current != CHAN_STATUS && ga.current != CHAN_DEBUG_IRC)
 		{
-			// aktywność typu 1 (domyślna, więc nie trzeba podawać)
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
 					+ "] zaprasza Cię do rozmowy prywatnej. Szczegóły w \"Status\" (Alt + 1).");
 		}
 
-		// informacja w "Status" (aktywność typu 1)
+		// informacja w "Status"
 		win_buf_add_str(ga, chan_parm, "Status", xBOLD_ON xYELLOW_BLACK "* "
 				+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
 				+ "] zaprasza Cię do rozmowy prywatnej. Aby dołączyć, wpisz /join " + raw_parm[3]);
@@ -803,10 +802,9 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	// jeśli to zaproszenie do pokoju
 	else if(raw_parm[3].size() > 0)
 	{
-		// informacja w aktywnym pokoju (o ile to nie "Status")
-		if(chan_parm[ga.current] && chan_parm[ga.current]->channel != "Status")
+		// informacja w aktywnym pokoju (o ile to nie "Status" i nie "Debug")
+		if(chan_parm[ga.current] && ga.current != CHAN_STATUS && ga.current != CHAN_DEBUG_IRC)
 		{
-			// aktywność typu 1 (domyślna, więc nie trzeba podawać)
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
 					+ "] zaprasza Cię do pokoju " + raw_parm[3] + ", szczegóły w \"Status\" (Alt + 1).");
@@ -815,7 +813,6 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		// informacja w "Status"
 		raw_parm[4] = raw_parm[3];	// po /join wytnij #, ale nie wycinaj go w pierwszej części zdania, dlatego użyj innego bufora (wolnego)
 
-		// aktywność typu 1 w "Status" (domyślna, więc nie trzeba podawać)
 		win_buf_add_str(ga, chan_parm, "Status", xBOLD_ON xYELLOW_BLACK "* "
 				+ get_value_from_buf(buffer_irc_raw, ":", "!") + " [" + get_value_from_buf(buffer_irc_raw, "!", " ")
 				+ "] zaprasza Cię do pokoju " + raw_parm[3] + ", aby wejść, wpisz /join " + raw_parm[4].erase(0, 1));
@@ -833,7 +830,6 @@ void raw_invreject(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	// jeśli odrzucono zaproszenie do rozmowy prywatnej
 	if(raw_parm[3].size() > 0 && raw_parm[3][0] == '^')
 	{
-		// aktywność typu 1 (domyślna, więc nie trzeba podawać)
 		win_buf_add_str(ga, chan_parm, raw_parm[3], xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
 				+ " odrzucił(a) Twoje zaproszenie do rozmowy prywatnej.");
 	}
@@ -3054,16 +3050,14 @@ void raw_605(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 /*
 	801 (authKey)
-	:cf1f4.onet 801 ucc_test :<authKey>
+	:cf1f4.onet 801 ucc_test :authKey
 */
 void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
-	std::string authkey = raw_parm[3];
+	// konwersja authKey
+	std::string authkey = auth_code(raw_parm[3]);
 
-	// konwersja authKey na nowy_authKey
-	auth_code(authkey);
-
-	if(authkey.size() == 0)
+	if(authkey.size() != 16)
 	{
 		ga.irc_ok = false;
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
@@ -3072,9 +3066,9 @@ void raw_801(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	else
 	{
-		// wyślij:
-		// AUTHKEY <nowy_authKey>
-		irc_send(ga, chan_parm, "AUTHKEY " + authkey);
+		// wyślij przekonwertowany authKey:
+		// AUTHKEY authKey
+		irc_send(ga, chan_parm, "AUTHKEY " + authkey, "ircAuth3b: ");	// to trzecia b część autoryzacji, dlatego dodano informację o tym przy bł.
 	}
 }
 
