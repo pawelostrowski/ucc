@@ -73,13 +73,6 @@
 #define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy
 #define CHAN_DEBUG_IRC	(CHAN_MAX - 1)	// "Debug" zawsze jako ostatni w tablicy (- 1, bo liczymy od 0)
 
-// struktura zawierająca listę otwartych pokoi
-//struct open_chan
-//{
-//	std::string channel;	// nazwa pokoju
-//	int index;		// nr otwartego pokoju (-1 względem tego, co wyświetla program, bo liczymy od 0)
-//};
-
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
@@ -109,10 +102,6 @@ struct global_args
 	std::string zuousername;
 	std::string uokey;
 	std::string cookies;
-
-	// lista otwartych pokoi
-//	std::map<std::string, struct open_chan> list_chan;
-//	std::map<std::string, std::string> list_chan;
 
 	long ping, pong, lag;
 	bool lag_timeout;

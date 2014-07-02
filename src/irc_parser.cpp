@@ -3756,7 +3756,10 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 		}
 
 		// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był
-		irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chanlist_join));
+		if(chanlist_join.size() > 0)
+		{
+			irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chanlist_join));
+		}
 	}
 
 	// po użyciu wyczyść listę
