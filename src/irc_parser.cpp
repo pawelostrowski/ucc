@@ -1875,14 +1875,14 @@ void raw_modermsg(struct global_args &ga, struct channel_irc *chan_parm[], std::
 	if(action_me.size() > 0)
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[4], xMAGENTA "* " + form_start + raw_parm[2] + xNORMAL " " + action_me
-				+ " " xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]", act_type);
+				+ " " xNORMAL xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]", act_type);
 	}
 
 	// a jeśli nie było /me wyświetl wiadomość w normalny sposób
 	else
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[4], xCYAN + form_start + "<" + raw_parm[2] + ">" + xNORMAL " " + modermsg
-				+ " " xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]", act_type);
+				+ " " xNORMAL xRED "[Moderowany przez " + get_value_from_buf(buffer_irc_raw, ":", "!") + "]", act_type);
 	}
 }
 
@@ -2276,7 +2276,17 @@ void raw_303(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 */
 void raw_304(struct global_args &ga, struct channel_irc *chan_parm[], std::string &buffer_irc_raw)
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+	// Zamień 'SYNTAX' na 'Składnia:'
+	if(buffer_irc_raw.find(" :SYNTAX ") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* Składnia: " + get_value_from_buf(buffer_irc_raw, " :SYNTAX ", "\n"));
+	}
+
+	// jeśli nie było ciągu 'SYNTAX', wyświetl komunikat bez zmian
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+	}
 }
 
 
@@ -3663,37 +3673,90 @@ void raw_notice_141(struct global_args &ga, std::string &buffer_irc_raw)
 */
 void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	// wejdź do ulubionych pokoi (później dodać opcję wyboru)
-	std::string chan_join;
+	// wejdź do ulubionych pokoi w kolejności alfabetycznej (później dodać opcję wyboru)
 
-	for(int i = 0; i < static_cast<int>(ga.my_favourites.size()); ++i)
+	size_t pos_chan_start, pos_chan_end;
+	std::map<std::string, std::string> chanlist;
+
+	// wykryj pierwszy pokój z listy
+	pos_chan_start = ga.my_favourites.find("#");
+
+	// jeśli jest pokój na liście, przejdź do pętli wpisującej go na listę w std::map oraz szukającej kolejnych pokoi
+	if(pos_chan_start != std::string::npos)
 	{
-		if(ga.my_favourites[i] == ' ')
-		{
-			// dodaj przecinek za pokojem
-			chan_join += ",";
+		std::string chan, chan_key;
 
-			// usuń ewentualne spacje za tą spacją
-			for(int j = i + 1; j < static_cast<int>(ga.my_favourites.size()); ++j)
+		do
+		{
+			// znajdź koniec pokoju
+			pos_chan_end = ga.my_favourites.find(" ", pos_chan_start);
+
+			// jeśli to był ostatni pokój na liście, nie będzie zawierał spacji za nazwą, wtedy uznaje się, że koniec pokoju to koniec bufora
+			if(pos_chan_end == std::string::npos)
 			{
-				if(ga.my_favourites[j] != ' ')
+				pos_chan_end = ga.my_favourites.size();
+			}
+
+			// wstaw pokój do bufora pomocniczego
+			chan.insert(0, ga.my_favourites, pos_chan_start, pos_chan_end - pos_chan_start);
+
+			// w kluczu trzymaj pokój zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
+			std::string chan_key = chan;
+
+			for(int i = 0; i < static_cast<int>(chan_key.size()); ++i)
+			{
+				if(islower(chan_key[i]))
 				{
+					chan_key[i] = toupper(chan_key[i]);
+				}
+			}
+
+			// dodaj pokój do listy w std::map
+			chanlist[chan_key] = chan;
+
+			// znajdź kolejny pokój
+			pos_chan_start = ga.my_favourites.find("#", pos_chan_start + chan.size());
+
+			// wyczyść bufor pomocniczy
+			chan.clear();
+
+		} while(pos_chan_start != std::string::npos);	// przerwij pętlę, gdy nie ma więcej pokoi
+	}
+
+	// jeśli były pokoje na liście, wejdź do nich na czacie
+	if(chanlist.size() > 0)
+	{
+		std::string chanlist_join;
+		bool was_chan;
+
+		// poskładaj pokoje, aby można było wysłać je za pomocą jednego polecenia (pomijaj pokoje, w których już jesteśmy, czyli po wylogowaniu,
+		// ale bez zamykania programu ponowne zalogowanie powoduje wejście do tych pokoi po odebraniu +r lub +x, zależnie od rodzaju nicka)
+		for(std::map<std::string, std::string>::iterator it = chanlist.begin(); it != chanlist.end(); ++it)
+		{
+			was_chan = false;
+
+			for(int i = 1; i < CHAN_MAX - 1; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == it->second)
+				{
+					was_chan = true;
 					break;
 				}
+			}
 
-				++i;
+			if(chanlist_join.size() == 0 && ! was_chan)
+			{
+				chanlist_join = it->second;
+			}
+
+			else if(! was_chan)
+			{
+				chanlist_join += "," + it->second;	// kolejne pokoje muszą być rozdzielone przecinkiem
 			}
 		}
 
-		else
-		{
-			chan_join += ga.my_favourites[i];
-		}
-	}
-
-	if(chan_join.size() > 0)
-	{
-		irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chan_join));
+		// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był
+		irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chanlist_join));
 	}
 
 	// po użyciu wyczyść listę

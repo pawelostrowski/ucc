@@ -356,19 +356,8 @@ void kbd_command_away(struct global_args &ga, struct channel_irc *chan_parm[], s
 	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 	if(ga.irc_ok)
 	{
-		std::string away_reason = get_rest_args(kbd_buf, pos_arg);
-
-		// jeśli podano powód nieobecności, wyślij go
-		if(away_reason.size() > 0)
-		{
-			irc_send(ga, chan_parm, "AWAY :" + away_reason);
-		}
-
-		// w przeciwnym razie wyślij bez powodu (co wyłączy status nieobecności)
-		else
-		{
-			irc_send(ga, chan_parm, "AWAY");
-		}
+		// jeśli podano powód nieobecności, wyślij go (co ustawi tryb nieobecności, przy braku powodu zostanie ustawiony tryb obecności)
+		irc_send(ga, chan_parm, "AWAY :" + get_rest_args(kbd_buf, pos_arg));
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie
