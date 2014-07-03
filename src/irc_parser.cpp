@@ -3691,11 +3691,14 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 				pos_chan_end = ga.my_favourites.size();
 			}
 
+			// wyczyść bufor pomocniczy
+			chan.clear();
+
 			// wstaw pokój do bufora pomocniczego
 			chan.insert(0, ga.my_favourites, pos_chan_start, pos_chan_end - pos_chan_start);
 
 			// w kluczu trzymaj pokój zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-			std::string chan_key = chan;
+			chan_key = chan;
 
 			for(int i = 0; i < static_cast<int>(chan_key.size()); ++i)
 			{
@@ -3710,9 +3713,6 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 
 			// znajdź kolejny pokój
 			pos_chan_start = ga.my_favourites.find("#", pos_chan_start + chan.size());
-
-			// wyczyść bufor pomocniczy
-			chan.clear();
 
 		} while(pos_chan_start != std::string::npos);	// przerwij pętlę, gdy nie ma więcej pokoi
 
