@@ -736,8 +736,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	// pobierz nicki w kolejności zależnej od uprawnień
-	for(std::map<std::string, struct nick_irc>::iterator it = chan_parm[ga.current]->nick_parm.begin();
-		it != chan_parm[ga.current]->nick_parm.end(); ++it)
+	for(auto it = chan_parm[ga.current]->nick_parm.begin(); it != chan_parm[ga.current]->nick_parm.end(); ++it)
 	{
 		if(it->second.flags.owner)
 		{

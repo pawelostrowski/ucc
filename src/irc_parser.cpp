@@ -3722,7 +3722,7 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 
 		// poskładaj pokoje, aby można było wysłać je za pomocą jednego polecenia (pomijaj pokoje, w których już jesteśmy, czyli po wylogowaniu,
 		// ale bez zamykania programu ponowne zalogowanie powoduje wejście do tych pokoi po odebraniu +r lub +x, zależnie od rodzaju nicka)
-		for(std::map<std::string, std::string>::iterator it = chanlist.begin(); it != chanlist.end(); ++it)
+		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
 		{
 			was_chan = false;
 
