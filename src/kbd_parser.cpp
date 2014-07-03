@@ -419,18 +419,14 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 		// jeśli captcha ma 6 znaków, wykonaj sprawdzenie
 		else
 		{
-			std::string msg;
-
 			// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
-			if(! http_auth_checkcode(ga, captcha, msg))
+			if(! http_auth_checkcode(ga, chan_parm, captcha))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_getuokey(ga, msg))
+			if(! http_auth_getuokey(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 		}
@@ -481,8 +477,6 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 	// jeśli podano nick i można rozpocząć łączenie z czatem
 	else
 	{
-		std::string msg;
-
 		// komunikat o łączeniu we wszystkich otwartych pokojach z wyjątkiem "Debug"
 		for(int i = 0; i < CHAN_MAX - 1; ++i)
 		{
@@ -499,9 +493,8 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		ga.command_vhost = false;
 
 		// gdy wpisano nick, rozpocznij łączenie
-		if(! http_auth_init(ga, msg))
+		if(! http_auth_init(ga, chan_parm))
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 			return;
 		}
 
@@ -509,9 +502,8 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		if(ga.my_password.size() == 0)
 		{
 			// pobierz captcha
-			if(! http_auth_getcaptcha(ga, msg))
+			if(! http_auth_getcaptcha(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
@@ -523,29 +515,25 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		// gdy wpisano hasło, wykonaj część dla nicka stałego
 		else
 		{
-			if(! http_auth_getsk(ga, msg))
+			if(! http_auth_getsk(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_mlogin(ga, msg))
+			if(! http_auth_mlogin(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
-			if(! http_auth_getuokey(ga, msg))
+			if(! http_auth_getuokey(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 
 /*
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! http_auth_useroverride(ga, msg))
+			if(! http_auth_useroverride(ga, chan_parm))
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, msg);
 				return;
 			}
 */

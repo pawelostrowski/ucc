@@ -85,8 +85,6 @@ std::string auth_code(std::string &authkey)
 			ai[i] = c >= 10 ? c >= 36 ? c + 61 : c + 55 : c + 48;
 			authkey += ai[i];	// int na std::string (po jednym znaku)
 		}
-
-
 	}
 
 	// zwróć przekonwertowany authKey lub niezmieniony, jeśli authKey nie miał 16 znaków (błędny rozmiar zostanie wykryty poza funkcją)
@@ -94,7 +92,7 @@ std::string auth_code(std::string &authkey)
 }
 
 
-bool http_auth_init(struct global_args &ga, std::string &msg)
+bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Pobierz pierwsze 4 ciastka (onet_ubi, onetzuo_ticket, onet_cid, onet_sgn).
@@ -112,7 +110,7 @@ bool http_auth_init(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthInit: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
 		return false;
 	}
 
@@ -123,7 +121,7 @@ bool http_auth_init(struct global_args &ga, std::string &msg)
 }
 
 
-bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
+bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Pobierz captcha i kolejne, piąte ciastko (onet_sid), jednocześnie wysyłając pobrane poprzednio 4 ciastka.
@@ -138,7 +136,7 @@ bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthInit: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
 		return false;
 	}
 
@@ -148,7 +146,7 @@ bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 	if(cap_ptr == NULL)
 	{
 		free(buffer_recv);
-		msg = xRED "# Nie udało się pobrać obrazka z kodem do przepisania.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
 		return false;
 	}
 
@@ -167,27 +165,26 @@ bool http_auth_getcaptcha(struct global_args &ga, std::string &msg)
 	else
 	{
 		free(buffer_recv);
-
-		msg = xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).");
 		return false;
 	}
 
 	ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
 
 	// wyświetl obrazek z kodem do przepisania
-	if(/* int system_stat = */ system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// to do poprawy, rozwiązanie tymczasowe!!!
+	if(int system_stat = system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// do poprawy, rozwiązanie tymczasowe!!!
 	{
-//		msg =	xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
-//			xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE;
-
-//		return false;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
+				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
 
 	return true;
 }
 
 
-bool http_auth_getsk(struct global_args &ga, std::string &msg)
+bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	W przypadku nicka stałego nie trzeba pobierać captcha, ale potrzebne jest piąte ciastko (onet_sid), a można je uzyskać,
@@ -202,7 +199,7 @@ bool http_auth_getsk(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthGetSk: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetSk: " + msg_err);
 		return false;
 	}
 
@@ -212,7 +209,7 @@ bool http_auth_getsk(struct global_args &ga, std::string &msg)
 }
 
 
-bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::string &msg)
+bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[], std::string &captcha)
 {
 	long offset_recv;
 	char *buffer_recv;
@@ -227,7 +224,7 @@ bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::stri
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthCheckCode: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: " + msg_err);
 		return false;
 	}
 
@@ -239,21 +236,23 @@ bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::stri
 
 	if(err_code.size() == 0)
 	{
-		msg = xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.");
 		return false;
 	}
 
 	// jeśli serwer zwrócił FALSE, oznacza to błędnie wpisany kod captcha
 	if(err_code == "FALSE")
 	{
-		msg = xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
 		return false;
 	}
 
 	// brak TRUE (lub wcześniejszego FALSE) oznacza błąd w odpowiedzi serwera
 	if(err_code != "TRUE")
 	{
-		msg = xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
 		return false;
 	}
 
@@ -261,7 +260,7 @@ bool http_auth_checkcode(struct global_args &ga, std::string &captcha, std::stri
 }
 
 
-bool http_auth_mlogin(struct global_args &ga, std::string &msg)
+bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka (onet_uoi, onet_uid).
@@ -277,7 +276,7 @@ bool http_auth_mlogin(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthMLogin: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthMLogin: " + msg_err);
 		return false;
 	}
 
@@ -287,7 +286,7 @@ bool http_auth_mlogin(struct global_args &ga, std::string &msg)
 }
 
 
-bool http_auth_useroverride(struct global_args &ga, std::string &msg)
+bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 /*
 	Funkcja ta przydaje się, gdy nas rozłączy, ale nie wyrzuci jeszcze z serwera (łączy od razu, bez komunikatu błędu o zalogowanym już nicku),
@@ -304,7 +303,7 @@ bool http_auth_useroverride(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthUserOverride: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthUserOverride: " + msg_err);
 		return false;
 	}
 
@@ -314,7 +313,7 @@ bool http_auth_useroverride(struct global_args &ga, std::string &msg)
 }
 
 
-bool http_auth_getuokey(struct global_args &ga, std::string &msg)
+bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	long offset_recv;
 	char *buffer_recv;
@@ -350,7 +349,7 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 
 	if(buffer_recv == NULL)
 	{
-		msg = xRED "# httpAuthGetUoKey: " + msg_err;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: " + msg_err);
 		return false;
 	}
 
@@ -360,8 +359,7 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 	if(err_code.size() == 0)
 	{
 		free(buffer_recv);
-
-		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.");
 		return false;
 	}
 
@@ -373,18 +371,19 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 		// -2 oznacza nieprawidłowy nick (stały) lub hasło
 		if(err_code == "-2")
 		{
-			msg = xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.");
 		}
 
 		// -4 oznacza nieprawidłowe znaki w nicku tymczasowym (lub błędne parametry funkcji, ale zakłada się, że są prawidłowe)
 		else if(err_code == "-4")
 		{
-			msg = xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.");
 		}
 
 		else
 		{
-			msg = xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code;
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
 		}
 
 		return false;
@@ -396,8 +395,7 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 	if(ga.uokey.size() == 0)
 	{
 		free(buffer_recv);
-
-		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.");
 		return false;
 	}
 
@@ -408,7 +406,7 @@ bool http_auth_getuokey(struct global_args &ga, std::string &msg)
 
 	if(ga.zuousername.size() == 0)
 	{
-		msg = xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.");
 		return false;
 	}
 
