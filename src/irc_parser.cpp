@@ -3670,87 +3670,82 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 	// wejdź do ulubionych pokoi w kolejności alfabetycznej (później dodać opcję wyboru)
 
 	size_t pos_chan_start, pos_chan_end;
+	std::string chan, chan_key;
+
 	std::map<std::string, std::string> chanlist;
+
+	std::string chanlist_join;
+	bool was_chan;
 
 	// wykryj pierwszy pokój z listy
 	pos_chan_start = ga.my_favourites.find("#");
 
 	// jeśli jest pokój na liście, przejdź do pętli wpisującej go na listę w std::map oraz szukającej kolejnych pokoi
-	if(pos_chan_start != std::string::npos)
+	while(pos_chan_start != std::string::npos)
 	{
-		std::string chan, chan_key;
+		// znajdź koniec pokoju
+		pos_chan_end = ga.my_favourites.find(" ", pos_chan_start);
 
-		do
+		// jeśli to był ostatni pokój na liście, nie będzie zawierał spacji za nazwą, wtedy uznaje się, że koniec pokoju to koniec bufora
+		if(pos_chan_end == std::string::npos)
 		{
-			// znajdź koniec pokoju
-			pos_chan_end = ga.my_favourites.find(" ", pos_chan_start);
+			pos_chan_end = ga.my_favourites.size();
+		}
 
-			// jeśli to był ostatni pokój na liście, nie będzie zawierał spacji za nazwą, wtedy uznaje się, że koniec pokoju to koniec bufora
-			if(pos_chan_end == std::string::npos)
-			{
-				pos_chan_end = ga.my_favourites.size();
-			}
+		// wyczyść bufor pomocniczy
+		chan.clear();
 
-			// wyczyść bufor pomocniczy
-			chan.clear();
+		// wstaw pokój do bufora pomocniczego
+		chan.insert(0, ga.my_favourites, pos_chan_start, pos_chan_end - pos_chan_start);
 
-			// wstaw pokój do bufora pomocniczego
-			chan.insert(0, ga.my_favourites, pos_chan_start, pos_chan_end - pos_chan_start);
+		// w kluczu trzymaj pokój zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
+		chan_key = chan;
 
-			// w kluczu trzymaj pokój zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-			chan_key = chan;
-
-			for(int i = 0; i < static_cast<int>(chan_key.size()); ++i)
-			{
-				if(islower(chan_key[i]))
-				{
-					chan_key[i] = toupper(chan_key[i]);
-				}
-			}
-
-			// dodaj pokój do listy w std::map
-			chanlist[chan_key] = chan;
-
-			// znajdź kolejny pokój
-			pos_chan_start = ga.my_favourites.find("#", pos_chan_start + chan.size());
-
-		} while(pos_chan_start != std::string::npos);	// przerwij pętlę, gdy nie ma więcej pokoi
-
-		// jeśli były pokoje na liście, wejdź do nich na czacie
-		std::string chanlist_join;
-		bool was_chan;
-
-		// poskładaj pokoje, aby można było wysłać je za pomocą jednego polecenia (pomijaj pokoje, w których już jesteśmy, czyli po wylogowaniu,
-		// ale bez zamykania programu ponowne zalogowanie powoduje wejście do tych pokoi po odebraniu +r lub +x, zależnie od rodzaju nicka)
-		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+		for(int i = 0; i < static_cast<int>(chan_key.size()); ++i)
 		{
-			was_chan = false;
-
-			for(int i = 1; i < CHAN_MAX - 1; ++i)
+			if(islower(chan_key[i]))
 			{
-				if(chan_parm[i] && chan_parm[i]->channel == it->second)
-				{
-					was_chan = true;
-					break;
-				}
-			}
-
-			if(chanlist_join.size() == 0 && ! was_chan)
-			{
-				chanlist_join = it->second;
-			}
-
-			else if(! was_chan)
-			{
-				chanlist_join += "," + it->second;	// kolejne pokoje muszą być rozdzielone przecinkiem
+				chan_key[i] = toupper(chan_key[i]);
 			}
 		}
 
-		// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był
-		if(chanlist_join.size() > 0)
+		// dodaj pokój do listy w std::map
+		chanlist[chan_key] = chan;
+
+		// znajdź kolejny pokój
+		pos_chan_start = ga.my_favourites.find("#", pos_chan_start + chan.size());
+	}
+
+
+	// pomiń te pokoje, które już były (po wylogowaniu i ponownym zalogowaniu się, nie dotyczy pierwszego logowania po uruchomieniu programu)
+	for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+	{
+		was_chan = false;
+
+		for(int i = 1; i < CHAN_MAX - 1; ++i)
 		{
-			irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chanlist_join));
+			if(chan_parm[i] && chan_parm[i]->channel == it->second)
+			{
+				was_chan = true;
+				break;
+			}
 		}
+
+		if(chanlist_join.size() == 0 && ! was_chan)
+		{
+			chanlist_join = it->second;
+		}
+
+		else if(! was_chan)
+		{
+			chanlist_join += "," + it->second;	// kolejne pokoje muszą być rozdzielone przecinkiem
+		}
+	}
+
+	// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był (jeśli jakieś zostały do wejścia)
+	if(chanlist_join.size() > 0)
+	{
+		irc_send(ga, chan_parm, "JOIN " + buf_utf2iso(chanlist_join));
 	}
 
 	// po użyciu wyczyść listę
