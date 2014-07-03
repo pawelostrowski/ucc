@@ -5,12 +5,12 @@
 
 #define FF_VER "30.0"
 
-int socket_init(std::string host, short port, std::string &msg_err);
+int socket_init(struct global_args &ga, struct channel_irc *chan_parm[], std::string host, short port, std::string msg_dbg);
 
-bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err);
+bool http_get_cookies(struct global_args &ga, struct channel_irc *chan_parm[], char *buffer_recv, std::string msg_dbg_http);
 
-char *http_get_data(struct global_args &ga, std::string method, std::string host, short port, std::string stock, std::string content,
-			std::string &cookies, bool get_cookies, long &offset_recv, std::string &msg_err, std::string msg_dbg_http);
+char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std::string method, std::string host, short port, std::string stock,
+		std::string content, std::string &cookies, bool get_cookies, long &offset_recv, std::string msg_dbg_http);
 
 void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string buffer_irc_send, std::string msg_dbg_irc = "");
 

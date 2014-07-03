@@ -837,7 +837,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					// zaloguj się do czata
 					irc_auth_all(ga, chan_parm);
 
-					// od tej pory, o ile poprawnie połączono się do IRC, można dodać socketfd_irc do zestawu select()
+					// od tej pory, o ile poprawnie połączono się z IRC, można dodać socketfd_irc do zestawu select()
 					if(ga.irc_ok)
 					{
 						FD_SET(ga.socketfd_irc, &readfds);		// gniazdo IRC (socket)

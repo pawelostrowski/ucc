@@ -3715,11 +3715,8 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 			chan.clear();
 
 		} while(pos_chan_start != std::string::npos);	// przerwij pętlę, gdy nie ma więcej pokoi
-	}
 
-	// jeśli były pokoje na liście, wejdź do nich na czacie
-	if(chanlist.size() > 0)
-	{
+		// jeśli były pokoje na liście, wejdź do nich na czacie
 		std::string chanlist_join;
 		bool was_chan;
 

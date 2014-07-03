@@ -10,7 +10,7 @@
 #include "ucc_global.hpp"
 
 
-int socket_init(std::string host, short port, std::string &msg_err)
+int socket_init(struct global_args &ga, struct channel_irc *chan_parm[], std::string host, short port, std::string msg_dbg)
 {
 /*
 	Utwórz gniazdo (socket) oraz połącz się z hostem.
@@ -26,7 +26,8 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 	if(host_info == NULL)
 	{
-		msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				xRED "# " + msg_dbg + ": Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).");
 		return 0;
 	}
 
@@ -35,7 +36,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 
 	if(socketfd == -1)
 	{
-		msg_err = "Nie udało się utworzyć deskryptora gniazda.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg + ": Nie udało się utworzyć deskryptora gniazda.");
 		return 0;
 	}
 
@@ -48,7 +49,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 	if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
 	{
 		close(socketfd);
-		msg_err = "Nie udało się połączyć z hostem: " + host;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg + ": Nie udało się połączyć z hostem: " + host);
 		return 0;
 	}
 
@@ -56,7 +57,7 @@ int socket_init(std::string host, short port, std::string &msg_err)
 }
 
 
-bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_err)
+bool http_get_cookies(struct global_args &ga, struct channel_irc *chan_parm[], char *buffer_recv, std::string msg_dbg_http)
 {
 	size_t pos_cookie_start, pos_cookie_end;
 
@@ -67,7 +68,7 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 
 	if(pos_cookie_start == std::string::npos)
 	{
-		msg_err = "Nie znaleziono żadnego cookie.";
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg_http + ": Nie znaleziono żadnego cookie.");
 		return false;
 	}
 
@@ -78,12 +79,13 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 
 		if(pos_cookie_end == std::string::npos)
 		{
-			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Problem z cookie, brak wymaganego średnika na końcu.");
 			return false;
 		}
 
 		// dopisz kolejne cookie do bufora
-		cookies.insert(cookies.size(), std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
+		ga.cookies.insert(ga.cookies.size(), std::string(buffer_recv), pos_cookie_start + cookie_string.size(),
 						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
 
 		// znajdź kolejne cookie
@@ -95,28 +97,28 @@ bool http_get_cookies(char *buffer_recv, std::string &cookies, std::string &msg_
 }
 
 
-char *http_get_data(struct global_args &ga, std::string method, std::string host, short port, std::string stock, std::string content,
-			std::string &cookies, bool get_cookies, long &offset_recv, std::string &msg_err, std::string msg_dbg_http)
+char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std::string method, std::string host, short port, std::string stock,
+		std::string content, std::string &cookies, bool get_cookies, long &offset_recv, std::string msg_dbg_http)
 {
 	if(method != "GET" && method != "POST")
 	{
-		msg_err = "Nieobsługiwana metoda: " + method;
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg_http + ": Nieobsługiwana metoda: " + method);
 		return NULL;
 	}
 
 	int socketfd;			// deskryptor gniazda (socket)
 	int bytes_sent, bytes_recv;
+	std::string data_send;		// dane do wysłania do hosta
 	char *buffer_recv = NULL;
 	char buffer_tmp[BUF_SIZE];	// bufor tymczasowy pobranych danych
 	bool first_recv = true;		// czy to pierwsze pobranie w pętli
-	std::string data_send;		// dane do wysłania do hosta
 
 	// utwórz gniazdo (socket) oraz połącz się z hostem
-	socketfd = socket_init(host, port, msg_err);
+	socketfd = socket_init(ga, chan_parm, host, port, msg_dbg_http);
 
 	if(socketfd == 0)
 	{
-		return NULL;	// zwróć komunikat błędu w msg_err
+		return NULL;
 	}
 
 	// utwórz dane do wysłania do hosta
@@ -155,14 +157,16 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 		if(bytes_sent == -1)
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać danych do hosta: " + host;
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Nie udało się wysłać danych do hosta: " + host);
 			return NULL;
 		}
 
 		else if(bytes_sent == 0)
 		{
 			close(socketfd);
-			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Podczas próby wysłania danych host " + host + " zakończył połączenie.");
 			return NULL;
 		}
 
@@ -170,7 +174,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 		else if(bytes_sent != static_cast<int>(data_send.size()))	// static_cast<int> - rzutowanie size_t (w tym przypadku) na int
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Nie udało się wysłać wszystkich danych do hosta: " + host);
 			return NULL;
 		}
 
@@ -186,7 +191,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas alokacji pamięci przez malloc()";
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							xRED "# " + msg_dbg_http + ": Błąd podczas alokacji pamięci przez malloc()");
 					return NULL;
 				}
 			}
@@ -198,7 +204,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas realokacji pamięci przez realloc()";
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							xRED "# " + msg_dbg_http + ": Błąd podczas realokacji pamięci przez realloc()");
 					return NULL;
 				}
 			}
@@ -211,7 +218,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 			{
 				close(socketfd);
 				free(buffer_recv);	// w przypadku błędu zwolnij pamięć zajmowaną przez bufor
-				msg_err = "Nie udało się pobrać danych z hosta: " + host;
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						xRED "# " + msg_dbg_http + ": Nie udało się pobrać danych z hosta: " + host);
 				return NULL;
 			}
 
@@ -220,7 +228,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						xRED "# " + msg_dbg_http + ": Podczas próby pobrania danych host " + host + " zakończył połączenie.");
 				return NULL;
 			}
 
@@ -249,7 +258,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 		if(ssl_context == NULL)
 		{
-			msg_err = "Błąd podczas tworzenia obiektu SSL_CTX";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Błąd podczas tworzenia obiektu SSL_CTX");
 			return NULL;
 		}
 
@@ -257,19 +267,22 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 		if(ssl_handle == NULL)
 		{
-			msg_err = "Błąd podczas tworzenia struktury SSL.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Błąd podczas tworzenia struktury SSL.");
 			return NULL;
 		}
 
 		if(! SSL_set_fd(ssl_handle, socketfd))
 		{
-			msg_err = "Błąd podczas łączenia deskryptora SSL.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Błąd podczas łączenia deskryptora SSL.");
 			return NULL;
 		}
 
 		if(SSL_connect(ssl_handle) != 1)
 		{
-			msg_err = "Błąd podczas łączenia się z " + host + " przez SSL.";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Błąd podczas łączenia się z " + host + " przez SSL.");
 			return NULL;
 		}
 
@@ -279,21 +292,24 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 		if(bytes_sent <= -1)
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać danych do hosta: " + host + " (SSL).";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Nie udało się wysłać danych do hosta: " + host + " (SSL).");
 			return NULL;
 		}
 
 		else if(bytes_sent == 0)
 		{
 			close(socketfd);
-			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie (SSL).";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Podczas próby wysłania danych host " + host + " zakończył połączenie (SSL).");
 			return NULL;
 		}
 
 		else if(bytes_sent != static_cast<int>(data_send.size()))
 		{
 			close(socketfd);
-			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " (SSL).";
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xRED "# " + msg_dbg_http + ": Nie udało się wysłać wszystkich danych do hosta: " + host + " (SSL).");
 			return NULL;
 		}
 
@@ -306,7 +322,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas alokacji pamięci przez malloc() (SSL).";
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							xRED "# " + msg_dbg_http + ": Błąd podczas alokacji pamięci przez malloc() (SSL).");
 					return NULL;
 				}
 			}
@@ -317,7 +334,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 
 				if(buffer_recv == NULL)
 				{
-					msg_err = "Błąd podczas realokacji pamięci przez realloc() (SSL).";
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							xRED "# " + msg_dbg_http + ": Błąd podczas realokacji pamięci przez realloc() (SSL).");
 					return NULL;
 				}
 			}
@@ -328,7 +346,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Nie udało się pobrać danych z hosta: " + host + " (SSL).";
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						xRED "# " + msg_dbg_http + ": Nie udało się pobrać danych z hosta: " + host + " (SSL).");
 				return NULL;
 			}
 
@@ -336,7 +355,8 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 			{
 				close(socketfd);
 				free(buffer_recv);
-				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie (SSL).";
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						xRED "# " + msg_dbg_http + ": Podczas próby pobrania danych host " + host + " zakończył połączenie (SSL).");
 				return NULL;
 			}
 
@@ -367,10 +387,10 @@ char *http_get_data(struct global_args &ga, std::string method, std::string host
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
-	if(get_cookies && ! http_get_cookies(buffer_recv, cookies, msg_err))
+	if(get_cookies && ! http_get_cookies(ga, chan_parm, buffer_recv, msg_dbg_http))
 	{
 		free(buffer_recv);
-		return NULL;	// zwróć komunikat błędu w msg_err
+		return NULL;
 	}
 
 	return buffer_recv;	// zwróć wskaźnik do bufora pobranych danych
@@ -405,9 +425,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	if(bytes_sent == -1)
 	{
 		close(ga.socketfd_irc);
-
 		ga.irc_ok = false;
-
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# " + msg_dbg_irc + "Nie udało się wysłać danych do serwera (IRC).");
 	}
@@ -415,9 +433,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	else if(bytes_sent == 0)
 	{
 		close(ga.socketfd_irc);
-
 		ga.irc_ok = false;
-
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# " + msg_dbg_irc + "Podczas próby wysłania danych serwer zakończył połączenie (IRC).");
 	}
@@ -425,9 +441,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	else if(bytes_sent != static_cast<int>(buffer_irc_send.size()))
 	{
 		close(ga.socketfd_irc);
-
 		ga.irc_ok = false;
-
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# " + msg_dbg_irc + "Nie udało się wysłać wszystkich danych do serwera (IRC).");
 	}
@@ -449,9 +463,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	if(bytes_recv == -1)
 	{
 		close(ga.socketfd_irc);
-
 		ga.irc_ok = false;
-
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# " + msg_dbg_irc + "Nie udało się pobrać danych z serwera (IRC).");
 	}
@@ -459,9 +471,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	else if(bytes_recv == 0)
 	{
 		close(ga.socketfd_irc);
-
 		ga.irc_ok = false;
-
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# " + msg_dbg_irc + "Podczas próby pobrania danych serwer zakończył połączenie (IRC).");
 	}

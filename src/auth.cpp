@@ -100,17 +100,15 @@ bool http_auth_init(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err;
 
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	buffer_recv = http_get_data(ga, "GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
-				ga.cookies, true, offset_recv, msg_err, "httpAuthInit");
+	buffer_recv = http_get_data(ga, chan_parm, "GET", "kropka.onet.pl", 80, "/_s/kropka/5?DV=czat/applet/FULL", "",
+				ga.cookies, true, offset_recv, "httpAuthInit");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
 		return false;
 	}
 
@@ -130,13 +128,11 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 	long offset_recv;
 	char *buffer_recv;
 	char *cap_ptr;
-	std::string msg_err;
 
-	buffer_recv = http_get_data(ga, "GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetCaptcha");
+	buffer_recv = http_get_data(ga, chan_parm, "GET", "czat.onet.pl", 80, "/myimg.gif", "", ga.cookies, true, offset_recv, "httpAuthGetCaptcha");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthInit: " + msg_err);
 		return false;
 	}
 
@@ -170,8 +166,6 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 		return false;
 	}
 
-	ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
-
 	// wyświetl obrazek z kodem do przepisania
 	if(int system_stat = system("/usr/bin/eog " CAPTCHA_FILE " 2>/dev/null &") != 0)	// do poprawy, rozwiązanie tymczasowe!!!
 	{
@@ -179,6 +173,8 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 				xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
 				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
+
+	ga.captcha_ready = true;	// można przepisać kod i wysłać na serwer
 
 	return true;
 }
@@ -193,13 +189,11 @@ bool http_auth_getsk(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err;
 
-	buffer_recv = http_get_data(ga, "GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, msg_err, "httpAuthGetSk");
+	buffer_recv = http_get_data(ga, chan_parm, "GET", "czat.onet.pl", 80, "/sk.gif", "", ga.cookies, true, offset_recv, "httpAuthGetSk");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetSk: " + msg_err);
 		return false;
 	}
 
@@ -214,17 +208,15 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	long offset_recv;
 	char *buffer_recv;
 	std::string err_code;
-	std::string msg_err;
 
 	ga.captcha_ready = false;	// zapobiega ponownemu wysłaniu kodu na serwer
 
-	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+	buffer_recv = http_get_data(ga, chan_parm, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}",
-				ga.cookies, false, offset_recv, msg_err, "httpAuthCheckCode");
+				ga.cookies, false, offset_recv, "httpAuthCheckCode");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: " + msg_err);
 		return false;
 	}
 
@@ -268,15 +260,13 @@ bool http_auth_mlogin(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err;
 
-	buffer_recv = http_get_data(ga, "POST", "secure.onet.pl", 443, "/mlogin.html",
+	buffer_recv = http_get_data(ga, chan_parm, "POST", "secure.onet.pl", 443, "/mlogin.html",
 				"r=&url=&login=" + ga.my_nick + "&haslo=" + ga.my_password + "&app_id=20&ssl=1&ok=1",
-				ga.cookies, true, offset_recv, msg_err, "httpAuthMLogin");
+				ga.cookies, true, offset_recv, "httpAuthMLogin");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthMLogin: " + msg_err);
 		return false;
 	}
 
@@ -295,15 +285,13 @@ bool http_auth_useroverride(struct global_args &ga, struct channel_irc *chan_par
 
 	long offset_recv;
 	char *buffer_recv;
-	std::string msg_err;
 
-	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+	buffer_recv = http_get_data(ga, chan_parm, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(ga.my_nick.size()) + ":\"" + ga.my_nick + "\";}",
-				ga.cookies, false, offset_recv, msg_err, "httpAuthUserOverride");
+				ga.cookies, false, offset_recv, "httpAuthUserOverride");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthUserOverride: " + msg_err);
 		return false;
 	}
 
@@ -319,7 +307,6 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	char *buffer_recv;
 	std::string my_nick_c, nick_i;
 	std::string err_code;
-	std::string msg_err;
 
 	// wykonaj "kopię" nicka, aby nie modyfikować go z punktu widzenia użytkownika (gdy trzeba usunąć ~)
 	my_nick_c = ga.my_nick;
@@ -342,14 +329,13 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 		nick_i = "0";	// stały
 	}
 
-	buffer_recv = http_get_data(ga, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
+	buffer_recv = http_get_data(ga, chan_parm, "POST", "czat.onet.pl", 80, "/include/ajaxapi.xml.php3",
 				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(my_nick_c.size()) + ":\"" + my_nick_c
 				+ "\";s:8:\"tempNick\";i:" + nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}",
-				ga.cookies, false, offset_recv, msg_err, "httpAuthGetUoKey");
+				ga.cookies, false, offset_recv, "httpAuthGetUoKey");
 
 	if(buffer_recv == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: " + msg_err);
 		return false;
 	}
 
@@ -418,8 +404,6 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	std::string msg_err;
-
 	// nie próbuj ponownie łączyć się do IRC od zera
 	ga.irc_ready = false;
 
@@ -431,13 +415,12 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	Część 1 autoryzacji.
 */
 	// zainicjalizuj gniazdo oraz połącz z IRC
-	ga.socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
+	ga.socketfd_irc = socket_init(ga, chan_parm, "czat-app.onet.pl", 5015, "ircAuth1");
 
-	// w przypadku błędu zwróć komunikat oraz zakończ
+	// w przypadku błędu zakończ
 	if(ga.socketfd_irc == 0)
 	{
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# ircAuth1: " + msg_err);
 		return;
 	}
 
@@ -445,7 +428,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// :cf1f4.onet NOTICE Auth :*** Looking up your hostname...
 	irc_parser(ga, chan_parm, "ircAuth1: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
+	// w przypadku błędu zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -458,7 +441,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// NICK <zuoUsername>
 	irc_send(ga, chan_parm, "NICK " + ga.zuousername, "ircAuth2: ");
 
-	// w przypadku błędu irc_send() wyświetlił błąd, więc zakończ
+	// w przypadku błędu zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -468,7 +451,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// :cf1f4.onet NOTICE Auth :*** Found your hostname (ajs7.neoplus.adsl.tpnet.pl) -- cached
 	irc_parser(ga, chan_parm, "ircAuth2: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
+	// w przypadku błędu zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -481,7 +464,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// AUTHKEY
 	irc_send(ga, chan_parm, "AUTHKEY", "ircAuth3a: ");
 
-	// w przypadku błędu irc_send() wyświetlił błąd, więc zakończ
+	// w przypadku błędu zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -493,7 +476,7 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// AUTHKEY authKey
 	irc_parser(ga, chan_parm, "ircAuth3b: ");
 
-	// w przypadku błędu komunikat został wyświetlony w parserze, więc zakończ
+	// w przypadku błędu zakończ
 	if(! ga.irc_ok)
 	{
 		return;
@@ -506,8 +489,6 @@ void irc_auth_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	// USER * <uoKey> czat-app.onet.pl :<zuoUsername>
 	// PROTOCTL ONETNAMESX
 	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX", "ircAuth4: ");
-
-	// w przypadku błędu irc_send() wyświetlił błąd, ale to koniec funkcji, która zwraca void, więc nie trzeba sprawdzać ga.irc_ok
 
 	// jeśli na którymś etapie wystąpił błąd, funkcja irc_auth_all() zakończy się z ga.irc_ok = false
 
