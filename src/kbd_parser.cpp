@@ -970,7 +970,7 @@ void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], 
 		if(chan_parm[ga.current] && chan_parm[ga.current]->channel_ok)
 		{
 			// wyślij temat do IRC (można nie podawać tematu, wtedy zostanie on wyczyszczony)
-			irc_send(ga, chan_parm, "TOPIC " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + get_rest_args(kbd_buf, pos_arg));
+			irc_send(ga, chan_parm, "CS SET " + buf_utf2iso(chan_parm[ga.current]->channel) + " TOPIC " + get_rest_args(kbd_buf, pos_arg));
 		}
 
 		else

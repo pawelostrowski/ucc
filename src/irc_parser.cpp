@@ -622,6 +622,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 					raw_notice_258(ga, chan_parm, raw_parm);
 					break;
 
+				case 259:
+					raw_notice_259(ga, chan_parm, raw_parm);
+					break;
+
 				case 260:
 					raw_notice_260();
 					break;
@@ -2068,13 +2072,26 @@ void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 
 /*
-	TOPIC
+	TOPIC (TOPIC #pokój :...)
 	:ucc_test!76995189@87edcc.30c29e.b9c507.d5c6b7 TOPIC #ucc :nowy temat
+	TOPIC (CS SET #pokój TOPIC ...)
+	:cf1f3.onet TOPIC #ucc :Ucieszony Chat Client
 */
 void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
-			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] zmienił(a) temat pokoju " + raw_parm[2]);
+	// gdy ustawiono temat przez: TOPIC #pokój :...
+	// wtedy inaczej zwracany jest nick
+	if(raw_parm[0].find("!") != std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] zmienił(a) temat pokoju " + raw_parm[2]);
+	}
+
+	// w przeciwnym razie temat ustawiony przez: CS SET #pokój TOPIC ...
+	else
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[0] + " zmienił temat pokoju " + raw_parm[2]);
+	}
 
 	// wpisz temat również do bufora tematu kanału, aby wyświetlić go na górnym pasku (reszta jest identyczna jak w obsłudze RAW 332,
 	// trzeba tylko przestawić parametry w raw_parm)
@@ -3958,6 +3975,16 @@ void raw_notice_257()
 void raw_notice_258(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
 	win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[4] + " zmienił(a) ustawienia pokoju " + raw_parm[2] + " (" + raw_parm[5] + ").");
+}
+
+
+/*
+	NOTICE 259 (np. wpisanie 2x tego samego tematu: CS SET #ucc TOPIC abc)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :259 #ucc :nothing changed
+*/
+void raw_notice_259(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	win_buf_add_str(ga, chan_parm, raw_parm[4], xWHITE "* Niczego nie zmieniono w pokoju " + raw_parm[4]);
 }
 
 

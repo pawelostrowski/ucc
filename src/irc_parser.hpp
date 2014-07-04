@@ -229,6 +229,8 @@ void raw_notice_257();
 
 void raw_notice_258(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
+void raw_notice_259(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
 void raw_notice_260();
 
 void raw_notice_401(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
