@@ -686,8 +686,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 					raw_notice_461(ga, chan_parm, raw_parm);
 					break;
 
+				case 463:
+					raw_notice_463(ga, chan_parm, raw_parm);
+					break;
+
+				case 465:
+					raw_notice_465(ga, chan_parm, raw_parm, buffer_irc_raw);
+					break;
+
 				case 468:
-					raw_notice_468(ga, chan_parm, raw_parm, buffer_irc_raw);
+					raw_notice_468(ga, chan_parm, raw_parm);
 					break;
 
 				// nieznany lub niezaimplementowany jeszcze RAW NOTICE
@@ -2079,7 +2087,7 @@ void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	// gdy ustawiono temat przez: TOPIC #pokój :...
+	// gdy ustawiono temat przez (tak robi program): TOPIC #pokój :...
 	// wtedy inaczej zwracany jest nick
 	if(raw_parm[0].find("!") != std::string::npos)
 	{
@@ -4048,12 +4056,12 @@ void raw_notice_404(struct global_args &ga, struct channel_irc *chan_parm[], std
 void raw_notice_406(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* " + raw_parm[4] + " - nieznane polecenie dla " + get_value_from_buf(buffer_irc_raw, ":", "!"));
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": " + raw_parm[4] + " - nieznane polecenie.");
 }
 
 
 /*
-	NOTICE 407 (CS SET)
+	NOTICE 407 (NS/CS/RS SET)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :407 SET :not enough parameters
 */
 void raw_notice_407(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
@@ -4160,10 +4168,40 @@ void raw_notice_461(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
+	NOTICE 463
+*/
+void raw_notice_463(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
+{
+	// CS SET #pokój TOPIC ... - w pokoju bez uprawnień
+	// :ChanServ!service@service.onet NOTICE ucc_test :463 #zua_zuy_zuo TOPIC :permission denied, insufficient privileges
+	if(raw_parm[5] == "TOPIC")
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[4], xRED "* Nie posiadasz uprawnień do zmiany tematu w pokoju " + raw_parm[4]);
+	}
+
+	// nieznany lub niezaimplementowany powód zmiany ustawień (należy dodać jeszcze te popularne)
+	else
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[4], xRED "* " + raw_parm[5] + ": nie posiadasz uprawnień do zmiany tego ustawienia.");
+	}
+}
+
+
+/*
+	NOTICE 465 (CS SET #pokój nieznane_ustawienie)
+	:ChanServ!service@service.onet NOTICE ucc_test :465 ABC :no such setting
+*/
+void raw_notice_465(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + get_value_from_buf(buffer_irc_raw, ":", "!") + ": " + raw_parm[4] + " - nie ma takiego ustawienia.");
+}
+
+/*
 	NOTICE 468 (CS BAN #Learning_English ADD anonymous@IP)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :468 #Learning_English :permission denied, insufficient privileges
 */
-void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
+void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			xRED "* Dostęp zabroniony, nie posiadasz wystarczających uprawnień w pokoju " + raw_parm[4]);

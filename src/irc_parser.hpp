@@ -261,6 +261,10 @@ void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 void raw_notice_461(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
-void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
+void raw_notice_463(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
+
+void raw_notice_465(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw);
+
+void raw_notice_468(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm);
 
 #endif		// IRC_PARSER_HPP
