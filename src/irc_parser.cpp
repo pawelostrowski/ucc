@@ -3471,6 +3471,49 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 					"* " xMAGENTA + raw_parm[4] + xNORMAL " data urodzenia: " + ga.card_birthdate);
+
+			// oblicz wiek (wersja uproszczona zakłada, że data zapisana jest za pomocą 10 znaków łącznie z separatorami)
+			if(ga.card_birthdate.size() == 10)
+			{
+				std::string y_bd_str, m_bd_str, d_bd_str;
+				int y_bd, m_bd, d_bd;
+
+				y_bd_str.insert(0, ga.card_birthdate, 0, 4);
+				y_bd = std::stoi("0" + y_bd_str);
+
+				m_bd_str.insert(0, ga.card_birthdate, 5, 2);
+				m_bd = std::stoi("0" + m_bd_str);
+
+				d_bd_str.insert(0, ga.card_birthdate, 8, 2);
+				d_bd = std::stoi("0" + d_bd_str);
+
+				// żadna z liczb nie może być zerem
+				if(y_bd != 0 && m_bd != 0 && d_bd != 0)
+				{
+					// pobierz aktualną datę
+					int y, m, d, age;
+
+					time_t time_g;
+					struct tm *time_l;
+
+					time(&time_g);
+					time_l = localtime(&time_g);
+
+					y = time_l->tm_year + 1900;	// + 1900, bo rok jest liczony od 1900
+					m = time_l->tm_mon + 1;		// + 1, bo miesiące w strukturze są od zera
+					d = time_l->tm_mday;
+
+					age = y - y_bd;
+
+					if(m <= m_bd && d < d_bd)
+					{
+						--age;		// wykryj urodziny, jeśli ich jeszcze nie było w danym roku, trzeba odjąć rok
+					}
+
+					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+							"* " xMAGENTA + raw_parm[4] + xNORMAL " wiek: " + std::to_string(age));
+				}
+			}
 		}
 
 		if(ga.card_sex.size() > 0)
@@ -3716,13 +3759,12 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 		pos_chan_start = ga.my_favourites.find("#", pos_chan_start + chan.size());
 	}
 
-
 	// pomiń te pokoje, które już były (po wylogowaniu i ponownym zalogowaniu się, nie dotyczy pierwszego logowania po uruchomieniu programu)
 	for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
 	{
 		was_chan = false;
 
-		for(int i = 1; i < CHAN_MAX - 1; ++i)
+		for(int i = 1; i < CHAN_MAX - 1; ++i)	// pomiń "Status" i "Debug", bo to nie są "normalne" pokoje czata
 		{
 			if(chan_parm[i] && chan_parm[i]->channel == it->second)
 			{
