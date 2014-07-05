@@ -8,8 +8,8 @@
 #define UCC_NAME "Ucieszony Chat Client"
 #define UCC_VER "v1.0 alpha2"
 
-#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.log"
-#define FILE_DBG_IRC "/tmp/ucc_dbg_irc.log"
+#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.txt"
+#define FILE_DBG_IRC "/tmp/ucc_dbg_irc.txt"
 
 // szerokość listy nicków
 #define NICKLIST_WIDTH 36

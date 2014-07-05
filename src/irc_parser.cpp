@@ -2088,28 +2088,28 @@ void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 
 /*
-	TOPIC (TOPIC #pokój :...)
-	:ucc_test!76995189@87edcc.30c29e.b9c507.d5c6b7 TOPIC #ucc :nowy temat
 	TOPIC (CS SET #pokój TOPIC ...)
 	:cf1f3.onet TOPIC #ucc :Ucieszony Chat Client
+	TOPIC (TOPIC #pokój :...)
+	:ucc_test!76995189@87edcc.30c29e.b9c507.d5c6b7 TOPIC #ucc :nowy temat
 */
 void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
-	// gdy ustawiono temat przez (tak robi program): TOPIC #pokój :...
+	// gdy ustawiono temat przez (tak robi program): CS SET #pokój TOPIC ...
 	// wtedy inaczej zwracany jest nick
-	if(raw_parm[0].find("!") != std::string::npos)
+	if(raw_parm[0].find("!") == std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[0] + " zmienił temat pokoju " + raw_parm[2]);
+	}
+
+	// w przeciwnym razie temat ustawiony przez: TOPIC #pokój :...
+	else
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
 				+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] zmienił(a) temat pokoju " + raw_parm[2]);
 	}
 
-	// w przeciwnym razie temat ustawiony przez: CS SET #pokój TOPIC ...
-	else
-	{
-		win_buf_add_str(ga, chan_parm, raw_parm[2], xMAGENTA "* " + raw_parm[0] + " zmienił temat pokoju " + raw_parm[2]);
-	}
-
-	// wpisz temat również do bufora tematu kanału, aby wyświetlić go na górnym pasku (reszta jest identyczna jak w obsłudze RAW 332,
+	// wyświetl temat oraz wpisz go również do bufora tematu kanału, aby wyświetlić go na górnym pasku (reszta jest identyczna jak w obsłudze RAW 332,
 	// trzeba tylko przestawić parametry w raw_parm)
 	raw_parm[3] = raw_parm[2];	// przesuń nazwę pokoju, reszta parametrów w raw_parm dla raw_332() nie jest istotna
 	raw_332(ga, chan_parm, raw_parm, buffer_irc_raw);
@@ -2456,12 +2456,12 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	if(topic_tmp.size() > 0)
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " + raw_parm[3] + " - " + topic_tmp);
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " xGREEN + raw_parm[3] + xWHITE ": " xNORMAL + topic_tmp);
 	}
 
 	else
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " + raw_parm[3] + " nie został ustawiony (jest pusty).");
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " xGREEN + raw_parm[3] + xWHITE " nie został ustawiony (jest pusty).");
 	}
 
 	// teraz znajdź pokój, do którego należy temat, wpisz go do jego bufora "topic" i wyświetl na górnym pasku
@@ -2508,13 +2508,15 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 /*
 	333 (kto i kiedy ustawił temat)
+	:cf1f4.onet 333 ucc_test #ucc ucc_test!76995189 1404519605
 	:cf1f4.onet 333 ucc_test #ucc ucc_test!76995189@87edcc.30c29e.b9c507.d5c6b7 1400889719
 */
 void raw_333(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	win_buf_add_str(ga, chan_parm, raw_parm[3],
-			xWHITE "* Temat pokoju " + raw_parm[3] + " ustawiony przez " + get_value_from_buf(buffer_irc_raw, raw_parm[3] + " ", "!")
-			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] (" + time_unixtimestamp2local_full(raw_parm[5]) + ").");
+			xWHITE "* Temat pokoju " xGREEN + raw_parm[3] + xWHITE " ustawiony przez " xCYAN
+			+ get_value_from_buf(buffer_irc_raw, raw_parm[3] + " ", "!")
+			+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "]" xWHITE " (" + time_unixtimestamp2local_full(raw_parm[5]) + ").");
 }
 
 
@@ -2710,7 +2712,7 @@ void raw_391(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	time_serv += "\n";		// + "\n", aby zwróciło ostatni znak w buforze
 	get_raw_parm(time_serv, time_parm);
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xYELLOW "* Data i czas na serwerze " + raw_parm[3] + " - "
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Data i czas na serwerze " + raw_parm[3] + " - "
 			+ dayen2daypl(time_parm[0]) + ", " + time_parm[2] + " "	+ monthen2monthpl(time_parm[1]) + " " + time_parm[4] + ", " + time_parm[3]);
 }
 
@@ -2999,7 +3001,7 @@ void raw_484(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
-	530 (JOIN #sc)
+	530 (JOIN #sc - nieistniejący pokój)
 	:cf1f3.onet 530 ucc_test #sc :Only IRC operators may create new channels
 */
 void raw_530(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm)
