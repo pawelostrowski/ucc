@@ -2452,11 +2452,11 @@ void raw_319(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::string *raw_parm, std::string &buffer_irc_raw)
 {
 	// najpierw wyświetl temat (tylko, gdy jest ustawiony lub informację o braku tematu)
-	std::string topic_tmp = get_value_from_buf(buffer_irc_raw, " :", "\n");
+	std::string topic_tmp1 = get_value_from_buf(buffer_irc_raw, " :", "\n");
 
-	if(topic_tmp.size() > 0)
+	if(topic_tmp1.size() > 0)
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " xGREEN + raw_parm[3] + xWHITE ": " xNORMAL + topic_tmp);
+		win_buf_add_str(ga, chan_parm, raw_parm[3], xWHITE "* Temat pokoju " xGREEN + raw_parm[3] + xWHITE ": " xNORMAL + topic_tmp1);
 	}
 
 	else
@@ -2472,37 +2472,32 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 		if(chan_parm[i] && chan_parm[i]->channel == raw_parm[3])	// znajdź pokój, do którego należy temat
 		{
 			topic_chan = i;
+			break;
 		}
 	}
 
-	// jeśli nie znaleziono pokoju, zakończ
-	if(topic_chan == -1)
+	// jeśli znaleziono pokój, wpisz temat do jego bufora
+	if(topic_chan != -1)
 	{
-		return;
-	}
+		std::string topic_tmp2;
 
-	std::string topic_tmp1 = get_value_from_buf(buffer_irc_raw, " :", "\n");
-	std::string topic_tmp2;
-
-	// usuń z tematu formatowanie fontu i kolorów (na pasku nie jest obsługiwane)
-	for(int i = 0; i < static_cast<int>(topic_tmp1.size()); ++i)
-	{
-		if(topic_tmp1[i] == dCOLOR)
+		// usuń z tematu formatowanie fontu i kolorów (na pasku nie jest obsługiwane)
+		for(int i = 0; i < static_cast<int>(topic_tmp1.size()); ++i)
 		{
-			++i;
-			continue;
+			if(topic_tmp1[i] == dCOLOR)
+			{
+				++i;
+			}
+
+			else if(topic_tmp1[i] != dBOLD_ON && topic_tmp1[i] != dBOLD_OFF && topic_tmp1[i] != dREVERSE_ON && topic_tmp1[i] != dREVERSE_OFF
+				&& topic_tmp1[i] != dUNDERLINE_ON && topic_tmp1[i] != dUNDERLINE_OFF && topic_tmp1[i] != dNORMAL)
+			{
+				topic_tmp2 += topic_tmp1[i];
+			}
 		}
 
-		else if(topic_tmp1[i] == dBOLD_ON || topic_tmp1[i] == dBOLD_OFF || topic_tmp1[i] == dREVERSE_ON || topic_tmp1[i] == dREVERSE_OFF
-			|| topic_tmp1[i] == dUNDERLINE_ON || topic_tmp1[i] == dUNDERLINE_OFF || topic_tmp1[i] == dNORMAL)
-		{
-                        continue;
-		}
-
-		topic_tmp2 += topic_tmp1[i];
+		chan_parm[topic_chan]->topic = topic_tmp2;
 	}
-
-	chan_parm[topic_chan]->topic = topic_tmp2;
 }
 
 
