@@ -524,3 +524,26 @@ std::string monthen2monthpl(std::string &month_en)
 		return month_en;
 	}
 }
+
+
+std::string remove_form(std::string &buffer_in)
+{
+	std::string buffer_out;
+
+	// usuń formatowanie fontu i kolorów
+	for(int i = 0; i < static_cast<int>(buffer_in.size()); ++i)
+	{
+		if(buffer_in[i] == dCOLOR)
+		{
+			++i;
+		}
+
+		else if(buffer_in[i] != dBOLD_ON && buffer_in[i] != dBOLD_OFF && buffer_in[i] != dREVERSE_ON && buffer_in[i] != dREVERSE_OFF
+			&& buffer_in[i] != dUNDERLINE_ON && buffer_in[i] != dUNDERLINE_OFF && buffer_in[i] != dNORMAL)
+		{
+			buffer_out += buffer_in[i];
+		}
+	}
+
+	return buffer_out;
+}

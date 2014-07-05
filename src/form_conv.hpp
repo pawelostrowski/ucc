@@ -13,4 +13,6 @@ std::string dayen2daypl(std::string &day_en);
 
 std::string monthen2monthpl(std::string &month_en);
 
+std::string remove_form(std::string &buffer_in);
+
 #endif		// FORM_CONV_HPP
