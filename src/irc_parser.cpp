@@ -16,22 +16,20 @@ std::string get_value_from_buf(std::string buffer_str, std::string expr_before, 
 	Znajdź i pobierz wartość pomiędzy wyrażeniem początkowym i końcowym.
 */
 
-	size_t pos_expr_before, pos_expr_after;		// pozycja początkowa i końcowa szukanych wyrażeń
 	std::string g_value_from_buf;
 
 	// znajdź pozycję początku szukanego wyrażenia
-	pos_expr_before = buffer_str.find(expr_before);
+	size_t pos_expr_before = buffer_str.find(expr_before);
 
 	if(pos_expr_before != std::string::npos)
 	{
 		// znajdź pozycję końca szukanego wyrażenia, zaczynając od znalezionego początku + jego jego długości
-		pos_expr_after = buffer_str.find(expr_after, pos_expr_before + expr_before.size());
+		size_t pos_expr_after = buffer_str.find(expr_after, pos_expr_before + expr_before.size());
 
 		if(pos_expr_after != std::string::npos)
 		{
 			// wstaw szukaną wartość
-			g_value_from_buf.insert(0, buffer_str, pos_expr_before + expr_before.size(),
-						pos_expr_after - pos_expr_before - expr_before.size());
+			g_value_from_buf.insert(0, buffer_str, pos_expr_before + expr_before.size(), pos_expr_after - pos_expr_before - expr_before.size());
 		}
 	}
 
