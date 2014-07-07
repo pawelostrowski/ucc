@@ -26,7 +26,7 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, int act_type = 1,
 			bool add_time = true);
 
-void win_buf_all_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg);
+void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg);
 
 void nicklist_on(struct global_args &ga);
 

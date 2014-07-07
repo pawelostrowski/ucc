@@ -637,7 +637,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 }
 
 
-void win_buf_all_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg)
+void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg)
 {
 /*
 	Wyświetl komunikat we wszystkich otwartych pokojach, z wyjątkiem "Debug".

@@ -854,8 +854,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 							ga.socketfd_irc = 0;
 						}
 					}
-
-				}	// if(irc_ready)
+				}
 
 				// po obsłudze bufora wyczyść go
 				kbd_buf.clear();
@@ -893,8 +892,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				++kbd_buf_max;
 			}
 */
-
-		}	// if(FD_ISSET(0, &readfds_tmp))
+		}
 
 		// gniazdo (socket), sprawdzaj tylko wtedy, gdy socket jest aktywny
 		if(ga.socketfd_irc > 0 && FD_ISSET(ga.socketfd_irc, &readfds_tmp))
@@ -920,7 +918,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					if(chan_parm[i])
 					{
 						chan_parm[i]->nick_parm.clear();
-
 						win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xRED "# Rozłączono.");
 					}
 				}
@@ -928,8 +925,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				ga.nicklist_refresh = true;
 			}
 		}
-
-	}	// while(! ga.ucc_quit)
+	}
 
 /*
 	Kończenie działania programu.

@@ -423,7 +423,7 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_checkcode(ga, chan_parm, captcha))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -431,7 +431,7 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_getuokey(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -502,7 +502,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		if(! http_auth_init(ga, chan_parm))
 		{
 			// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-			win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+			win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 			return;
 		}
@@ -514,7 +514,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_getcaptcha(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -530,7 +530,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_getsk(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -538,7 +538,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_mlogin(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -546,7 +546,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_getuokey(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
@@ -556,7 +556,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			if(! http_auth_useroverride(ga, chan_parm))
 			{
 				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+				win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
 
 				return;
 			}
