@@ -40,11 +40,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
+
 	long hist_end = 0;
 	bool hist_mod = false;
 	bool hist_up = false;
 	bool hist_down = false;
 	std::string hist_buf, hist_ignore;
+
+	int tab_index, tab_pos;
+	std::string tab_buf;
+
 	int top_excess;
 	bool chan_act_ok = false;
 	short act_color;
@@ -634,7 +639,24 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
+				win_buf_add_str(ga, chan_parm, "Status", "tab_buf: " + tab_buf);
 			}
+
+			// Tab
+			else if(key_code == '\t')
+			{
+				//
+			}
+
+/*
+			// kod tabulatora dodaj do bufora - dodać wklejanie tylko ze schowka
+			else if(key_code == '\t')
+			{
+				kbd_buf.insert(kbd_buf_pos, "\t");
+				++kbd_buf_pos;
+				++kbd_buf_max;
+			}
+*/
 
 			// Alt Left + (...)
 			else if(key_code == 0x1b)
@@ -882,16 +904,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 				hist_mod = true;
 			}
-
-/*
-			// kod tabulatora dodaj do bufora
-			else if(key_code == '\t')
-			{
-				kbd_buf.insert(kbd_buf_pos, "\t");
-				++kbd_buf_pos;
-				++kbd_buf_max;
-			}
-*/
 		}
 
 		// gniazdo (socket), sprawdzaj tylko wtedy, gdy socket jest aktywny
