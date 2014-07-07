@@ -422,11 +422,17 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 			// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
 			if(! http_auth_checkcode(ga, chan_parm, captcha))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 
 			if(! http_auth_getuokey(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 		}
@@ -482,7 +488,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		{
 			if(chan_parm[i])
 			{
-				win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xGREEN "# Łączę z czatem...");
+				win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xGREEN "# Łączenie z czatem...");
 			}
 		}
 
@@ -495,6 +501,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		// gdy wpisano nick, rozpocznij łączenie
 		if(! http_auth_init(ga, chan_parm))
 		{
+			// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+			win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 			return;
 		}
 
@@ -504,6 +513,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			// pobierz captcha
 			if(! http_auth_getcaptcha(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 
@@ -517,16 +529,25 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		{
 			if(! http_auth_getsk(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 
 			if(! http_auth_mlogin(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 
 			if(! http_auth_getuokey(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 
@@ -534,6 +555,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
 			if(! http_auth_useroverride(ga, chan_parm))
 			{
+				// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+				win_buf_all_chan(ga, chan_parm, xBOLD_ON xRED "# Rozłączono.");
+
 				return;
 			}
 */

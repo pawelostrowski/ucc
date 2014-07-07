@@ -7,6 +7,7 @@
 #include "network.hpp"
 #include "irc_parser.hpp"
 #include "window_utils.hpp"
+#include "enc_str.hpp"
 #include "ucc_global.hpp"
 
 
@@ -141,8 +142,9 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	if(cap_ptr == NULL)
 	{
-		free(buffer_recv);
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
+
+		free(buffer_recv);
 		return false;
 	}
 
@@ -160,9 +162,10 @@ bool http_auth_getcaptcha(struct global_args &ga, struct channel_irc *chan_parm[
 
 	else
 	{
-		free(buffer_recv);
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# Nie udało się uzyskać dostępu do " CAPTCHA_FILE " (sprawdź uprawnienia do zapisu).");
+
+		free(buffer_recv);
 		return false;
 	}
 
@@ -229,6 +232,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	if(err_code.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthCheckCode: Serwer nie zwrócił err_code.");
+
 		return false;
 	}
 
@@ -237,6 +241,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
+
 		return false;
 	}
 
@@ -245,6 +250,7 @@ bool http_auth_checkcode(struct global_args &ga, struct channel_irc *chan_parm[]
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 				xRED "# httpAuthCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
+
 		return false;
 	}
 
@@ -316,8 +322,8 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	{
 		nick_i = "1";	// tymczasowy
 
-		// jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje,
-		//  mimo iż potem taki nick zwraca po zalogowaniu się
+		// jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po
+		// zalogowaniu się
 		if(my_nick_c.size() > 0 && my_nick_c[0] == '~')
 		{
 			my_nick_c.erase(0, 1);
@@ -344,34 +350,30 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(err_code.size() == 0)
 	{
-		free(buffer_recv);
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił err_code.");
+
+		free(buffer_recv);
 		return false;
 	}
 
 	// sprawdź, czy serwer zwrócił wartość TRUE (brak TRUE może wystąpić np. przy błędnym nicku)
 	if(err_code != "TRUE")
 	{
-		free(buffer_recv);
+		std::string err_text = get_value_from_buf(std::string(buffer_recv), "err_text=\"", "\"");
 
-		// -2 oznacza nieprawidłowy nick (stały) lub hasło
-		if(err_code == "-2")
+		if(err_text.size() > 0)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-2): nieprawidłowy nick lub hasło.");
-		}
-
-		// -4 oznacza nieprawidłowe znaki w nicku tymczasowym (lub błędne parametry funkcji, ale zakłada się, że są prawidłowe)
-		else if(err_code == "-4")
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd serwera (-4): nick zawiera niedozwolone znaki.");
+			err_text = buf_iso2utf(err_text);
 		}
 
 		else
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# httpAuthGetUoKey: Nieznany błąd serwera, kod błędu: " + err_code);
+			err_text = "<serwer nie zwrócił komunikatu błędu>";
 		}
 
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Błąd serwera (" + err_code + "): " + err_text);
+
+		free(buffer_recv);
 		return false;
 	}
 
@@ -380,8 +382,9 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 
 	if(ga.uokey.size() == 0)
 	{
-		free(buffer_recv);
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił uoKey.");
+
+		free(buffer_recv);
 		return false;
 	}
 
@@ -393,6 +396,7 @@ bool http_auth_getuokey(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.zuousername.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# httpAuthGetUoKey: Serwer nie zwrócił zuoUsername.");
+
 		return false;
 	}
 

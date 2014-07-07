@@ -738,13 +738,15 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 {
 	ga.irc_ok = false;
 
-	// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug") i wyczyść listy nicków otwartych pokoi
+	// wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
+	win_buf_all_chan(ga, chan_parm, xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
+
+	// wyczyść listy nicków otwartych pokoi
 	for(int i = 0; i < CHAN_MAX - 1; ++i)
 	{
 		if(chan_parm[i])
 		{
 			chan_parm[i]->nick_parm.clear();
-			win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xYELLOW "* " + get_value_from_buf(buffer_irc_raw, " :", "\n"));
 		}
 	}
 }

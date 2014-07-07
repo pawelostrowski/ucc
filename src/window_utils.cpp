@@ -637,6 +637,22 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 }
 
 
+void win_buf_all_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg)
+{
+/*
+	Wyświetl komunikat we wszystkich otwartych pokojach, z wyjątkiem "Debug".
+*/
+
+	for(int i = 0; i < CHAN_MAX - 1; ++i)
+	{
+		if(chan_parm[i])
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, msg);
+		}
+	}
+}
+
+
 void nicklist_on(struct global_args &ga)
 {
 	int term_y, term_x;
