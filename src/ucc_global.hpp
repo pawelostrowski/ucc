@@ -123,7 +123,6 @@ struct global_args
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)
 struct nick_flags
 {
-	bool busy;
 	bool owner;
 	bool op;
 	bool halfop;
@@ -131,6 +130,7 @@ struct nick_flags
 	bool voice;
 	bool public_webcam;
 	bool private_webcam;
+	bool busy;
 };
 
 // struktura nicka na czacie

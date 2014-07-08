@@ -680,44 +680,54 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 	if(it != chan_parm[ga.current]->nick_parm.end())
 	{
-		if(it->second.flags.busy)
+		if(! it->second.flags.busy)
 		{
-			nick_tmp = xWHITE;
+			nick_tmp = xBOLD_ON;
 		}
 
 		if(it->second.flags.owner)
 		{
-			nick_tmp += "`";
+			nick_tmp += xMAGENTA "`";
 		}
 
 		else if(it->second.flags.op)	// jeśli był ` to nie pokazuj @
 		{
-			nick_tmp += "@";
+			nick_tmp += xMAGENTA "@";
 		}
 
 		if(it->second.flags.halfop)
 		{
-			nick_tmp += "%";
+			nick_tmp += xMAGENTA "%";
 		}
 
 		if(it->second.flags.moderator)
 		{
-			nick_tmp += "!";
+			nick_tmp += xRED "!";
 		}
 
 		if(it->second.flags.voice)
 		{
-			nick_tmp += "+";
+			nick_tmp += xBLUE "+";
 		}
 
 		if(it->second.flags.public_webcam)
 		{
-			nick_tmp += "=";
+			nick_tmp += xYELLOW "=";
 		}
 
 		if(it->second.flags.private_webcam)
 		{
-			nick_tmp += "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
+			nick_tmp += xYELLOW "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
+		}
+
+		if(it->second.flags.busy)
+		{
+			nick_tmp += xWHITE;
+		}
+
+		else
+		{
+			nick_tmp += xNORMAL;
 		}
 	}
 
