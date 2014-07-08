@@ -1161,7 +1161,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* " + raw_parm[i - x + 3] + " nie jest już właścicielem pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie jest już właścicielem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1224,7 +1224,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* " + raw_parm[i - x + 3] + " nie jest już superoperatorem pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie jest już superoperatorem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1287,7 +1287,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* " + raw_parm[i - x + 3] + " nie jest już operatorem pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie jest już operatorem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1320,7 +1320,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm[3][s] == '+')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xBLUE "* " + raw_parm[i - x + 3] + " jest teraz gościem pokoju " + raw_parm[2]
+							xCYAN "* " + raw_parm[i - x + 3] + " jest teraz gościem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1350,7 +1350,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xBLUE "* " + raw_parm[i - x + 3] + " nie jest już gościem pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie jest już gościem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1413,7 +1413,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* " + raw_parm[i - x + 3] + " nie jest już moderatorem pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie jest już moderatorem pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 
 					// zaktualizuj flagę
@@ -1470,7 +1470,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* " + raw_parm[i - x + 3] + " nie posiada już wyjątku od bana w pokoju " + raw_parm[2]
+							xWHITE "* " + raw_parm[i - x + 3] + " nie posiada już wyjątku od bana w pokoju " + raw_parm[2]
 							+ " (ustawił " + nick_mode + ").");
 				}
 			}
@@ -1480,7 +1480,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm[3][s] == '+')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xWHITE "* " + raw_parm[i - x + 3] + " jest teraz na liście zaproszonych w pokoju " + raw_parm[2]
+							xCYAN "* " + raw_parm[i - x + 3] + " jest teraz na liście zaproszonych w pokoju " + raw_parm[2]
 							+ " (ustawił" + a + " " + nick_mode + ").");
 				}
 
@@ -1503,7 +1503,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* Pokój " + raw_parm[2] + " nie jest już moderowany (ustawił" + a + " " + nick_mode + ").");
+							xWHITE "* Pokój " + raw_parm[2] + " nie jest już moderowany (ustawił" + a + " " + nick_mode + ").");
 				}
 			}
 
@@ -1518,7 +1518,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* Pokój " + raw_parm[2] + " nie jest już ukryty (ustawił " + nick_mode + ").");
+							xWHITE "* Pokój " + raw_parm[2] + " nie jest już ukryty (ustawił " + nick_mode + ").");
 				}
 			}
 
@@ -1533,7 +1533,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* Pokój " + raw_parm[2] + " nie jest już prywatny (ustawił " + nick_mode + ").");
+							xWHITE "* Pokój " + raw_parm[2] + " nie jest już prywatny (ustawił " + nick_mode + ").");
 				}
 			}
 
@@ -1548,7 +1548,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm[2],
-							xMAGENTA "* Pokój " + raw_parm[2] + " nie jest już sekretny (ustawił " + nick_mode + ").");
+							xWHITE "* Pokój " + raw_parm[2] + " nie jest już sekretny (ustawił " + nick_mode + ").");
 				}
 			}
 
@@ -1587,7 +1587,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_mode_key) != chan_parm[j]->nick_parm.end())
 						{
 							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
-									xMAGENTA "* " + raw_parm[2] + " nie jest już administratorem czata (ustawił(a) "
+									xWHITE "* " + raw_parm[2] + " nie jest już administratorem czata (ustawił(a) "
 									+ nick_mode + ").");
 						}
 					}
@@ -1768,7 +1768,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm[3][s] == '-')
 				{
 					win_buf_add_str(ga, chan_parm, "Status",
-							xGREEN "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
+							xWHITE "* " + get_value_from_buf(buffer_irc_raw, ":", "!")
 							+ " [" + get_value_from_buf(buffer_irc_raw, "!", " ") + "] - nie masz już szyfrowanego IP.");
 				}
 			}
@@ -1778,14 +1778,16 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			{
 				if(raw_parm[3][s] == '+')
 				{
-					win_buf_add_str(ga, chan_parm, "Status", xGREEN "* Jesteś teraz zarejestrowanym użytkownikiem.");
+					win_buf_add_str(ga, chan_parm, "Status", xGREEN "* Jesteś teraz zarejestrowanym użytkownikiem (ustawił "
+							+ get_value_from_buf(buffer_irc_raw, ":", "!") + ").");
 
 					my_flag_r = true;
 				}
 
 				else if(raw_parm[3][s] == '-')
 				{
-					win_buf_add_str(ga, chan_parm, "Status", xGREEN "* Nie jesteś już zarejestrowanym użytkownikiem.");
+					win_buf_add_str(ga, chan_parm, "Status", xWHITE "* Nie jesteś już zarejestrowanym użytkownikiem (ustawił "
+							+ get_value_from_buf(buffer_irc_raw, ":", "!") + ").");
 				}
 			}
 
