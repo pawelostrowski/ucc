@@ -47,8 +47,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	bool hist_down = false;
 	std::string hist_buf, hist_ignore;
 
-	int tab_index, tab_pos;
-	std::string tab_buf;
+//	int tab_index, tab_pos;
+//	std::string tab_buf;
 
 	int top_excess;
 	bool chan_act_ok = false;
@@ -639,7 +639,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
-				win_buf_add_str(ga, chan_parm, "Status", "tab_buf: " + tab_buf);
+//				win_buf_add_str(ga, chan_parm, "Status", "tab_buf: " + tab_buf);
 			}
 
 			// Tab
@@ -857,7 +857,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					std::string msg;
 
 					// zaloguj się do czata
-					irc_auth_all(ga, chan_parm);
+					auth_irc_all(ga, chan_parm);
 
 					// od tej pory, o ile poprawnie połączono się z IRC, można dodać socketfd_irc do zestawu select()
 					if(ga.irc_ok)
@@ -895,7 +895,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
-			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
+			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < kbd_buf_MAX_SIZE)
 			{
 				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2
 				kbd_buf.insert(kbd_buf_pos, key_utf2iso(key_code));

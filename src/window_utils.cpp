@@ -553,7 +553,7 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string buffer_str, int act_type, bool add_time)
+void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string in_buf, int act_type, bool add_time)
 {
 /*
 	Dodaj string do bufora danego kanału oraz wyświetl jego zawartość (jeśli to aktywny pokój) wraz z dodaniem przed wyrażeniem aktualnego czasu
@@ -589,7 +589,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	{
 		// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
 		// trzeba go wstawić na początku bufora pomocniczego (+ 1 załatwia sprawę, w kolejnych obiegach + 1 wstawia czas za kodem \n)
-		size_t buffer_str_n_pos = -1;
+		size_t pos_n_in_buf = -1;
 
 		// pobierz rozmiar zajmowany przez wyświetlenie czasu, potrzebne przy szukaniu kodu \n
 		int time_len = get_time().size();
@@ -597,18 +597,18 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		// poniższa pętla wstawia czas za każdym kodem \n (poza początkiem, gdzie go nie ma i wstawia na początku bufora pomocniczego)
 		do
 		{
-			buffer_str.insert(buffer_str_n_pos + 1, get_time());	// wstaw czas na początku każdego wiersza
+			in_buf.insert(pos_n_in_buf + 1, get_time());	// wstaw czas na początku każdego wiersza
 
-			buffer_str_n_pos = buffer_str.find("\n", buffer_str_n_pos + time_len + 1);	// kolejny raz szukaj za czasem i kodem \n
+			pos_n_in_buf = in_buf.find("\n", pos_n_in_buf + time_len + 1);	// kolejny raz szukaj za czasem i kodem \n
 
-		} while(buffer_str_n_pos != std::string::npos);
+		} while(pos_n_in_buf != std::string::npos);
 	}
 
 	// ze względu na przyjęty sposób trzymania danych w buforze, na końcu bufora głównego danego kanału nie ma kodu \n, więc aby przejść do nowego
 	// wiersza, należy przed dopisaniem bufora pomocniczego dodać kod \n
-	if(buffer_str.size() > 0 && buffer_str[0] != '\n')	// na wszelki wypadek sprawdź, czy na początku nie ma już kodu \n
+	if(in_buf.size() > 0 && in_buf[0] != '\n')	// na wszelki wypadek sprawdź, czy na początku nie ma już kodu \n
 	{
-		chan_parm[which_chan]->win_buf += "\n" + buffer_str;
+		chan_parm[which_chan]->win_buf += "\n" + in_buf;
 	}
 
 	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy)
@@ -621,19 +621,19 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	wmove(ga.win_chat, ga.wcur_y, ga.wcur_x);
 
 	// jeśli kursor jest na początku okna "wirtualnego", i jest tam kod \n, to go usuń, aby nie tworzyć pustego wiersza
-	if(ga.wcur_y == 0 && ga.wcur_x == 0 && buffer_str.size() > 0 && buffer_str[0] == '\n')
+	if(ga.wcur_y == 0 && ga.wcur_x == 0 && in_buf.size() > 0 && in_buf[0] == '\n')
 	{
-		buffer_str.erase(0, 1);
+		in_buf.erase(0, 1);
 	}
 
 	// jeśli kursor nie jest na początku okna "wirtualnego", dodaj kod \n, aby przejść do nowego wiersza
 	else if(ga.wcur_y != 0 || ga.wcur_x != 0)
 	{
-		buffer_str.insert(0, "\n");
+		in_buf.insert(0, "\n");
 	}
 
 	// wyświetl otrzymaną część bufora
-	win_buf_common(ga, buffer_str, 0);
+	win_buf_common(ga, in_buf, 0);
 }
 
 
@@ -687,17 +687,17 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.owner)
 		{
-			nick_tmp += xMAGENTA "`";
+			nick_tmp += "`";
 		}
 
 		else if(it->second.flags.op)	// jeśli był ` to nie pokazuj @
 		{
-			nick_tmp += xMAGENTA "@";
+			nick_tmp += "@";
 		}
 
 		if(it->second.flags.halfop)
 		{
-			nick_tmp += xMAGENTA "%";
+			nick_tmp += "%";
 		}
 
 		if(it->second.flags.moderator)
@@ -712,12 +712,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.public_webcam)
 		{
-			nick_tmp += xYELLOW "=";
+			nick_tmp += xYELLOW_BLACK "=";
 		}
 
 		if(it->second.flags.private_webcam)
 		{
-			nick_tmp += xYELLOW "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
+			nick_tmp += xYELLOW_BLACK "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
 		}
 
 		if(it->second.flags.busy)

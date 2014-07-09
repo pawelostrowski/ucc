@@ -6,7 +6,7 @@
 #include "ucc_global.hpp"
 
 
-void dbg_http_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, short port, std::string &stock,
+void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, short port, std::string &stock,
 			std::string &msg_dbg_http)
 {
 	if(ga.f_dbg_http.good())
@@ -106,7 +106,7 @@ void dbg_http_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 }
 
 
-void dbg_irc_sent_to_file(struct global_args &ga, std::string dbg_sent)
+void irc_sent_dbg_to_file(struct global_args &ga, std::string dbg_sent)
 {
 	if(ga.f_dbg_irc.good())
 	{
@@ -134,7 +134,7 @@ void dbg_irc_sent_to_file(struct global_args &ga, std::string dbg_sent)
 }
 
 
-void dbg_irc_recv_to_file(struct global_args &ga, std::string &dbg_recv)
+void irc_recv_dbg_to_file(struct global_args &ga, std::string &dbg_recv)
 {
 	if(ga.f_dbg_irc.good())
 	{
