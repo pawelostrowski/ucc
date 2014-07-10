@@ -3,7 +3,7 @@
 
 int get_command(std::string &kbd_buf, std::string &command, std::string &command_org, size_t &pos_arg_start);
 
-std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2upper);
+std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2upper = false);
 
 std::string get_rest_args(std::string &kbd_buf, size_t pos_arg_start);
 

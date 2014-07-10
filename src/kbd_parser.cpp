@@ -102,7 +102,7 @@ std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2uppe
 	// wstaw szukany argument
 	arg.insert(0, kbd_buf, pos_arg_start, pos_arg_end - pos_arg_start);
 
-	// jeśli trzeba, zamień małe litery w argumencie na wielkie
+	// jeśli trzeba, zamień małe litery w argumencie na wielkie (domyślnie nie zamieniaj)
 	if(lower2upper)
 	{
 		for(int i = 0; i < static_cast<int>(arg.size()); ++i)
@@ -419,7 +419,7 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 	else if(ga.captcha_ready)
 	{
 		// pobierz wpisany kod captcha
-		std::string captcha = get_arg(kbd_buf, pos_arg_start, false);
+		std::string captcha = get_arg(kbd_buf, pos_arg_start);
 
 		if(captcha.size() == 0)
 		{
@@ -467,7 +467,7 @@ void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], s
 	if(ga.irc_ok)
 	{
 		// polecenie do IRC (można nie podawać nicka, wtedy pokaże własną wizytówkę)
-		irc_send(ga, chan_parm, "NS INFO " + get_arg(kbd_buf, pos_arg_start, false));
+		irc_send(ga, chan_parm, "NS INFO " + get_arg(kbd_buf, pos_arg_start));
 
 		ga.command_card = true;
 	}
@@ -643,7 +643,7 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
-		std::string join_chan = get_arg(kbd_buf, pos_arg_start, false);
+		std::string join_chan = get_arg(kbd_buf, pos_arg_start);
 
 		if(join_chan.size() == 0)
 		{
@@ -659,7 +659,17 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 			}
 
 			// opcjonalnie można podać klucz do pokoju
-			irc_send(ga, chan_parm, "JOIN " + join_chan + " " + get_arg(kbd_buf, pos_arg_start, false));
+			std::string join_key = get_arg(kbd_buf, pos_arg_start);
+
+			if(join_key.size() == 0)
+			{
+				irc_send(ga, chan_parm, "JOIN " + join_chan);
+			}
+
+			else
+			{
+				irc_send(ga, chan_parm, "JOIN " + join_chan + " " + join_key);
+			}
 
 			ga.command_join = true;
 		}
@@ -688,7 +698,7 @@ void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], s
 		else
 		{
 			// pobierz wpisany nick do wyrzucenia
-			std::string kick_nick = get_arg(kbd_buf, pos_arg_start, false);
+			std::string kick_nick = get_arg(kbd_buf, pos_arg_start);
 
 			// jeśli nie wpisano nicka, pokaż ostrzeżenie
 			if(kick_nick.size() == 0)
@@ -752,7 +762,7 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 	if(ga.irc_ok)
 	{
 		// /names może działać z parametrem lub bez (wtedy dotyczy aktywnego pokoju)
-		std::string names_chan = get_arg(kbd_buf, pos_arg_start, false);
+		std::string names_chan = get_arg(kbd_buf, pos_arg_start);
 
 		// gdy podano pokój do sprawdzenia
 		if(names_chan.size() > 0)
@@ -803,7 +813,7 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 	// nick można zmienić tylko, gdy nie jest się połączonym z IRC
 	else
 	{
-		std::string nick = get_arg(kbd_buf, pos_arg_start, false);
+		std::string nick = get_arg(kbd_buf, pos_arg_start);
 
 		if(nick.size() == 0)
 		{
@@ -847,7 +857,7 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 			ga.my_nick = nick;
 
 			// pobierz hasło (jeśli wpisano, jeśli nie, bufor hasła będzie pusty)
-			ga.my_password = get_arg(kbd_buf, pos_arg_start, false);
+			ga.my_password = get_arg(kbd_buf, pos_arg_start);
 
 			// wyświetl wpisany nick
 			if(ga.my_password.size() == 0)
@@ -908,7 +918,7 @@ void kbd_command_priv(struct global_args &ga, struct channel_irc *chan_parm[], s
 	if(ga.irc_ok)
 	{
 		// pobierz nick, który zapraszamy do rozmowy prywatnej
-		std::string priv_nick = get_arg(kbd_buf, pos_arg_start, false);
+		std::string priv_nick = get_arg(kbd_buf, pos_arg_start);
 
 		// jeśli nie wpisano nicka, pokaż ostrzeżenie
 		if(priv_nick.size() == 0)
@@ -989,7 +999,7 @@ void kbd_command_time(struct global_args &ga, struct channel_irc *chan_parm[], s
 	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 	if(ga.irc_ok)
 	{	// opcjonalnie można podać serwer
-		irc_send(ga, chan_parm, "TIME " + get_arg(kbd_buf, pos_arg_start, false));
+		irc_send(ga, chan_parm, "TIME " + get_arg(kbd_buf, pos_arg_start));
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -1031,7 +1041,7 @@ void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], 
 	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
 	if(ga.irc_ok)
 	{
-		std::string vhost_nick = get_arg(kbd_buf, pos_arg_start, false);
+		std::string vhost_nick = get_arg(kbd_buf, pos_arg_start);
 
 		// jeśli nie podano parametrów, pokaż ostrzeżenie
 		if(vhost_nick.size() == 0)
@@ -1042,7 +1052,7 @@ void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], 
 		// jeśli podano nick, sprawdź, czy podano hasło
 		else
 		{
-			std::string vhost_password = get_arg(kbd_buf, pos_arg_start, false);
+			std::string vhost_password = get_arg(kbd_buf, pos_arg_start);
 
 			// jeśli nie podano hasła, pokaż ostrzeżenie
 			if(vhost_password.size() == 0)
@@ -1074,7 +1084,7 @@ void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], 
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
-		std::string whois_nick = get_arg(kbd_buf, pos_arg_start, false);
+		std::string whois_nick = get_arg(kbd_buf, pos_arg_start);
 
 		// jeśli podano nick, to go użyj
 		if(whois_nick.size() > 0)
@@ -1102,7 +1112,7 @@ void kbd_command_whowas(struct global_args &ga, struct channel_irc *chan_parm[],
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
-		std::string whowas_nick = get_arg(kbd_buf, pos_arg_start, false);
+		std::string whowas_nick = get_arg(kbd_buf, pos_arg_start);
 
 		// jeśli podano nick, to go użyj
 		if(whowas_nick.size() > 0)
