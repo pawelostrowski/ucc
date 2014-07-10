@@ -726,6 +726,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	ERROR
 	ERROR :Closing link (76995189@adei211.neoplus.adsl.tpnet.pl) [Client exited]
 	ERROR :Closing link (76995189@adei211.neoplus.adsl.tpnet.pl) [Quit: z/w]
+	ERROR :Closing link (unknown@eqw75.neoplus.adsl.tpnet.pl) [Registration timeout]
 */
 void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
@@ -873,8 +874,16 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// jeśli to ja wchodzę, utwórz nowy kanał (jeśli wpisano /join, przechodź od razu do tego pokoju - ga.command_join)
 	if(get_value_from_buf(raw_buf, ":", "!") == buf_iso2utf(ga.zuousername) && ! new_chan_chat(ga, chan_parm, raw_parm2, ga.command_join))
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# Nie udało się utworzyć nowego pokoju (brak pamięci w tablicy pokoi).");
+		// w przypadku błędu opuść pokój (i tak nie byłoby widać jego komunikatów)
+		irc_send(ga, chan_parm, "PART " + buf_utf2iso(raw_parm2) + " :Channel index out of range.");
+
+		// przełącz na "Status"
+		ga.current = CHAN_STATUS;
+		win_buf_refresh(ga, chan_parm);
+
+		// wyświetl ostrzeżenie
+		win_buf_add_str(ga, chan_parm, "Status", xRED "# Nie udało się utworzyć nowego pokoju (brak pamięci w tablicy pokoi).");
+
 		return;
 	}
 
@@ -2375,7 +2384,7 @@ void raw_305(struct global_args &ga, struct channel_irc *chan_parm[])
 */
 void raw_306(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Jesteś teraz oznaczony(-na) jako nieobecny(-na).");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Jesteś teraz oznaczony(-na) jako nieobecny(-na) z powodu: " + ga.msg_away);
 }
 
 

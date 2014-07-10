@@ -86,7 +86,7 @@ bool http_get_cookies(struct global_args &ga, struct channel_irc *chan_parm[], c
 
 		// dopisz kolejne cookie do bufora
 		ga.cookies.insert(ga.cookies.size(), std::string(http_recv_buf), pos_cookie_start + cookie_string.size(),
-						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);	// + 1, bo dopisać też średnik
 
 		// znajdź kolejne cookie
 		pos_cookie_start = std::string(http_recv_buf).find(cookie_string, pos_cookie_start + cookie_string.size());

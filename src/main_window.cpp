@@ -664,98 +664,98 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// lewy Alt generuje też kod klawisza, z którym został wciśnięty (dla poniższych sprawdzeń), dlatego pobierz ten kod
 				key_code = getch();
 
-				// okna od 1 do 9 (jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08))
+				// "okna" od 1 do 9 (jeśli kanał istnieje, wybierz go (- '1', aby zamienić na cyfry 0x00...0x08))
 				if(key_code >= '1' && key_code <= '9' && chan_parm[key_code - '1'])
 				{
 					ga.current = key_code - '1';
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 10 (0 jest traktowane jak 10) (to nie pomyłka, że 9, bo numery są od 0)
+				// "okno" 10 (0 jest traktowane jak 10) (to nie pomyłka, że 9, bo numery są od 0)
 				else if(key_code == '0' && chan_parm[9])
 				{
 					ga.current = 9;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 11
+				// "okno" 11
 				else if(key_code == 'q' && chan_parm[10])
 				{
 					ga.current = 10;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 12
+				// "okno" 12
 				else if(key_code == 'w' && chan_parm[11])
 				{
 					ga.current = 11;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 13
+				// "okno" 13
 				else if(key_code == 'e' && chan_parm[12])
 				{
 					ga.current = 12;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 14
+				// "okno" 14
 				else if(key_code == 'r' && chan_parm[13])
 				{
 					ga.current = 13;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 15
+				// "okno" 15
 				else if(key_code == 't' && chan_parm[14])
 				{
 					ga.current = 14;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 16
+				// "okno" 16
 				else if(key_code == 'y' && chan_parm[15])
 				{
 					ga.current = 15;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 17
+				// "okno" 17
 				else if(key_code == 'u' && chan_parm[16])
 				{
 					ga.current = 16;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 18
+				// "okno" 18
 				else if(key_code == 'i' && chan_parm[17])
 				{
 					ga.current = 17;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 19
+				// "okno" 19
 				else if(key_code == 'o' && chan_parm[18])
 				{
 					ga.current = 18;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 20
+				// "okno" 20
 				else if(key_code == 'p' && chan_parm[19])
 				{
 					ga.current = 19;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 21
+				// "okno" 21
 				else if(key_code == 'a' && chan_parm[20])
 				{
 					ga.current = 20;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// okno 22
+				// "okno" 22
 				else if(key_code == 's' && chan_parm[21])
 				{
 					ga.current = 21;
@@ -854,8 +854,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// sprawdź gotowość do połączenia z IRC
 				if(ga.irc_ready)
 				{
-					std::string msg;
-
 					// zaloguj się do czata
 					auth_irc_all(ga, chan_parm);
 

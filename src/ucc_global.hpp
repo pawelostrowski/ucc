@@ -67,7 +67,7 @@
 #define dNORMAL		0x17
 
 // maksymalna liczba kanałów czata wraz z kanałami "Status" oraz "Debug"
-#define CHAN_MAX	(20 + 2)		// kanały czata + "Status" i "Debug"
+#define CHAN_MAX	(20 + 2)	// kanały czata + "Status" i "Debug"
 
 // nadanie numerów w tablicy kanałom "Status" i "Debug"
 #define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy
@@ -115,6 +115,8 @@ struct global_args
 			card_rank, card_sex, card_short_desc, card_type, card_v_email, card_www;
 
 	std::string my_friend, my_ignore, my_favourites;
+
+	std::string msg_away;
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
 	bool command_card, command_join, command_names, command_vhost;
