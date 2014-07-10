@@ -895,7 +895,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
-			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < kbd_buf_MAX_SIZE)
+			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
 			{
 				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2
 				kbd_buf.insert(kbd_buf_pos, key_utf2iso(key_code));

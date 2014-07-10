@@ -3,7 +3,9 @@
 
 std::string get_value_from_buf(std::string buf_str, std::string expr_before, std::string expr_after);
 
-std::string get_raw_parm(std::string &raw_buf, int raw_nr);
+std::string get_rest_from_buf(std::string &in_buf, std::string expr_before);
+
+std::string get_raw_parm(std::string &raw_buf, int raw_parm_number);
 
 void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg_dbg_irc = "");
 

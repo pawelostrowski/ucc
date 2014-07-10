@@ -969,7 +969,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 
 			chan_parm[i]->win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
 
-			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), domyślnie oznaczaj
+			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join
 			if(active)
 			{
 				ga.current = i;
