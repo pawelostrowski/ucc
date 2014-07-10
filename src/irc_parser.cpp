@@ -3055,8 +3055,7 @@ void raw_484(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	// KICK #pokój nick :<...> - próba wyrzucenia sopa przez innego sopa, opa przez innego opa lub nicka bez uprawnień, gdy sami ich nie posiadamy
 	// :cf1f1.onet 484 ucieszony86 #Computers :Can't kick AT89S8253 as your spells are not good enough
-	else if(raw_buf.find(" :Can't kick " + get_value_from_buf(raw_buf, "kick ", " as") + " as your spells are not good enough")
-		!= std::string::npos)
+	else if(raw_buf.find(" :Can't kick " + get_value_from_buf(raw_buf, "kick ", " as") + " as your spells are not good enough") != std::string::npos)
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm3,
 				xRED "* Nie posiadasz wystarczających uprawnień, aby wyrzucić " + get_value_from_buf(raw_buf, "kick ", " as")
@@ -3865,8 +3864,8 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	// wejdź do ulubionych pokoi w kolejności alfabetycznej (później dodać opcję wyboru)
 
-	size_t pos_chan_start, pos_chan_end;
 	std::string chan, chan_key;
+	size_t pos_chan_start, pos_chan_end;
 
 	std::map<std::string, std::string> chanlist;
 
@@ -4157,12 +4156,23 @@ void raw_notice_260()
 /*
 	NOTICE 401 (NS INFO nick)
 	:NickServ!service@service.onet NOTICE ucc_test :401 t :no such nick
+	:NickServ!service@service.onet NOTICE ucc_test :401  :no such nick
 */
 void raw_notice_401(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string nick_info = get_value_from_buf(raw_buf, " :401 ", " :");
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xMAGENTA + raw_parm4 + xNORMAL " - nie ma takiego nicka na czacie.");
+	if(nick_info.size() > 0)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				"* " xBOLD_ON xMAGENTA + nick_info + xNORMAL " - nie ma takiego nicka na czacie.");
+	}
+
+	// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka.");
+	}
 }
 
 
@@ -4181,13 +4191,23 @@ void raw_notice_402(struct global_args &ga, struct channel_irc *chan_parm[], std
 /*
 	NOTICE 403 (RS INFO nick)
 	:RankServ!service@service.onet NOTICE ucc_test :403 abc :user is not on-line
+	:RankServ!service@service.onet NOTICE ucc_test :403  :user is not on-line
 */
 void raw_notice_403(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string nick_info = get_value_from_buf(raw_buf, " :403 ", " :");
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xBOLD_ON xYELLOW_BLACK + raw_parm4 + xNORMAL " - nie ma takiego nicka na czacie.");
+	if(nick_info.size() > 0)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+				"* " xBOLD_ON xYELLOW_BLACK + nick_info + xNORMAL " - nie ma takiego nicka na czacie.");
+	}
+
+	// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka.");
+	}
 }
 
 
@@ -4233,12 +4253,22 @@ void raw_notice_407(struct global_args &ga, struct channel_irc *chan_parm[], std
 /*
 	NOTICE 408 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucc_test :408 abc :no such channel
+	:ChanServ!service@service.onet NOTICE ucc_test :408  :no such channel
 */
 void raw_notice_408(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string chan_info = get_value_from_buf(raw_buf, " :408 ", " :");
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xBLUE + raw_parm4 + xNORMAL " - nie ma takiego pokoju.");
+	if(chan_info.size() > 0)
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xBLUE + chan_info + xNORMAL " - nie ma takiego pokoju.");
+	}
+
+	// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej pokoju
+	else
+	{
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": nie podano pokoju.");
+	}
 }
 
 

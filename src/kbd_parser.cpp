@@ -737,9 +737,10 @@ void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 		else
 		{
-			std::string me_reason = get_rest_args(kbd_buf, pos_arg_start);	// pobierz wpisany komunikat dla /me (nie jest niezbędny)
+			// pobierz wpisany komunikat dla /me (nie jest niezbędny)
+			std::string me_reason = get_rest_args(kbd_buf, pos_arg_start);
 
-			// jeśli przebywamy w aktywnym pokoju czata, przygotuj komunikat do wyświetlenia w oknie terminala
+			// przygotuj komunikat do wyświetlenia w oknie terminala
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 					xBOLD_ON xMAGENTA "* " + buf_iso2utf(ga.zuousername) + xNORMAL " " + buf_iso2utf(me_reason));
 
