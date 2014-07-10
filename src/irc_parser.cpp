@@ -3368,15 +3368,6 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Wyszukiwanie Twojej nazwy hosta...");
 	}
 
-	// :cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
-	else if(raw_parm2 == "Auth" && raw_buf.find(" :*** Found your hostname (" + get_value_from_buf(raw_buf, "hostname (", ")") + ")")
-		!= std::string::npos)
-	{
-		win_buf_add_str(ga, chan_parm, "Status",
-				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
-				+ get_rest_from_buf(raw_buf, "hostname ") + ".");
-	}
-
 	// :cf1f1.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl) -- cached
 	else if(raw_parm2 == "Auth" && raw_buf.find(" :*** Found your hostname (" + get_value_from_buf(raw_buf, "hostname (", ") ") + ") -- cached")
 		!= std::string::npos)
@@ -3384,6 +3375,15 @@ void raw_notice(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		win_buf_add_str(ga, chan_parm, "Status",
 				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
 				+ get_value_from_buf(raw_buf, "hostname ", " ") + " -- była zbuforowana na serwerze.");
+	}
+
+	// :cf1f3.onet NOTICE Auth :*** Found your hostname (eik220.neoplus.adsl.tpnet.pl)
+	else if(raw_parm2 == "Auth" && raw_buf.find(" :*** Found your hostname (" + get_value_from_buf(raw_buf, "hostname (", ")") + ")")
+		!= std::string::npos)
+	{
+		win_buf_add_str(ga, chan_parm, "Status",
+				"* " xBOLD_ON "-" xMAGENTA + nick_notice + xTERMC "-" xNORMAL " Znaleziono Twoją nazwę hosta "
+				+ get_rest_from_buf(raw_buf, "hostname ") + ".");
 	}
 
 	// :cf1f2.onet NOTICE Auth :*** Could not resolve your hostname: Domain name not found; using your IP address (93.159.185.10) instead.
