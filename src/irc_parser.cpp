@@ -4273,7 +4273,7 @@ void raw_notice_408(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 
 /*
-	NOTICE 409 (NS SET OFFMSG - brak argumentu)
+	NOTICE 409 (NS SET opcja_do_zmiany - brak argumentu)
 	:NickServ!service@service.onet NOTICE ucieszony86 :409 OFFMSG :invalid argument
 */
 void raw_notice_409(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
@@ -4319,8 +4319,7 @@ void raw_notice_416(struct global_args &ga, struct channel_irc *chan_parm[], std
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			"* " xBOLD_ON + raw_parm4 + xNORMAL " - dostęp do informacji zabroniony.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON + raw_parm4 + xNORMAL " - dostęp do informacji zabroniony.");
 }
 
 

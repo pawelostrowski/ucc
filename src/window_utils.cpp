@@ -712,12 +712,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.public_webcam)
 		{
-			nick_tmp += xYELLOW_BLACK "=";
+			nick_tmp += xYELLOW_BLACK "*";
 		}
 
 		if(it->second.flags.private_webcam)
 		{
-			nick_tmp += xYELLOW_BLACK "\xE2\x89\xA0";	// ≠ (dano kod, gdyby symbol nie wyświetlił się w edytorze)
+			nick_tmp += xCYAN "*";
 		}
 
 		if(it->second.flags.busy)
