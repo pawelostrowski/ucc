@@ -883,7 +883,7 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		win_buf_refresh(ga, chan_parm);
 
 		// wyświetl ostrzeżenie
-		win_buf_add_str(ga, chan_parm, "Status", xRED "# Nie udało się utworzyć nowego pokoju (brak pamięci w tablicy pokoi).");
+		win_buf_add_str(ga, chan_parm, "Status", xRED "# Nie udało się wejść do pokoju " + raw_parm2 + " (brak pamięci w tablicy pokoi).");
 
 		return;
 	}
@@ -1348,7 +1348,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm3[s] == '+')
 				{
 					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xCYAN "* " + nick_receives + " jest teraz gościem pokoju " + raw_parm2
+							xMAGENTA "* " + nick_receives + " jest teraz gościem pokoju " + raw_parm2
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę

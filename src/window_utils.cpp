@@ -721,7 +721,7 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.voice)
 		{
-			nick_tmp += xCYAN "+";
+			nick_tmp += xMAGENTA "+";
 		}
 
 		if(it->second.flags.public_webcam)
