@@ -898,6 +898,20 @@ void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], s
 			}
 		}
 
+		// jako wyjątek /part w oknie "RawUnknown" zamyka je
+		else if(ga.current == CHAN_RAW_UNKNOWN)
+		{
+			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
+			ga.current = CHAN_STATUS;
+			win_buf_refresh(ga, chan_parm);
+
+			// usuń kanał "RawUnknown"
+			delete chan_parm[CHAN_RAW_UNKNOWN];
+
+			// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
+			chan_parm[CHAN_RAW_UNKNOWN] = 0;
+		}
+
 		// w przeciwnym razie pokaż ostrzeżenie
 		else
 		{
