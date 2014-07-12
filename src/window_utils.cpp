@@ -421,7 +421,7 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 }
 
 
-void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_buf_start)
+void win_buf_show(struct global_args &ga, std::string &win_buf, int pos_win_buf_start)
 {
 	int wcur_x;
 	int win_buf_len = win_buf.size();
@@ -547,13 +547,14 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	}
 
 	// wyświetl ustaloną część bufora
-	win_buf_common(ga, chan_parm[ga.current]->win_buf, pos_win_buf_start);
+	win_buf_show(ga, chan_parm[ga.current]->win_buf, pos_win_buf_start);
 
 	ga.nicklist_refresh = true;
 }
 
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string in_buf, int act_type, bool add_time)
+void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string in_buf, int act_type,
+			bool add_time, bool only_chan_normal)
 {
 /*
 	Dodaj string do bufora danego kanału oraz wyświetl jego zawartość (jeśli to aktywny pokój) wraz z dodaniem przed wyrażeniem aktualnego czasu
@@ -562,20 +563,33 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 
 	int which_chan = -1;		// kanał, do którego należy dopisać bufor (-1 przy braku kanału powoduje wyjście)
 
-	// znajdź numer kanału w tablicy na podstawie jego nazwy
-	for(int i = 0; i < CHAN_MAX; ++i)
+	// jeśli komunikat ma być wyświetlony wyłącznie w pokojach normalnych oraz w "Status", a chan_name wskazuje na "Debug" lub "RawUnknown",
+	// wyświetl bez sprawdzania komunikat w oknie "Status" (domyślnie sprawdzaj)
+	if(only_chan_normal && (chan_name == "Debug" || chan_name == "RawUnknown"))
 	{
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
-		{
-			which_chan = i;		// wpisz numer znalezionego kanału
-			break;
-		}
+		which_chan = CHAN_STATUS;
+
+		// zmień domyślną aktywność z 1 na 2, aby zwrócić uwagę, że pojawił się komunikat
+		act_type = 2;
 	}
 
-	// jeśli pokój o szukanej nazwie nie istnieje, zakończ
-	if(which_chan == -1)
+	else
 	{
-		return;
+		// znajdź numer kanału w tablicy na podstawie jego nazwy
+		for(int i = 0; i < CHAN_MAX; ++i)
+		{
+			if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+			{
+				which_chan = i;		// wpisz numer znalezionego kanału
+				break;
+			}
+		}
+
+		// jeśli pokój o szukanej nazwie nie istnieje, zakończ
+		if(which_chan == -1)
+		{
+			return;
+		}
 	}
 
 	// ustaw aktywność danego typu (1...3) dla danego kanału, która zostanie wyświetlona później na pasku dolnym (domyślnie aktywność typu 1)
@@ -633,17 +647,17 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 	}
 
 	// wyświetl otrzymaną część bufora
-	win_buf_common(ga, in_buf, 0);
+	win_buf_show(ga, in_buf, 0);
 }
 
 
 void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg)
 {
 /*
-	Wyświetl komunikat we wszystkich otwartych pokojach, z wyjątkiem "Debug".
+	Wyświetl komunikat we wszystkich otwartych pokojach, z wyjątkiem "Debug" i "RawUnknown".
 */
 
-	for(int i = 0; i < CHAN_MAX - 1; ++i)
+	for(int i = 0; i < CHAN_NORMAL; ++i)
 	{
 		if(chan_parm[i])
 		{
@@ -717,7 +731,18 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.private_webcam)
 		{
-			nick_tmp += xCYAN "*";
+			// jeśli terminal obsługuje kolory, pokaż prywatną kamerkę w kolorze cyjan
+			if(ga.use_colors)
+			{
+				nick_tmp += xCYAN "*";
+			}
+
+			// jeśli terminal nie obsługuje kolorów, to aby jakoś odróżnić prywatną kamerkę od publicznej, gwiazdka dla prywatnej kamerki
+			// będzie podkreślona
+			else
+			{
+				nick_tmp += xUNDERLINE_ON "*" xUNDERLINE_OFF;
+			}
 		}
 
 		if(it->second.flags.busy)
@@ -827,7 +852,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 
 		else
 		{
-			// wykryj formatowanie kolorów i bolda (uproszczone w stosunku do win_buf_refresh(), bo na liście nie trzeba tylu możliwości)
+			// wykryj formatowanie kolorów i bolda
 			if(nicklist[i] == dCOLOR && i + 1 < static_cast<int>(nicklist.size()))
 			{
 				++i;	// przejdź na kod koloru
@@ -852,6 +877,16 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 			else if(nicklist[i] == dREVERSE_OFF)
 			{
 				wattroff(ga.win_info, A_REVERSE);
+			}
+
+			else if(nicklist[i] == dUNDERLINE_ON)
+			{
+				wattron(ga.win_info, A_UNDERLINE);
+			}
+
+			else if(nicklist[i] == dUNDERLINE_OFF)
+			{
+				wattroff(ga.win_info, A_UNDERLINE);
 			}
 
 			else if(nicklist[i] == dNORMAL)
@@ -913,7 +948,6 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 
 		chan_parm[CHAN_STATUS] = new channel_irc;
 		chan_parm[CHAN_STATUS]->channel = "Status";
-		chan_parm[CHAN_STATUS]->channel_ok = false;	// w kanale "Status" nie można pisać tekstu jak w kanale czata
 		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
 		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
 
@@ -932,11 +966,24 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 	{
 		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
 		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
-		chan_parm[CHAN_DEBUG_IRC]->channel_ok = false;	// w kanale "Debug" nie można pisać tekstu jak w kanale czata
 		chan_parm[CHAN_DEBUG_IRC]->topic = "Debug";
 		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
 
 		chan_parm[CHAN_DEBUG_IRC]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+	}
+}
+
+
+void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	if(chan_parm[CHAN_RAW_UNKNOWN] == 0)
+	{
+		chan_parm[CHAN_RAW_UNKNOWN] = new channel_irc;
+		chan_parm[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
+		chan_parm[CHAN_RAW_UNKNOWN]->topic = "RawUnknown";
+		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;	// zacznij od braku aktywności kanału
+
+		chan_parm[CHAN_RAW_UNKNOWN]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 	}
 }
 
@@ -948,7 +995,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 */
 
 	// pierwsza pętla wyszukuje, czy kanał o podanej nazwie istnieje, jeśli tak, nie będzie tworzony drugi o takiej samej nazwie
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo tutaj nie będą tworzone kanały "Status" oraz "Debug" (tylko kanały czata)
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// nie twórz dwóch kanałów o takiej samej nazwie
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
@@ -958,13 +1005,12 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	}
 
 	// druga pętla szuka pierwszego wolnego kanału w tablicy pokoi i jeśli są wolne miejsca, to go tworzy
-	for(int i = 1; i < CHAN_MAX - 1; ++i)
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		if(chan_parm[i] == 0)
 		{
 			chan_parm[i] = new channel_irc;
 			chan_parm[i]->channel = chan_name;	// nazwa kanału czata
-			chan_parm[i]->channel_ok = true;	// w kanałach czata można pisać normalny tekst do wysłania na serwer
 			chan_parm[i]->chan_act = 0;		// zacznij od braku aktywności kanału
 
 			chan_parm[i]->win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
@@ -996,7 +1042,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	Usuń kanał czata w programie.
 */
 
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo kanały "Status" oraz "Debug" nie mogą zostać usunięte
+	for(int i = 0; i < CHAN_CHAT; ++i)	// pokoje inne, niż pokoje czata nie mogą zostać usunięte (podczas normalnego działania programu)
 	{
 		// znajdź po nazwie kanału jego numer w tablicy
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
@@ -1046,7 +1092,7 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 		}
 	}
 
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie będą wrzucani użytkownicy
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
@@ -1082,7 +1128,7 @@ void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_par
 		}
 	}
 
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie będą wrzucani użytkownicy
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
@@ -1111,7 +1157,7 @@ void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		}
 	}
 
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie byli wrzucani użytkownicy
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy usunięcie nicka
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)

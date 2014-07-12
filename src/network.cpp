@@ -411,7 +411,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	if(ga.ucc_dbg_irc)
 	{
 		std::string irc_send_buf_dbg = buf_iso2utf(irc_send_buf);
-		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_dbg.erase(irc_send_buf_dbg.size() - 1, 1));
+		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_dbg.erase(irc_send_buf_dbg.size() - 1, 1), 1, true, false);
 	}
 /*
 	DBG IRC END
@@ -530,7 +530,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		if(ga.ucc_dbg_irc)
 		{
 			std::string irc_recv_buf_dbg = irc_recv_buf;
-			win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_dbg.erase(irc_recv_buf_dbg.size() - 1, 1));
+			win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_dbg.erase(irc_recv_buf_dbg.size() - 1, 1), 1, true, false);
 		}
 /*
 	DBG IRC END

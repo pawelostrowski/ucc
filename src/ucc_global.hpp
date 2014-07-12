@@ -66,12 +66,23 @@
 #define dUNDERLINE_OFF	0x14
 #define dNORMAL		0x17
 
-// maksymalna liczba kanałów czata wraz z kanałami "Status" oraz "Debug"
-#define CHAN_MAX	(20 + 2)	// kanały czata + "Status" i "Debug"
+// liczba pokoi czata (liczona od zera, czyli najwyższy numer w tablicy pokoi będzie o 1 mniejszy)
+#define CHAN_CHAT		20
 
-// nadanie numerów w tablicy kanałom "Status" i "Debug"
-#define CHAN_STATUS	0		// "Status" zawsze pod numerem 0 w tablicy
-#define CHAN_DEBUG_IRC	(CHAN_MAX - 1)	// "Debug" zawsze jako ostatni w tablicy (- 1, bo liczymy od 0)
+// numer dla "Status" w tablicy pokoi
+#define CHAN_STATUS		(CHAN_CHAT + 0)
+
+// numer dla "Debug" w tablicy pokoi
+#define CHAN_DEBUG_IRC		(CHAN_CHAT + 1)
+
+// numer dla "RawUnknown" w tablicy pokoi
+#define CHAN_RAW_UNKNOWN	(CHAN_CHAT + 2)
+
+// najwyższy numer pokoju minus jeden, w którym wyświetlane są normalne powiadomienia (czyli pokoje czata wraz ze "Status")
+#define CHAN_NORMAL		(CHAN_CHAT + 1)
+
+// maksymalna łączna liczba pokoi
+#define CHAN_MAX		(CHAN_CHAT + 3)
 
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
@@ -146,15 +157,13 @@ struct nick_irc
 // struktura kanału
 struct channel_irc
 {
-	bool channel_ok;	// czy to kanał czata i czy można w nim pisać
+	std::string win_buf;
+	std::string channel;
+	std::string topic;
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
 	size_t win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
-
-	std::string win_buf;
-	std::string channel;
-	std::string topic;
 
         std::map<std::string, struct nick_irc> nick_parm;
 };

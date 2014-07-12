@@ -708,10 +708,11 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			raw_unknown = true;
 		}
 
-		// nieznany lub niezaimplementowany RAW (każdego typu) wyświetl bez zmian w aktualnie otwartym pokoju
+		// nieznany lub niezaimplementowany RAW (każdego typu) wyświetl bez zmian w oknie "RawUnknown" (zostanie utworzone, jeśli nie jest)
 		if(raw_unknown)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE + raw_buf);
+			new_chan_raw_unknown(ga, chan_parm);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
+			win_buf_add_str(ga, chan_parm, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
 		}
 	}
 }
@@ -732,8 +733,8 @@ void raw_error(struct global_args &ga, struct channel_irc *chan_parm[], std::str
 {
 	ga.irc_ok = false;
 
-	// wyczyść listy nicków otwartych pokoi oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug")
-	for(int i = 0; i < CHAN_MAX - 1; ++i)
+	// wyczyść listy nicków otwartych pokoi oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "Debug" i "RawUnknown")
+	for(int i = 0; i < CHAN_NORMAL; ++i)
 	{
 		if(chan_parm[i])
 		{
@@ -802,7 +803,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(raw_buf, ":", "!") + " [" + get_value_from_buf(raw_buf, "!", " ")
-					+ "] zaprasza Cię do rozmowy prywatnej. Szczegóły w \"Status\" (Alt + 1).");
+					+ "] zaprasza Cię do rozmowy prywatnej. Szczegóły w \"Status\" (Lewy Alt + s).");
 		}
 
 		// informacja w "Status"
@@ -819,7 +820,7 @@ void raw_invite(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON xYELLOW_BLACK "* "
 					+ get_value_from_buf(raw_buf, ":", "!") + " [" + get_value_from_buf(raw_buf, "!", " ")
-					+ "] zaprasza Cię do pokoju " + raw_parm3 + ", szczegóły w \"Status\" (Alt + 1).");
+					+ "] zaprasza Cię do pokoju " + raw_parm3 + ", szczegóły w \"Status\" (Lewy Alt + s).");
 		}
 
 		// informacja w "Status"
@@ -1004,7 +1005,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		// jeśli nick wszedł po mnie, to jego ZUO jest na liście, wtedy dodaj je do komunikatu
 		std::string nick_zuo;
 
-		for(int i = 1; i < CHAN_MAX - 1; ++i)
+		for(int i = 0; i < CHAN_CHAT; ++i)
 		{
 			if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 			{
@@ -1162,7 +1163,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1192,7 +1193,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1225,7 +1226,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1255,7 +1256,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1288,7 +1289,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1318,7 +1319,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1351,7 +1352,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1381,7 +1382,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1414,7 +1415,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1444,7 +1445,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 1; j < CHAN_MAX - 1; j++)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
 						{
@@ -1595,7 +1596,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1609,7 +1610,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1626,7 +1627,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1654,7 +1655,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1682,7 +1683,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1707,7 +1708,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1736,7 +1737,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1757,7 +1758,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 1; j < CHAN_MAX - 1; ++j)
+					for(int j = 0; j < CHAN_CHAT; ++j)
 					{
 						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_gives_key) != chan_parm[j]->nick_parm.end())
 						{
@@ -1820,13 +1821,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 		}
 
-		// niezaimplementowane RAW z MODE wyświetl bez z mian
+		// niezaimplementowane RAW z MODE wyświetl bez zmian w oknie "RawUnknown"
 		if(raw_mode_unknown)
 		{
-			if(raw_parm3[i])
-			{
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE + raw_buf);
-			}
+			new_chan_raw_unknown(ga, chan_parm);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
+			win_buf_add_str(ga, chan_parm, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
 		}
 
 	}	// for()
@@ -1856,7 +1855,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			vhost_file.close();
 		}
 
-		for(int i = 1; i < CHAN_MAX - 1; ++i)	// od 1, bo pomijamy "Status" oraz - 1, bo pomijamy "Debug"
+		for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "Debug" i "RawUnknown"
 		{
 			if(chan_parm[i] && chan_parm[i]->channel.size() > 0)
 			{
@@ -2105,7 +2104,7 @@ void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	}
 
 	// usuń nick ze wszystkich pokoi z listy, gdzie przebywał i wyświetl w tych pokojach komunikat o tym
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// i = 1 oraz i < CHAN_MAX - 1, bo do "Status" oraz "Debug" nie byli wrzucani użytkownicy
+	for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "Debug" i "RawUnknown"
 	{
 		// usuwać można tylko w otwartych pokojach oraz nie usuwaj nicka, jeśli takiego nie było w pokoju
 		if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_key) != chan_parm[i]->nick_parm.end())
@@ -2529,7 +2528,7 @@ void raw_332(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	}
 
 	// teraz znajdź pokój, do którego należy temat, wpisz go do jego bufora "topic" i wyświetl na górnym pasku
-	for(int i = 1; i < CHAN_MAX - 1; ++i)	// 1 i - 1, bo pomijamy "Status" i "Debug"
+	for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "Debug" i "RawUnknown"
 	{
 		if(chan_parm[i] && chan_parm[i]->channel == raw_parm3)	// znajdź pokój, do którego należy temat
 		{
@@ -3916,7 +3915,7 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 	{
 		was_chan = false;
 
-		for(int i = 1; i < CHAN_MAX - 1; ++i)	// pomiń "Status" i "Debug", bo to nie są "normalne" pokoje czata
+		for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "Debug" i "RawUnknown"
 		{
 			if(chan_parm[i] && chan_parm[i]->channel == it->second)
 			{

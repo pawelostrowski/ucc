@@ -19,12 +19,12 @@ std::string key_utf2iso(int key_code);
 
 void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
 
-void win_buf_common(struct global_args &ga, std::string &win_buf, int pos_win_buf_start);
+void win_buf_show(struct global_args &ga, std::string &win_buf, int pos_win_buf_start);
 
 void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string in_buf, int act_type = 1,
-			bool add_time = true);
+			bool add_time = true, bool only_chan_normal = true);
 
 void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *chan_parm[], std::string msg);
 
@@ -39,6 +39,8 @@ void nicklist_off(struct global_args &ga);
 void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool active);
 

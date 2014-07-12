@@ -187,7 +187,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		}
 
 		// jeśli nie jesteśmy w aktywnym pokoju czata, wiadomości nie można wysłać, więc pokaż ostrzeżenie
-		else if(! chan_parm[ga.current]->channel_ok)
+		else if(ga.current >= CHAN_CHAT)
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
 		}
@@ -498,8 +498,8 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 	// jeśli podano nick i można rozpocząć łączenie z czatem
 	else
 	{
-		// komunikat o łączeniu we wszystkich otwartych pokojach z wyjątkiem "Debug"
-		for(int i = 0; i < CHAN_MAX - 1; ++i)
+		// komunikat o łączeniu we wszystkich otwartych pokojach z wyjątkiem "Debug" i "RawUnknown"
+		for(int i = 0; i < CHAN_NORMAL; ++i)
 		{
 			if(chan_parm[i])
 			{
@@ -689,7 +689,7 @@ void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], s
 	if(ga.irc_ok)
 	{
 		// jeśli nie przebywamy w aktywnym pokoju czata, nie można wyrzucić użytkownika, więc pokaż ostrzeżenie
-		if(! chan_parm[ga.current]->channel_ok)
+		if(ga.current >= CHAN_CHAT)
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
 		}
@@ -730,7 +730,7 @@ void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std
 	if(ga.irc_ok)
 	{
 		// jeśli nie przebywamy w aktywnym pokoju czata, wiadomości nie można wysłać, więc pokaż ostrzeżenie
-		if(! chan_parm[ga.current]->channel_ok)
+		if(ga.current >= CHAN_CHAT)
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie jesteś w aktywnym pokoju czata.");
 		}
@@ -781,7 +781,7 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 		// gdy nie podano pokoju sprawdź, czy pokój jest aktywny (bo /names dla "Status" lub "Debug" nie ma sensu)
 		else
 		{
-			if(chan_parm[ga.current]->channel_ok)
+			if(ga.current < CHAN_CHAT)
 			{
 				irc_send(ga, chan_parm, "NAMES " + buf_utf2iso(chan_parm[ga.current]->channel));
 			}
@@ -881,7 +881,7 @@ void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], s
 	if(ga.irc_ok)
 	{
 		// wyślij polecenie, gdy to aktywny pokój czata, a nie "Status" lub "Debug"
-		if(chan_parm[ga.current] && chan_parm[ga.current]->channel_ok)
+		if(ga.current < CHAN_CHAT)
 		{
 			std::string part_reason = get_rest_args(kbd_buf, pos_arg_start);
 
@@ -1017,7 +1017,7 @@ void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], 
 	if(ga.irc_ok)
 	{
 		// temat można zmienić tylko w aktywnym oknie czata (nie w "Status" i "Debug)
-		if(chan_parm[ga.current] && chan_parm[ga.current]->channel_ok)
+		if(ga.current < CHAN_CHAT)
 		{
 			// wyślij temat do IRC (można nie podawać tematu, wtedy zostanie on wyczyszczony)
 			irc_send(ga, chan_parm, "CS SET " + buf_utf2iso(chan_parm[ga.current]->channel) + " TOPIC " + get_rest_args(kbd_buf, pos_arg_start));

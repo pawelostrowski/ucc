@@ -50,8 +50,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 //	int tab_index, tab_pos;
 //	std::string tab_buf;
 
-	int top_excess;
-	bool chan_act_ok = false;
+	int topic_utf8_excess;
+	bool was_act;
 	short act_color;
 	int ping_counter = 0;
 /*
@@ -210,6 +210,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		// pasek górny
 		move(0, 0);
+
 		for(int i = 0; i < term_x; ++i)
 		{
 			printw(" ");
@@ -217,6 +218,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		// pasek dolny
 		move(term_y - 2, 0);
+
 		for(int i = 0; i < term_x; ++i)
 		{
 			printw(" ");
@@ -265,8 +267,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					}
 
 					// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
-					// pokojach (poza "Debug")
-					for(int i = 0; i < CHAN_MAX - 1; ++i)
+					// pokojach (poza "Debug" i "RawUnknown")
+					for(int i = 0; i < CHAN_NORMAL; ++i)
 					{
 						if(chan_parm[i])
 						{
@@ -304,15 +306,15 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 		// temat pokoju
 		// wyświetl, uwzględniając szerokość terminala (wyświetl tyle, ile się zmieści)
-		top_excess = 0;
+		topic_utf8_excess = 0;
 
-		for(int i = 0; i < static_cast<int>(chan_parm[ga.current]->topic.size()) && i < term_x + top_excess; ++i)
+		for(int i = 0; i < static_cast<int>(chan_parm[ga.current]->topic.size()) && i < term_x + topic_utf8_excess; ++i)
 		{
 			// wykryj znaki wielobajtowe w UTF-8 (konkretnie 2-bajtowe, wersja uproszczona, zakładająca, że nie będzie innych znaków),
 			// aby zniwelować szerokość wyświetlania
 			if((chan_parm[ga.current]->topic[i] & 0xE0) == 0xC0)
 			{
-				++top_excess;
+				++topic_utf8_excess;
 			}
 
 			printw("%c", chan_parm[ga.current]->topic[i]);
@@ -332,24 +334,28 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		// skasuj flagi aktywności w aktualnie otwartym pokoju
 		chan_parm[ga.current]->chan_act = 0;
 
-		// wyświetl aktywność kanałów
+		// wyświetl aktywność pokoi
+		was_act = false;
+
+		printw("[Pokoje: ");
+
 		for(int i = 0; i < CHAN_MAX; ++i)
 		{
 			if(chan_parm[i])
 			{
-				// wykryj aktywność 3
+				// wykryj aktywność typu 3
 				if(chan_parm[i]->chan_act == 3)
 				{
 					act_color = pMAGENTA_BLUE;
 				}
 
-				// wykryj aktywność 2
+				// wykryj aktywność typu 2
 				else if(chan_parm[i]->chan_act == 2)
 				{
 					act_color = pWHITE_BLUE;
 				}
 
-				// wykryj aktywność 1
+				// wykryj aktywność typu 1
 				else if(chan_parm[i]->chan_act == 1)
 				{
 					act_color = pCYAN_BLUE;
@@ -370,55 +376,56 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					}
 				}
 
-				// wyświetl wynik
-				if(! chan_act_ok)
-				{
-					printw("[Pokoje: ");
-
-					// numer pokoju w kolorze
-					wattron_color(stdscr, ga.use_colors, act_color);
-
-					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
-					{
-						attron(A_BOLD);
-					}
-
-					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
-
-					chan_act_ok = true;	// gdy napisano "Aktywność: ", nie dopisuj tego ponownie
-				}
-
-				else
+				// jeśli był już wyświetlony pokój, dopisz po nim przecinek na liście
+				if(was_act)
 				{
 					printw(",");
-
-					// numer pokoju w kolorze
-					wattron_color(stdscr, ga.use_colors, act_color);
-
-					if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
-					{
-						attron(A_BOLD);
-					}
-
-					printw("%d", i + 1);	// + 1, bo kanały od 1 a nie od 0
 				}
 
-				// przywróć domyślny kolor paska bez bolda i podkreślenia
+				was_act = true;
+
+				// numer pokoju w kolorze
+				wattron_color(stdscr, ga.use_colors, act_color);
+
+				if(act_color == pMAGENTA_BLUE || act_color == pWHITE_BLUE)
+				{
+					attron(A_BOLD);
+				}
+
+				// okno "Status" jako literka "s"
+				if(i == CHAN_STATUS)
+				{
+					printw("s");
+				}
+
+				// pokój czata jako cyfra
+				else if(i < CHAN_CHAT)
+				{
+					printw("%d", i + 1);	// + 1, bo pokoje na pasku są od 1 a nie od 0 (jak w tablicy pokoi)
+				}
+
+				// okno "Debug" jako literka "d"
+				else if(i == CHAN_DEBUG_IRC)
+				{
+					printw("d");
+				}
+
+				// okno "RawUnknown" jako literka "x" (bez else if, bo to i tak ostatni kanał na liście)
+				else
+				{
+					printw("x");
+				}
+
+				// przywróć domyślny kolor paska bez bolda
 				wattron_color(stdscr, ga.use_colors, pWHITE_BLUE);
 				attroff(A_BOLD);
-				attroff(A_UNDERLINE);
-
 			}
 		}
 
-		if(chan_act_ok)
-		{
-			printw("]");
-		}
+		// nawias zamykający
+		printw("]");
 
-		chan_act_ok = false;
-
-		// nazwa kanału
+		// nazwa pokoju
 		printw(" [%s]", chan_parm[ga.current]->channel.c_str());
 
 		// pokaż lag
@@ -748,17 +755,24 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// "okno" 21
-				else if(key_code == 'a' && chan_parm[20])
+				// "Status"
+				else if(key_code == 's' && chan_parm[CHAN_STATUS])
 				{
-					ga.current = 20;
+					ga.current = CHAN_STATUS;
 					win_buf_refresh(ga, chan_parm);
 				}
 
-				// "okno" 22
-				else if(key_code == 's' && chan_parm[21])
+				// "Debug"
+				else if(key_code == 'd' && chan_parm[CHAN_DEBUG_IRC])
 				{
-					ga.current = 21;
+					ga.current = CHAN_DEBUG_IRC;
+					win_buf_refresh(ga, chan_parm);
+				}
+
+				// "RawUnknown"
+				else if(key_code == 'x' && chan_parm[CHAN_RAW_UNKNOWN])
+				{
+					ga.current = CHAN_RAW_UNKNOWN;
 					win_buf_refresh(ga, chan_parm);
 				}
 			}
@@ -922,8 +936,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					ga.socketfd_irc = 0;
 				}
 
-				// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat (z wyjątkiem "Debug")
-				for(int i = 0; i < CHAN_MAX - 1; ++i)
+				// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat (z wyjątkiem "Debug" i "RawUnknown")
+				for(int i = 0; i < CHAN_NORMAL; ++i)
 				{
 					if(chan_parm[i])
 					{
