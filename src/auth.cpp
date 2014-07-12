@@ -493,7 +493,7 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *chan_parm[])
 	Część 4 autoryzacji.
 */
 	// wyślij (zamiast zuoUsername można wysłać inną nazwę):
-	// USER * <uoKey> czat-app.onet.pl :<zuoUsername>
+	// USER * <uoKey> czat-app.onet.pl :zuoUsername
 	// PROTOCTL ONETNAMESX
 	irc_send(ga, chan_parm, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX", "authIrc4: ");
 
