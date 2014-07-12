@@ -675,6 +675,14 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 					raw_notice_421(ga, chan_parm, raw_buf);
 					break;
 
+				case 440:
+					raw_notice_440(ga, chan_parm, raw_buf);
+					break;
+
+				case 441:
+					raw_notice_441(ga, chan_parm, raw_buf);
+					break;
+
 				case 458:
 					raw_notice_458(ga, chan_parm, raw_buf);
 					break;
@@ -4343,6 +4351,30 @@ void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* " + raw_parm4 + " nie był(a) dodany(-na) do listy przyjaciół.");
+}
+
+
+/*
+	NOTICE 440 (NS FAVOURITES ADD #pokój - gdy pokój już jest na liście ulubionych)
+	:NickServ!service@service.onet NOTICE ucieszony86 :440 #Towarzyski :is already on your favourite list
+*/
+void raw_notice_440(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm4 + " jest już na liście ulubionych.");
+}
+
+
+/*
+	NOTICE 441 (NS FAVOURITES DEL #pokój - gdy pokój nie został dodany do listy ulubionych)
+	:NickServ!service@service.onet NOTICE ucieszony86 :441 #Towarzyski :is not on your favourite list
+*/
+void raw_notice_441(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE "* Pokój " + raw_parm4 + " nie był dodany do listy ulubionych.");
 }
 
 

@@ -259,6 +259,10 @@ void raw_notice_420(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 void raw_notice_421(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
 
+void raw_notice_440(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
+
+void raw_notice_441(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
+
 void raw_notice_458(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
 
 void raw_notice_461(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
