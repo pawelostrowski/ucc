@@ -783,17 +783,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 			if(! it->second.flags.busy)
 			{
-				nick_tmp += xBOLD_ON xDARK "*";
+				nick_tmp += xWHITE "*";
 			}
 
 			else
 			{
-				nick_tmp += xDARK "*";
-			}
-
-			if(! ga.use_colors)
-			{
-				nick_tmp += xREVERSE_OFF;
+				nick_tmp += xBOLD_ON xDARK "*";
 			}
 		}
 
@@ -804,7 +799,7 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		else
 		{
-			nick_tmp += xWHITE;
+			nick_tmp += xNORMAL xWHITE;
 		}
 	}
 
