@@ -1116,11 +1116,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	int s = 0;	// pozycja znaku +/- od początku raw_parm3
 	int x = -1;	// ile znaków +/- było minus 1
 
-	for(int i = 0; i < static_cast<int>(raw_parm3.size()); ++i)
+	for(int f = 0; f < static_cast<int>(raw_parm3.size()); ++f)
 	{
-		if(raw_parm3[i] == '+' || raw_parm3[i] == '-')
+		if(raw_parm3[f] == '+' || raw_parm3[f] == '-')
 		{
-			s = i;
+			s = f;
 			++x;
 			continue;	// gdy znaleziono znak + lub -, powróć do początku
 		}
@@ -1132,20 +1132,20 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 */
 		if(raw_parm2.size() > 0 && raw_parm2[0] == '#')
 		{
-			nick_receives = get_raw_parm(raw_buf, i - x + 3);
+			nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
 			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
 			nick_receives_key = nick_receives;
 
-			for(int j = 0; j < static_cast<int>(nick_receives_key.size()); ++j)
+			for(int i = 0; i < static_cast<int>(nick_receives_key.size()); ++i)
 			{
-				if(islower(nick_receives_key[j]))
+				if(islower(nick_receives_key[i]))
 				{
-					nick_receives_key[j] = toupper(nick_receives_key[j]);
+					nick_receives_key[i] = toupper(nick_receives_key[i]);
 				}
 			}
 
-			if(raw_parm3[i] == 'q')
+			if(raw_parm3[f] == 'q')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1154,19 +1154,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.owner = true;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1184,19 +1184,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.owner = false;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1208,7 +1208,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'o')
+			else if(raw_parm3[f] == 'o')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1217,19 +1217,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.op = true;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1247,19 +1247,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.op = false;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1271,7 +1271,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'h')
+			else if(raw_parm3[f] == 'h')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1280,19 +1280,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.halfop = true;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1310,19 +1310,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.halfop = false;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1334,7 +1334,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'v')
+			else if(raw_parm3[f] == 'v')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1343,19 +1343,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.voice = true;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1373,19 +1373,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.voice = false;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1397,7 +1397,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'X')
+			else if(raw_parm3[f] == 'X')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1406,19 +1406,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.moderator = true;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1436,19 +1436,19 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							+ " (ustawił" + a + " " + nick_gives + ").");
 
 					// zaktualizuj flagę
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->channel == raw_parm2)
+						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-							if(it != chan_parm[j]->nick_parm.end())
+							if(it != chan_parm[i]->nick_parm.end())
 							{
 								it->second.flags.moderator = false;
 
 								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
 								// pokoju)
-								if(j == ga.current)
+								if(i == ga.current)
 								{
 									ga.nicklist_refresh = true;
 								}
@@ -1460,7 +1460,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'b')
+			else if(raw_parm3[f] == 'b')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1477,7 +1477,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'e')
+			else if(raw_parm3[f] == 'e')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1494,7 +1494,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'I')
+			else if(raw_parm3[f] == 'I')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1511,7 +1511,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'm')
+			else if(raw_parm3[f] == 'm')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1526,7 +1526,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'i')
+			else if(raw_parm3[f] == 'i')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1541,7 +1541,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'p')
+			else if(raw_parm3[f] == 'p')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1556,7 +1556,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 's')
+			else if(raw_parm3[f] == 's')
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1587,24 +1587,24 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
 			nick_receives_key = nick_receives;
 
-			for(int j = 0; j < static_cast<int>(nick_receives_key.size()); ++j)
+			for(int i = 0; i < static_cast<int>(nick_receives_key.size()); ++i)
 			{
-				if(islower(nick_receives_key[j]))
+				if(islower(nick_receives_key[i]))
 				{
-					nick_receives_key[j] = toupper(nick_receives_key[j]);
+					nick_receives_key[i] = toupper(nick_receives_key[i]);
 				}
 			}
 
-			if(raw_parm3[i] == 'O')
+			if(raw_parm3[f] == 'O')
 			{
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xMAGENTA "* " + nick_receives + " jest teraz deweloperem czata (ustawił(a) "
 									+ nick_gives + ").");
 						}
@@ -1614,11 +1614,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xWHITE "* " + nick_receives + " nie jest już deweloperem czata (ustawił(a) "
 									+ nick_gives + ").");
 						}
@@ -1626,20 +1626,20 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'W')
+			else if(raw_parm3[f] == 'W')
 			{
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
 									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza publiczną kamerkę.");
 
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.public_webcam = true;
@@ -1648,7 +1648,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 							it->second.flags.private_webcam = false;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1659,21 +1659,21 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
 									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza publiczną kamerkę.");
 
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.public_webcam = false;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1682,26 +1682,26 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				}
 			}
 
-			else if(raw_parm3[i] == 'V')
+			else if(raw_parm3[f] == 'V')
 			{
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
 									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza prywatną kamerkę.");
 
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.private_webcam = true;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1712,21 +1712,21 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							win_buf_add_str(ga, chan_parm, chan_parm[j]->channel,
+							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
 									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
 									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza prywatną kamerkę.");
 
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.private_webcam = false;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1736,22 +1736,22 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 
 			// aktualizacja flagi busy na liście nicków
-			else if(raw_parm3[i] == 'b')
+			else if(raw_parm3[f] == 'b')
 			{
 				if(raw_parm3[s] == '+')
 				{
 					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.busy = true;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1762,17 +1762,17 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 				else if(raw_parm3[s] == '-')
 				{
 					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int j = 0; j < CHAN_CHAT; ++j)
+					for(int i = 0; i < CHAN_CHAT; ++i)
 					{
-						if(chan_parm[j] && chan_parm[j]->nick_parm.find(nick_receives_key) != chan_parm[j]->nick_parm.end())
+						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 						{
-							auto it = chan_parm[j]->nick_parm.find(nick_receives_key);
+							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
 							// zaktualizuj flagę
 							it->second.flags.busy = false;
 
 							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(j == ga.current)
+							if(i == ga.current)
 							{
 								ga.nicklist_refresh = true;
 							}
@@ -1782,7 +1782,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 
 			// pokazuj tylko moje szyfrowanie IP (w pokoju "Status")
-			else if(raw_parm3[i] == 'x' && raw_parm2 == buf_iso2utf(ga.zuousername))
+			else if(raw_parm3[f] == 'x' && raw_parm2 == buf_iso2utf(ga.zuousername))
 			{
 				if(raw_parm3[s] == '+')
 				{
@@ -1802,7 +1802,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			}
 
 			// pokazuj tylko mój zarejestrowany nick (w pokoju "Status")
-			else if(raw_parm3[i] == 'r' && raw_parm2 == buf_iso2utf(ga.zuousername))
+			else if(raw_parm3[f] == 'r' && raw_parm2 == buf_iso2utf(ga.zuousername))
 			{
 				if(raw_parm3[s] == '+')
 				{

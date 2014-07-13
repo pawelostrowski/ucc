@@ -694,65 +694,116 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 	if(it != chan_parm[ga.current]->nick_parm.end())
 	{
-		if(! it->second.flags.busy)
-		{
-			nick_tmp = xBOLD_ON;
-		}
-
 		if(it->second.flags.owner)
 		{
-			nick_tmp += "`";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += "`";
+			}
+
+			else
+			{
+				nick_tmp += xWHITE "`";
+			}
 		}
 
 		else if(it->second.flags.op)	// jeśli był ` to nie pokazuj @
 		{
-			nick_tmp += "@";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += "@";
+			}
+
+			else
+			{
+				nick_tmp += xWHITE "@";
+			}
 		}
 
 		if(it->second.flags.halfop)
 		{
-			nick_tmp += "%";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += "%";
+			}
+
+			else
+			{
+				nick_tmp += xWHITE "%";
+			}
 		}
 
 		if(it->second.flags.moderator)
 		{
-			nick_tmp += xRED "!";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += xBOLD_ON xRED "!";
+			}
+
+			else
+			{
+				nick_tmp += xRED "!";
+			}
 		}
 
 		if(it->second.flags.voice)
 		{
-			nick_tmp += xMAGENTA "+";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += xBOLD_ON xMAGENTA "+";
+			}
+
+			else
+			{
+				nick_tmp += xMAGENTA "+";
+			}
 		}
 
 		if(it->second.flags.public_webcam)
 		{
-			nick_tmp += xYELLOW_BLACK "*";
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += xBOLD_ON xYELLOW_BLACK "*";
+			}
+
+			else
+			{
+				nick_tmp += xYELLOW "*";
+			}
 		}
 
 		if(it->second.flags.private_webcam)
 		{
-			// jeśli terminal obsługuje kolory, pokaż prywatną kamerkę w kolorze cyjan
-			if(ga.use_colors)
+			// przy braku obsługi kolorów dla odróżnienia gwiazdek prywatna kamerka będzie w odwróconym tle
+			if(! ga.use_colors)
+			{
+				nick_tmp += xREVERSE_ON;
+			}
+
+			if(! it->second.flags.busy)
+			{
+				nick_tmp += xBOLD_ON xCYAN "*";
+			}
+
+			else
 			{
 				nick_tmp += xCYAN "*";
 			}
 
-			// jeśli terminal nie obsługuje kolorów, to aby jakoś odróżnić prywatną kamerkę od publicznej, gwiazdka dla prywatnej kamerki
-			// będzie podkreślona
-			else
+			if(! ga.use_colors)
 			{
-				nick_tmp += xUNDERLINE_ON "*" xUNDERLINE_OFF;
+				nick_tmp += xREVERSE_OFF;
 			}
 		}
 
-		if(it->second.flags.busy)
+		if(! it->second.flags.busy)
 		{
-			nick_tmp += xWHITE;
+			nick_tmp += xNORMAL;
 		}
 
 		else
 		{
-			nick_tmp += xNORMAL;
+			nick_tmp += xWHITE;
 		}
 	}
 
