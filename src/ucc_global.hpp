@@ -22,13 +22,14 @@
 #define pMAGENTA	0x05
 #define pCYAN		0x06
 #define pWHITE		0x07
-#define pTERMC		0x08	// kolor zależny od ustawień terminala
-#define pWHITE_BLUE	0x09	// biały font, niebieskie tło
-#define pCYAN_BLUE	0x0A	// cyjan font, niebieskie tło
-#define pMAGENTA_BLUE	0x0B	// magenta font, niebieskie tło
-#define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
-#define pYELLOW_BLACK	0x0D	// żółty font, czarne tło
-#define pBLUE_WHITE	0x0E	// niebieski font, białe tło
+#define pDARK		0x08
+#define pTERMC		0x09	// kolor zależny od ustawień terminala
+#define pWHITE_BLUE	0x0A	// biały font, niebieskie tło
+#define pCYAN_BLUE	0x0B	// cyjan font, niebieskie tło
+#define pMAGENTA_BLUE	0x0C	// magenta font, niebieskie tło
+#define pBLACK_BLUE	0x0D	// czarny font, niebieskie tło
+#define pYELLOW_BLACK	0x0E	// żółty font, czarne tło
+#define pBLUE_WHITE	0x0F	// niebieski font, białe tło
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -39,13 +40,14 @@
 #define xMAGENTA	xCOLOR "\x05"
 #define xCYAN		xCOLOR "\x06"
 #define xWHITE		xCOLOR "\x07"
-#define xTERMC		xCOLOR "\x08"
-#define xWHITE_BLUE	xCOLOR "\x09"
-#define xCYAN_BLUE	xCOLOR "\x0A"
-#define xMAGENTA_BLUE	xCOLOR "\x0B"
-#define xBLACK_BLUE	xCOLOR "\x0C"
-#define xYELLOW_BLACK	xCOLOR "\x0D"
-#define xBLUE_WHITE	xCOLOR "\x0E"
+#define xDARK		xCOLOR "\x08"
+#define xTERMC		xCOLOR "\x09"
+#define xWHITE_BLUE	xCOLOR "\x0A"
+#define xCYAN_BLUE	xCOLOR "\x0B"
+#define xMAGENTA_BLUE	xCOLOR "\x0C"
+#define xBLACK_BLUE	xCOLOR "\x0D"
+#define xYELLOW_BLACK	xCOLOR "\x0E"
+#define xBLUE_WHITE	xCOLOR "\x0F"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"

@@ -37,6 +37,7 @@ bool check_colors()
 	init_pair(pMAGENTA, COLOR_MAGENTA, background_color);
 	init_pair(pCYAN, COLOR_CYAN, background_color);
 	init_pair(pWHITE, COLOR_WHITE, background_color);
+	init_pair(pDARK, COLOR_BLACK, background_color);
 	init_pair(pTERMC, font_color, background_color);
 	init_pair(pWHITE_BLUE, COLOR_WHITE, COLOR_BLUE);
 	init_pair(pCYAN_BLUE, COLOR_CYAN, COLOR_BLUE);
@@ -763,12 +764,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 		{
 			if(! it->second.flags.busy)
 			{
-				nick_tmp += xBOLD_ON xYELLOW_BLACK "*";
+				nick_tmp += xBOLD_ON xGREEN "*";
 			}
 
 			else
 			{
-				nick_tmp += xYELLOW "*";
+				nick_tmp += xGREEN "*";
 			}
 		}
 
@@ -782,12 +783,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 			if(! it->second.flags.busy)
 			{
-				nick_tmp += xBOLD_ON xCYAN "*";
+				nick_tmp += xBOLD_ON xDARK "*";
 			}
 
 			else
 			{
-				nick_tmp += xCYAN "*";
+				nick_tmp += xDARK "*";
 			}
 
 			if(! ga.use_colors)
