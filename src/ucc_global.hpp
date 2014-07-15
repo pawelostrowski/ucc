@@ -132,7 +132,7 @@ struct global_args
 	std::string msg_away;
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
-	bool command_card, command_join, command_names, command_vhost;
+	bool command_card, command_join, command_names, command_names_empty, command_vhost;
 };
 
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)

@@ -775,7 +775,7 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 		if(it->second.flags.private_webcam)
 		{
-			// przy braku obsługi kolorów dla odróżnienia gwiazdek prywatna kamerka będzie w odwróconym tle
+			// przy braku obsługi kolorów dla odróżnienia gwiazdek prywatna kamerka będzie na odwróconym tle
 			if(! ga.use_colors)
 			{
 				nick_tmp += xREVERSE_ON;
@@ -783,12 +783,12 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm
 
 			if(! it->second.flags.busy)
 			{
-				nick_tmp += xWHITE "*";
+				nick_tmp += xBOLD_ON xRED "*";
 			}
 
 			else
 			{
-				nick_tmp += xBOLD_ON xDARK "*";
+				nick_tmp += xRED "*";
 			}
 		}
 

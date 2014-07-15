@@ -511,6 +511,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		ga.command_card = false;
 		ga.command_join = false;
 		ga.command_names = false;
+		ga.command_names_empty = false;
 		ga.command_vhost = false;
 
 		// gdy wpisano nick, rozpocznij łączenie
@@ -776,6 +777,8 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 
 			// wyślij komunikat do serwera IRC
 			irc_send(ga, chan_parm, "NAMES " + names_chan);
+
+			ga.command_names = true;
 		}
 
 		// gdy nie podano pokoju sprawdź, czy pokój jest aktywny (bo /names dla "Status" lub "Debug" nie ma sensu)
@@ -784,6 +787,9 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 			if(ga.current < CHAN_CHAT)
 			{
 				irc_send(ga, chan_parm, "NAMES " + buf_utf2iso(chan_parm[ga.current]->channel));
+
+				ga.command_names = true;
+				ga.command_names_empty = true;
 			}
 
 			else
@@ -791,8 +797,6 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# To nie jest aktywny pokój czata.");
 			}
 		}
-
-		ga.command_names = true;
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie
