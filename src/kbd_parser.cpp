@@ -48,13 +48,7 @@ int get_command(std::string &kbd_buf, std::string &command, std::string &command
 	command_org = command;
 
 	// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
-	for(int i = 0; i < static_cast<int>(command.size()); ++i)
-	{
-		if(islower(command[i]))
-		{
-			command[i] = toupper(command[i]);
-		}
-	}
+	command = buf_lower2upper(command);
 
 	// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
 	pos_arg_start = pos_command_end;
@@ -105,13 +99,7 @@ std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2uppe
 	// jeśli trzeba, zamień małe litery w argumencie na wielkie (domyślnie nie zamieniaj)
 	if(lower2upper)
 	{
-		for(int i = 0; i < static_cast<int>(arg.size()); ++i)
-		{
-			if(islower(arg[i]))
-			{
-				arg[i] = toupper(arg[i]);
-			}
-		}
+		arg = buf_lower2upper(arg);
 	}
 
 	// wpisz nową pozycję początkową dla ewentualnego kolejnego argumentu

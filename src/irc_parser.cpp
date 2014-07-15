@@ -1048,15 +1048,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	else
 	{
 		// klucz nicka trzymany jest wielkimi literami
-		std::string nick_key = raw_parm3;
-
-		for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-		{
-			if(islower(nick_key[i]))
-			{
-				nick_key[i] = toupper(nick_key[i]);
-			}
-		}
+		std::string nick_key = buf_lower2upper(raw_parm3);
 
 		// jeśli nick wszedł po mnie, to jego ZUO jest na liście, wtedy dodaj je do komunikatu
 		std::string nick_zuo;
@@ -1185,15 +1177,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
 			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
-			nick_receives_key = nick_receives;
-
-			for(int i = 0; i < static_cast<int>(nick_receives_key.size()); ++i)
-			{
-				if(islower(nick_receives_key[i]))
-				{
-					nick_receives_key[i] = toupper(nick_receives_key[i]);
-				}
-			}
+			nick_receives_key = buf_lower2upper(nick_receives);
 
 			if(raw_parm3[f] == 'q')
 			{
@@ -1635,15 +1619,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			nick_receives = raw_parm2;
 
 			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
-			nick_receives_key = nick_receives;
-
-			for(int i = 0; i < static_cast<int>(nick_receives_key.size()); ++i)
-			{
-				if(islower(nick_receives_key[i]))
-				{
-					nick_receives_key[i] = toupper(nick_receives_key[i]);
-				}
-			}
+			nick_receives_key = buf_lower2upper(nick_receives);
 
 			if(raw_parm3[f] == 'O')
 			{
@@ -2127,15 +2103,7 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *chan_parm[], std::s
 void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
 	// klucz nicka trzymany jest wielkimi literami
-	std::string nick_key = get_value_from_buf(raw_buf, ":", "!");
-
-	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-	{
-		if(islower(nick_key[i]))
-		{
-			nick_key[i] = toupper(nick_key[i]);
-		}
-	}
+	std::string nick_key = buf_lower2upper(get_value_from_buf(raw_buf, ":", "!"));
 
 	// usuń nick ze wszystkich pokoi z listy, gdzie przebywał i wyświetl w tych pokojach komunikat o tym
 	for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "Debug" i "RawUnknown"
@@ -2715,9 +2683,8 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 				nick.erase(rest_flags, nick.size() - rest_flags);
 			}
 
-			// jeśli to NAMES po wejściu do pokoju z listy ulubionych lub po ponownym zalogowaniu, wczytaj nicki na listę (gdy nie jest to
-			// użycie /names wraz z podaniem pokoju, podanie samego /names bez pokoju również wczytuje nicki na listę, a w zasadzie aktualizuje
-			// je, ma znaczenie przy kamerkach prywatnych, bo serwer nie zwraca obecnie flagi V dla MODE, za wyjątkiem własnego nicka)
+			// jeśli to NAMES po wejściu do pokoju po użyciu /join, wczytaj nicki na listę, tak samo jeśli to NAMES po użyciu /names bez podania
+			// pokoju (ma znaczenie przy kamerkach prywatnych, bo serwer nie zwraca obecnie flagi V dla MODE, za wyjątkiem własnego nicka)
 			if(! ga.command_names || ga.command_names_empty)
 			{
 				// wpisz nick na listę
@@ -2727,18 +2694,12 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 				update_nick_flags_chan(ga, chan_parm, raw_parm3, nick, flags);
 			}
 
+			// jeśli to NAMES po użyciu /names z podaniem pokoju, wyświetl listę nicków w aktualnie otwartym oknie (można podejrzeć listę osób,
+			// nie będąc w tym pokoju)
 			else
 			{
 				// klucz nicka trzymaj wielkimi literami w celu poprawienia sortowania zapewnianego przez std::map
-				nick_key = nick;
-
-				for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-				{
-					if(islower(nick_key[i]))
-					{
-						nick_key[i] = toupper(nick_key[i]);
-					}
-				}
+				nick_key = buf_lower2upper(nick);
 
 				// na listę wpisz już nick w formie odebranej przez serwer
 				nick_chan[nick_key] = {nick_onet, "", flags};
@@ -2770,42 +2731,42 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 		{
 			if(it->second.flags.owner)
 			{
-				nick_owner += xWHITE + it->second.nick + "\n";
+				nick_owner += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.op)
 			{
-				nick_op += xWHITE + it->second.nick + "\n";
+				nick_op += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.halfop)
 			{
-				nick_halfop += xWHITE + it->second.nick + "\n";
+				nick_halfop += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.moderator)
 			{
-				nick_moderator += xWHITE + it->second.nick + "\n";
+				nick_moderator += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.voice)
 			{
-				nick_voice += xWHITE + it->second.nick + "\n";
+				nick_voice += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.public_webcam)
 			{
-				nick_pub_webcam += xWHITE + it->second.nick + "\n";
+				nick_pub_webcam += it->second.nick + "\n";
 			}
 
 			else if(it->second.flags.private_webcam)
 			{
-				nick_priv_webcam += xWHITE + it->second.nick + "\n";
+				nick_priv_webcam += it->second.nick + "\n";
 			}
 
 			else
 			{
-				nick_normal += xWHITE + it->second.nick + "\n";
+				nick_normal += it->second.nick + "\n";
 			}
 		}
 
@@ -2818,6 +2779,11 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 		while(getline(nicklist_stream, nick))
 		{
+			if(x == 0)
+			{
+				nicklist_part += xWHITE;
+			}
+
 			++x;
 
 			nicklist_part += "[" + nick + "]";
@@ -2839,7 +2805,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			nicklist_part.erase(nicklist_part.size() - 1, 1);
 		}
 
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xWHITE + nicklist_part);
+		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, nicklist_part);
 	}
 
 	// po wyświetleniu nicków wyczyść bufor, aby kolejne użycie nie wyświetliło starej zawartości
@@ -4047,15 +4013,7 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *chan_parm[])
 		if(chan.size() > 0)
 		{
 			// w kluczu trzymaj pokój zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-			chan_key = chan;
-
-			for(int i = 0; i < static_cast<int>(chan_key.size()); ++i)
-			{
-				if(islower(chan_key[i]))
-				{
-					chan_key[i] = toupper(chan_key[i]);
-				}
-			}
+			chan_key = buf_lower2upper(chan);
 
 			// dodaj pokój do listy w std::map
 			chanlist[chan_key] = chan;

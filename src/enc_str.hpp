@@ -5,4 +5,6 @@ std::string buf_utf2iso(std::string &in_buf);
 
 std::string buf_iso2utf(std::string &in_buf);
 
+std::string buf_lower2upper(std::string buf);
+
 #endif		// ENC_STR_HPP

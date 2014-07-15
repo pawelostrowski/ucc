@@ -1129,15 +1129,7 @@ void del_all_chan(struct channel_irc *chan_parm[])
 void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo)
 {
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-	std::string nick_key = nick;
-
-	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-	{
-		if(islower(nick_key[i]))
-		{
-			nick_key[i] = toupper(nick_key[i]);
-		}
-	}
+	std::string nick_key = buf_lower2upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
@@ -1165,15 +1157,7 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 
 void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, struct nick_flags flags)
 {
-	std::string nick_key = nick;
-
-	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-	{
-		if(islower(nick_key[i]))
-		{
-			nick_key[i] = toupper(nick_key[i]);
-		}
-	}
+	std::string nick_key = buf_lower2upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
@@ -1194,15 +1178,7 @@ void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_par
 
 void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick)
 {
-	std::string nick_key = nick;
-
-	for(int i = 0; i < static_cast<int>(nick_key.size()); ++i)
-	{
-		if(islower(nick_key[i]))
-		{
-			nick_key[i] = toupper(nick_key[i]);
-		}
-	}
+	std::string nick_key = buf_lower2upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
