@@ -2723,90 +2723,98 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	// jeśli wpisano /names wraz z podaniem pokoju, wyświetl w oknie rozmowy nicki (w formie zwracanej przez serwer) w kolejności statusów, alfabetycznie
 	if(ga.command_names && ! ga.command_names_empty)
 	{
-		std::string nicklist, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
-		std::string nicklist_part;
-		std::stringstream nicklist_stream;
-		int x = 0;
-
-		for(auto it = nick_chan.begin(); it != nick_chan.end(); ++it)
+		if(nick_chan.size() > 0)
 		{
-			if(it->second.flags.owner)
+			std::string nicklist, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
+			std::string nicklist_part;
+			std::stringstream nicklist_stream;
+			int x = 0;
+
+			for(auto it = nick_chan.begin(); it != nick_chan.end(); ++it)
 			{
-				nick_owner += it->second.nick + "\n";
+				if(it->second.flags.owner)
+				{
+					nick_owner += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.op)
+				{
+					nick_op += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.halfop)
+				{
+					nick_halfop += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.moderator)
+				{
+					nick_moderator += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.voice)
+				{
+					nick_voice += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.public_webcam)
+				{
+					nick_pub_webcam += it->second.nick + "\n";
+				}
+
+				else if(it->second.flags.private_webcam)
+				{
+					nick_priv_webcam += it->second.nick + "\n";
+				}
+
+				else
+				{
+					nick_normal += it->second.nick + "\n";
+				}
 			}
 
-			else if(it->second.flags.op)
+			nicklist = nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
+
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xYELLOW "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
+
+			nicklist_stream << nicklist;
+
+			while(getline(nicklist_stream, nick))
 			{
-				nick_op += it->second.nick + "\n";
+				if(x == 0)
+				{
+					nicklist_part += xWHITE;
+				}
+
+				++x;
+
+				nicklist_part += "[" + nick + "]";
+
+				if(x < 6)
+				{
+					nicklist_part += " ";
+				}
+
+				else
+				{
+					nicklist_part += "\n";
+					x = 0;
+				}
 			}
 
-			else if(it->second.flags.halfop)
+			if(nicklist_part.size() > 0)
 			{
-				nick_halfop += it->second.nick + "\n";
+				nicklist_part.erase(nicklist_part.size() - 1, 1);
 			}
 
-			else if(it->second.flags.moderator)
-			{
-				nick_moderator += it->second.nick + "\n";
-			}
-
-			else if(it->second.flags.voice)
-			{
-				nick_voice += it->second.nick + "\n";
-			}
-
-			else if(it->second.flags.public_webcam)
-			{
-				nick_pub_webcam += it->second.nick + "\n";
-			}
-
-			else if(it->second.flags.private_webcam)
-			{
-				nick_priv_webcam += it->second.nick + "\n";
-			}
-
-			else
-			{
-				nick_normal += it->second.nick + "\n";
-			}
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, nicklist_part);
 		}
 
-		nicklist = nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
-
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xYELLOW "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
-
-		nicklist_stream << nicklist;
-
-		while(getline(nicklist_stream, nick))
+		else
 		{
-			if(x == 0)
-			{
-				nicklist_part += xWHITE;
-			}
-
-			++x;
-
-			nicklist_part += "[" + nick + "]";
-
-			if(x < 6)
-			{
-				nicklist_part += " ";
-			}
-
-			else
-			{
-				nicklist_part += "\n";
-				x = 0;
-			}
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xYELLOW "* Nikt nie przebywa w pokoju " + raw_parm3);
 		}
-
-		if(nicklist_part.size() > 0)
-		{
-			nicklist_part.erase(nicklist_part.size() - 1, 1);
-		}
-
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, nicklist_part);
 	}
 
 	// po wyświetleniu nicków wyczyść bufor, aby kolejne użycie nie wyświetliło starej zawartości
