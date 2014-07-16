@@ -3724,6 +3724,13 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std
 	{
 		ga.card_www = get_rest_from_buf(raw_buf, "www :");
 	}
+
+	// nieznany typ danych w wizytówce pokaż w "RawUnknown"
+	else
+	{
+		new_chan_raw_unknown(ga, chan_parm);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
+		win_buf_add_str(ga, chan_parm, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
+	}
 }
 
 
@@ -3733,11 +3740,11 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
-
-	// wizytówkę wyświetl tylko po użyciu polecenia /card, natomiast ukryj ją po zalogowaniu na czat
+	// wyświetl wizytówkę tylko po użyciu polecenia /card, natomiast ukryj ją po zalogowaniu na czat
 	if(ga.command_card)
 	{
+		std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xMAGENTA + raw_parm4 + xTERMC " [Wizytówka]");
 
 		if(ga.card_avatar.size() > 0)
@@ -3910,8 +3917,7 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std
 			/* win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 					"* " xMAGENTA + raw_parm4 + xNORMAL " preferencje: " + ga.card_prefs); */
 		}
-
-	}	// if(ga.command_card)
+	}
 
 	// dla pewności wyczyść informacje (nie wszystkie muszą pojawić się ponownie dla innego nicka)
 	ga.card_avatar.clear();

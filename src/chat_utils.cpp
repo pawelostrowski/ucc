@@ -32,7 +32,7 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 	{
 		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
 		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
-		chan_parm[CHAN_DEBUG_IRC]->topic = "Debug";
+		chan_parm[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
 		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
 
 		chan_parm[CHAN_DEBUG_IRC]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
@@ -46,7 +46,7 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[
 	{
 		chan_parm[CHAN_RAW_UNKNOWN] = new channel_irc;
 		chan_parm[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
-		chan_parm[CHAN_RAW_UNKNOWN]->topic = "RawUnknown";
+		chan_parm[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
 		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;	// zacznij od braku aktywności kanału
 
 		chan_parm[CHAN_RAW_UNKNOWN]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
@@ -212,7 +212,7 @@ void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 }
 
 
-void erase_passwd_nick(std::string &kbd_buf, std::string &hist_buf, std::string &hist_ignore)
+void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::string &hist_ignore)
 {
 	// gdy wpisano nick z hasłem, w historii nie trzymaj hasła
 	if(kbd_buf.find("/nick") == 0)	// reaguj tylko na wpisanie polecenia, dlatego 0
@@ -277,10 +277,10 @@ void erase_passwd_nick(std::string &kbd_buf, std::string &hist_buf, std::string 
 }
 
 
-void destroy_my_password(struct global_args &ga)
+void destroy_my_password(std::string &buf)
 {
-	for(int i = 0; i < static_cast<int>(ga.my_password.size()); ++i)
+	for(int i = 0; i < static_cast<int>(buf.size()); ++i)
 	{
-		ga.my_password[i] = rand();
+		buf[i] = rand();
 	}
 }

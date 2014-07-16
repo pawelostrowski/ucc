@@ -1,4 +1,4 @@
-#include <string>		// std::string
+#include <sstream>		// std::string, std::stringstream
 #include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
 #include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), memcpy()
 #include <unistd.h>		// close() - socket
@@ -410,8 +410,15 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	// debug w oknie
 	if(ga.ucc_dbg_irc)
 	{
-		std::string irc_send_buf_dbg = buf_iso2utf(irc_send_buf);
-		win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_dbg.erase(irc_send_buf_dbg.size() - 1, 1), 1, true, false);
+		std::string irc_send_buf_line;
+		std::stringstream irc_send_buf_stream;
+
+		irc_send_buf_stream << buf_iso2utf(irc_send_buf);
+
+		while(getline(irc_send_buf_stream, irc_send_buf_line))
+		{
+			win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_line, 1, true, false);
+		}
 	}
 /*
 	DBG IRC END
@@ -529,8 +536,15 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		// debug w oknie
 		if(ga.ucc_dbg_irc)
 		{
-			std::string irc_recv_buf_dbg = irc_recv_buf;
-			win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_dbg.erase(irc_recv_buf_dbg.size() - 1, 1), 1, true, false);
+			std::string irc_recv_buf_line;
+			std::stringstream irc_recv_buf_stream;
+
+			irc_recv_buf_stream << irc_recv_buf;
+
+			while(getline(irc_recv_buf_stream, irc_recv_buf_line))
+			{
+				win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_line, 1, true, false);
+			}
 		}
 /*
 	DBG IRC END

@@ -480,7 +480,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				delwin(ga.win_info);
 				endwin();	// zakończ tryb ncurses
 				del_all_chan(chan_parm);
-				destroy_my_password(ga);
+				destroy_my_password(ga.my_password);
 				fclose(stdin);
 
 				return 3;
@@ -510,7 +510,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
 				{
 					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
-					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
+					hist_erase_password(kbd_buf, hist_buf, hist_ignore);
 
 					hist_mod = false;
 					hist_up = true;
@@ -555,7 +555,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				if(hist_mod && kbd_buf.size() > 0 && hist_ignore != kbd_buf)
 				{
 					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
-					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
+					hist_erase_password(kbd_buf, hist_buf, hist_ignore);
 
 					hist_end = hist_buf.size() - 1;
 
@@ -849,7 +849,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				if(hist_ignore != kbd_buf)
 				{
 					// jeśli wpisano polecenie /nick wraz z hasłem, to hasło wytnij z historii
-					erase_passwd_nick(kbd_buf, hist_buf, hist_ignore);
+					hist_erase_password(kbd_buf, hist_buf, hist_ignore);
 				}
 
 				hist_end = hist_buf.size() - 1;
@@ -966,7 +966,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	delwin(ga.win_info);
 	endwin();	// zakończ tryb ncurses
 	del_all_chan(chan_parm);
-	destroy_my_password(ga);
+	destroy_my_password(ga.my_password);
 	fclose(stdin);
 
 	return 0;
