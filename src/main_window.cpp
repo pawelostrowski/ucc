@@ -37,8 +37,9 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	Zmienne.
 */
 	int term_y, term_x;		// wymiary terminala
+
 	int kbd_buf_pos = 0;		// początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
-	int kbd_buf_max = 0;		// początkowy maksymalny rozmiar bufora klawiatury
+	int kbd_buf_end = 0;		// początkowy koniec (rozmiar) bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
 
@@ -52,8 +53,10 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 //	std::string tab_buf;
 
 	int topic_utf8_excess;
+
 	bool was_act;
 	short act_color;
+
 	int ping_counter = 0;
 /*
 	Koniec zmiennych.
@@ -156,16 +159,16 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		new_chan_debug_irc(ga, chan_parm);
 	}
 
+	// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
+	// oraz o aktualizację aktywności pokoi)
+	tv.tv_sec = 0;
+	tv.tv_usec = 250000;
+
 /*
 	Pętla główna programu.
 */
 	while(! ga.ucc_quit)
 	{
-		// co 0.25s select() ma wychodzić z oczekiwania na klawiaturę lub socket (chodzi o pokazanie aktualnego czasu na dolnym pasku
-		// oraz o aktualizację aktywności pokoi)
-		tv.tv_sec = 0;
-		tv.tv_usec = 250000;
-
 		// wykryj zmianę rozmiaru okna terminala
 		if(is_term_resized(term_y, term_x))
 		{
@@ -226,78 +229,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		}
 /*
 	Koniec rysowania pasków.
-*/
-
-/*
-	Obsługa PING.
-*/
-		// licznik dla PING
-		if(ga.irc_ok)
-		{
-			++ping_counter;
-		}
-
-		else
-		{
-			ping_counter = 0;
-			ga.lag = 0;
-			ga.lag_timeout = false;
-		}
-
-		// PING do serwera co liczbę sekund w PING_TIME (gdy klient jest zalogowany)
-		if(ga.irc_ok && ping_counter == PING_TIME * 4)
-		{
-			if(ga.lag_timeout)
-			{
-				gettimeofday(&t_pong, NULL);
-				ga.pong = t_pong.tv_sec * 1000;
-				ga.pong += t_pong.tv_usec / 1000;
-
-				ga.lag += ga.pong - ga.ping;
-
-				if(ga.lag >= PING_TIMEOUT * 1000)
-				{
-					ga.irc_ok = false;
-					FD_CLR(ga.socketfd_irc, &readfds);
-					ga.zuousername = NICK_NOT_LOGGED;
-
-					if(ga.socketfd_irc > 0)
-					{
-						close(ga.socketfd_irc);
-						ga.socketfd_irc = 0;
-					}
-
-					// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
-					// pokojach (poza "Debug" i "RawUnknown")
-					for(int i = 0; i < CHAN_NORMAL; ++i)
-					{
-						if(chan_parm[i])
-						{
-							chan_parm[i]->nick_parm.clear();
-
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
-									+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
-						}
-					}
-
-					ga.nicklist_refresh = true;
-				}
-			}
-
-			ga.lag_timeout = true;
-			ping_counter = 0;
-			gettimeofday(&t_ping, NULL);
-			ga.ping = t_ping.tv_sec * 1000;
-			ga.ping += t_ping.tv_usec / 1000;
-
-			if(ga.irc_ok)
-			{
-				irc_send(ga, chan_parm, "PING :" + std::to_string(ga.ping));
-			}
-		}
-/*
-	Koniec obsługi PING.
 */
 
 /*
@@ -487,6 +418,86 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 		}
 
+		// co 0.25s aktualizuj licznik (trzeba pamiętać, że timeout to nie jedyny sposób wyjścia z select(), tak samo klawiatura i gniazdo przerywają)
+		if(tv.tv_sec == 0 && tv.tv_usec == 0)
+		{
+			tv.tv_sec = 0;
+			tv.tv_usec = 250000;
+
+/*
+	Obsługa PING.
+*/
+			// licznik dla PING
+			if(ga.irc_ok)
+			{
+				++ping_counter;
+			}
+
+			else
+			{
+				ping_counter = 0;
+				ga.lag = 0;
+				ga.lag_timeout = false;
+			}
+
+			// PING do serwera co liczbę sekund w PING_TIME (gdy klient jest zalogowany)
+			if(ga.irc_ok && ping_counter == PING_TIME * 4)
+			{
+				if(ga.lag_timeout)
+				{
+					gettimeofday(&t_pong, NULL);
+					ga.pong = t_pong.tv_sec * 1000;
+					ga.pong += t_pong.tv_usec / 1000;
+
+					ga.lag += ga.pong - ga.ping;
+
+					if(ga.lag >= PING_TIMEOUT * 1000)
+					{
+						ga.irc_ok = false;
+						FD_CLR(ga.socketfd_irc, &readfds);
+						ga.zuousername = NICK_NOT_LOGGED;
+
+						if(ga.socketfd_irc > 0)
+						{
+							close(ga.socketfd_irc);
+							ga.socketfd_irc = 0;
+						}
+
+						// usuń wszystkie nicki ze wszystkich otwartych pokoi z listy oraz wyświetl komunikat we wszystkich otwartych
+						// pokojach (poza "Debug" i "RawUnknown")
+						for(int i = 0; i < CHAN_NORMAL; ++i)
+						{
+							if(chan_parm[i])
+							{
+								chan_parm[i]->nick_parm.clear();
+
+								win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+										xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
+										+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+							}
+						}
+
+						ga.nicklist_refresh = true;
+					}
+				}
+
+				ga.lag_timeout = true;
+				ping_counter = 0;
+				gettimeofday(&t_ping, NULL);
+				ga.ping = t_ping.tv_sec * 1000;
+				ga.ping += t_ping.tv_usec / 1000;
+
+				if(ga.irc_ok)
+				{
+					irc_send(ga, chan_parm, "PING :" + std::to_string(ga.ping));
+				}
+			}
+/*
+	Koniec obsługi PING.
+*/
+
+		}
+
 		// klawiatura
 		if(FD_ISSET(0, &readfds_tmp))
 		{
@@ -499,7 +510,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 
 			// Right Arrow
-			else if(key_code == KEY_RIGHT && kbd_buf_pos < kbd_buf_max)
+			else if(key_code == KEY_RIGHT && kbd_buf_pos < kbd_buf_end)
 			{
 				++kbd_buf_pos;
 			}
@@ -542,7 +553,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					kbd_buf.insert(0, hist_buf, hist_prev, hist_end - hist_prev);
 
 					kbd_buf_pos = kbd_buf.size();
-					kbd_buf_max = kbd_buf_pos;
+					kbd_buf_end = kbd_buf_pos;
 
 					hist_end = hist_prev - 1;
 					hist_up = true;
@@ -561,7 +572,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 
 					kbd_buf.clear();
 					kbd_buf_pos = 0;
-					kbd_buf_max = 0;
+					kbd_buf_end = 0;
 
 					hist_mod = false;
 					hist_down = false;
@@ -585,7 +596,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 						kbd_buf.insert(0, hist_buf, hist_end + 1, hist_next - hist_end - 1);
 
 						kbd_buf_pos = kbd_buf.size();
-						kbd_buf_max = kbd_buf_pos;
+						kbd_buf_end = kbd_buf_pos;
 
 						hist_end = hist_next;
 						hist_down = true;
@@ -595,7 +606,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 					{
 						kbd_buf.clear();
 						kbd_buf_pos = 0;
-						kbd_buf_max = 0;
+						kbd_buf_end = 0;
 
 						hist_down = false;
 					}
@@ -606,7 +617,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				{
 					kbd_buf.clear();
 					kbd_buf_pos = 0;
-					kbd_buf_max = 0;
+					kbd_buf_end = 0;
 
 					hist_down = false;
 				}
@@ -616,14 +627,14 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			else if(key_code == KEY_BACKSPACE && kbd_buf_pos > 0)
 			{
 				--kbd_buf_pos;
-				--kbd_buf_max;
+				--kbd_buf_end;
 				kbd_buf.erase(kbd_buf_pos, 1);
 			}
 
 			// Delete
-			else if(key_code == KEY_DC && kbd_buf_pos < kbd_buf_max)
+			else if(key_code == KEY_DC && kbd_buf_pos < kbd_buf_end)
 			{
-				--kbd_buf_max;
+				--kbd_buf_end;
 				kbd_buf.erase(kbd_buf_pos, 1);
 			}
 
@@ -636,7 +647,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// End
 			else if(key_code == KEY_END)
 			{
-				kbd_buf_pos = kbd_buf_max;
+				kbd_buf_pos = kbd_buf_end;
 			}
 
 			// Page Up
@@ -662,7 +673,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			{
 				kbd_buf.insert(kbd_buf_pos, "\t");
 				++kbd_buf_pos;
-				++kbd_buf_max;
+				++kbd_buf_end;
 			}
 */
 
@@ -894,7 +905,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				// po obsłudze bufora wyczyść go
 				kbd_buf.clear();
 				kbd_buf_pos = 0;
-				kbd_buf_max = 0;
+				kbd_buf_end = 0;
 			}
 
 			// Enter, gdy nic nie ma w buforze klawiatury powoduje ustawienie w historii ostatnio wpisanego elementu
@@ -908,12 +919,12 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego
-			else if(key_code >= 32 && key_code <= 255 && kbd_buf_max < KBD_BUF_MAX_SIZE)
+			else if(key_code >= 32 && key_code <= 255 && kbd_buf_end < KBD_BUF_MAX_SIZE)
 			{
 				// wstaw do bufora klawiatury odczytany znak i gdy to UTF-8, zamień go na ISO-8859-2
 				kbd_buf.insert(kbd_buf_pos, key_utf2iso(key_code));
 				++kbd_buf_pos;
-				++kbd_buf_max;
+				++kbd_buf_end;
 
 				hist_mod = true;
 			}
