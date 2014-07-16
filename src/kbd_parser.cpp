@@ -1,6 +1,7 @@
 #include <string>		// std::string
 
 #include "kbd_parser.hpp"
+#include "chat_utils.hpp"
 #include "window_utils.hpp"
 #include "form_conv.hpp"
 #include "enc_str.hpp"
@@ -875,52 +876,50 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 
 void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
-	if(ga.irc_ok)
+	// w oknie "Status" i "Debug" pokaż ostrzeżenie, że tych okien nie można zamknąć
+	if(ga.current == CHAN_STATUS || ga.current == CHAN_DEBUG_IRC)
 	{
-		// wyślij polecenie, gdy to aktywny pokój czata, a nie "Status" lub "Debug"
-		if(ga.current < CHAN_CHAT)
+		msg_err_not_active_chan(ga, chan_parm);
+	}
+
+	// jako wyjątek /part w oknie "RawUnknown" zamyka je
+	else if(ga.current == CHAN_RAW_UNKNOWN)
+	{
+		// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
+		ga.current = CHAN_STATUS;
+		win_buf_refresh(ga, chan_parm);
+
+		// usuń kanał "RawUnknown"
+		delete chan_parm[CHAN_RAW_UNKNOWN];
+
+		// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
+		chan_parm[CHAN_RAW_UNKNOWN] = 0;
+	}
+
+	// ta opcja dotyczy /part po zalogowaniu się na czat i dotyczy wyłącznie pokoi czata, ale nie trzeba już ich sprawdzać w warunku, bo wyżej zostało
+	// wykluczone, że /part zadziała w niewłaściwym pokoju/oknie
+	else if(ga.irc_ok)
+	{
+		std::string part_reason = get_rest_args(kbd_buf, pos_arg_start);
+
+		// jeśli podano powód wyjścia, wyślij go
+		if(part_reason.size() > 0)
 		{
-			std::string part_reason = get_rest_args(kbd_buf, pos_arg_start);
-
-			// jeśli podano powód wyjścia, wyślij go
-			if(part_reason.size() > 0)
-			{
-				irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + part_reason);
-			}
-
-			// w przeciwnym razie wyślij samo polecenie
-			else
-			{
-				irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.current]->channel));
-			}
+			irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + part_reason);
 		}
 
-		// jako wyjątek /part w oknie "RawUnknown" zamyka je
-		else if(ga.current == CHAN_RAW_UNKNOWN)
-		{
-			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
-			ga.current = CHAN_STATUS;
-			win_buf_refresh(ga, chan_parm);
-
-			// usuń kanał "RawUnknown"
-			delete chan_parm[CHAN_RAW_UNKNOWN];
-
-			// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
-			chan_parm[CHAN_RAW_UNKNOWN] = 0;
-		}
-
-		// w przeciwnym razie pokaż ostrzeżenie
+		// w przeciwnym razie wyślij samo polecenie
 		else
 		{
-			msg_err_not_active_chan(ga, chan_parm);
+			irc_send(ga, chan_parm, "PART " + buf_utf2iso(chan_parm[ga.current]->channel));
 		}
 	}
 
-	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	// gdy jesteśmy rozłączeni, daj możliwość zamknięcia pokoi czata (wtedy nie dostaniemy odpowiedzi PART z serwera), nie trzeba sprawdzać warunku,
+	// bo wyżej zostało wykluczone, że /part zadziała w niewłaściwym pokoju/oknie
 	else
 	{
-		msg_err_first_login(ga, chan_parm);
+		del_chan_chat(ga, chan_parm, chan_parm[ga.current]->channel);
 	}
 }
 
