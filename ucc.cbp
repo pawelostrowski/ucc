@@ -39,6 +39,8 @@
 		</Linker>
 		<Unit filename="src/auth.cpp" />
 		<Unit filename="src/auth.hpp" />
+		<Unit filename="src/chat_utils.cpp" />
+		<Unit filename="src/chat_utils.hpp" />
 		<Unit filename="src/debug.cpp" />
 		<Unit filename="src/debug.hpp" />
 		<Unit filename="src/enc_str.cpp" />

@@ -7,6 +7,7 @@
 
 #include "main_window.hpp"
 #include "window_utils.hpp"
+#include "chat_utils.hpp"
 #include "enc_str.hpp"
 #include "network.hpp"
 #include "kbd_parser.hpp"

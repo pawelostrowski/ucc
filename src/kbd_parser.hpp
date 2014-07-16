@@ -7,7 +7,11 @@ std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2uppe
 
 std::string get_rest_args(std::string &kbd_buf, size_t pos_arg_start);
 
-void msg_connect_irc_err(struct global_args &ga, struct channel_irc *chan_parm[]);
+void msg_err_first_login(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void msg_err_not_active_chan(struct global_args &ga, struct channel_irc *chan_parm[]);
+
+void msg_err_disconnect(struct global_args &ga, struct channel_irc *chan_parm[]);
 
 void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf);
 

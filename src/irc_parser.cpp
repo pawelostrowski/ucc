@@ -2,6 +2,7 @@
 #include <sys/time.h>		// gettimeofday()
 
 #include "irc_parser.hpp"
+#include "chat_utils.hpp"
 #include "window_utils.hpp"
 #include "form_conv.hpp"
 #include "enc_str.hpp"
