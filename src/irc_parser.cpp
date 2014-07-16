@@ -810,6 +810,10 @@ void raw_ping(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 {
 	// odpowiedz PONG na PING
 	irc_send(ga, chan_parm, "PONG :" + raw_parm1);
+
+	// normalnie przy wysyłaniu przez ucc PING, serwer sam nie wysyła PING, ale zdarzyło się, że tak zrobił (brak PONG), dlatego na wszelki wypadek
+	// odebranie z serwera PING kasuje lag, aby nie zerwało połączenia (aby to działało, timeout w ucc musi być większy z zapasem od PING z serwera)
+	ga.lag = 0;
 }
 
 
