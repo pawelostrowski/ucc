@@ -37,6 +37,8 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 
 void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start);
 
+void kbd_command_list(struct global_args &ga, struct channel_irc *chan_parm[]);
+
 void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start);
 
 void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start);

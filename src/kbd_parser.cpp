@@ -282,6 +282,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 		kbd_command_kick(ga, chan_parm, kbd_buf, pos_arg_start);
 	}
 
+	else if(command == "LIST" || command == "L")
+	{
+		kbd_command_list(ga, chan_parm);
+	}
+
 	else if(command == "ME")
 	{
 		kbd_command_me(ga, chan_parm, kbd_buf, pos_arg_start);
@@ -617,6 +622,7 @@ void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
 			xCYAN  "/kick\n"
+			xCYAN  "/list " xGREEN "lub " xCYAN "/l\n"
 			xCYAN  "/me\n"
 			xCYAN  "/names " xGREEN "lub " xCYAN "/n\n"
 			xCYAN  "/nick\n"
@@ -715,6 +721,42 @@ void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], s
 	else
 	{
 		msg_err_first_login(ga, chan_parm);
+	}
+}
+
+
+void kbd_command_list(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	std::string chan_nr;
+
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xGREEN "# Aktualnie otwarte pokoje:");
+
+	for(int i = 0; i < CHAN_MAX; ++i)
+	{
+		if(chan_parm[i])
+		{
+			if(i < CHAN_CHAT)
+			{
+				chan_nr = std::to_string(i + 1);
+			}
+
+			else if(i == CHAN_STATUS)
+			{
+				chan_nr = "s";
+			}
+
+			else if(i == CHAN_DEBUG_IRC)
+			{
+				chan_nr = "d";
+			}
+
+			else
+			{
+				chan_nr = "x";
+			}
+
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xBOLD_ON + chan_nr + xNORMAL "\t\t" + chan_parm[i]->channel);
+		}
 	}
 }
 
