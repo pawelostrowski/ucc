@@ -1122,8 +1122,8 @@ void raw_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 	Do zaimplementowania:
 	:ChanServ!service@service.onet MODE #ucc +c 1
-	:ChanServ!service@service.onet MODE #nowy_test +il-e 1 *!50256503@*			(gdy ja usuwam swój pokój i w nim byłem)
-	:ChanServ!service@service.onet MODE #nowy_test +il-ee 1 *!70914256@* *!50256503@*	(gdy ktoś usuwa pokój, a ja miałem tam opa i w nim byłem)
+	:ChanServ!service@service.onet MODE #nowy_test +il-e 1 *!50256503@*			(gdy ja lub ktoś usuwa pokój i w nim byłem)
+	:ChanServ!service@service.onet MODE #nowy_test +il-ee 1 *!70914256@* *!50256503@*	(gdy ja lub ktoś usuwa pokój i w nim byłem)
 */
 void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf, std::string &raw_parm0, bool normal_user)
 {
@@ -1134,12 +1134,10 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	std::string raw_parm2 = get_raw_parm(raw_buf, 2);
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	bool raw_mode_unknown;
-
 	// flagi używane przy wchodzeniu do pokoi, które były otwarte po rozłączeniu, a program nie był zamknięty
 	bool my_flag_x = false, my_flag_r = false;
 
-	std::string a, nick_gives, nick_receives, nick_receives_key, chan_join;
+	std::string a, nick_gives, chan_join;
 
 	// flaga normal_user jest informacją, że to zwykły użytkownik czata (a nie np. ChanServ) ustawił daną flagę, dlatego wtedy dodaj "(a)" po "ustawił",
 	// pojawia się podczas wywołania z RAW NOTICE 256
@@ -1172,698 +1170,655 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 			continue;	// gdy znaleziono znak + lub -, powróć do początku
 		}
 
-		raw_mode_unknown = false;
-
 /*
-	Zmiany flag pokoju.
+	Zmiany flag pokoju (nie trzeba sprawdzać, czy raw_parm2 ma rozmiar większy od zera, bo wejście do tej pętli zawdzięczamy raw_parm3 większemu od zera).
 */
-		if(raw_parm2.size() > 0 && raw_parm2[0] == '#')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'q' && raw_parm3[s] == '+')
 		{
-			nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
 
-			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
-			nick_receives_key = buf_lower2upper(nick_receives);
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " jest teraz właścicielem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
 
-			if(raw_parm3[f] == 'q')
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " jest teraz właścicielem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.owner = true;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.owner = true;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
+			}
+		}
 
-				else if(raw_parm3[s] == '-')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'q' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już właścicielem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już właścicielem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.owner = false;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.owner = false;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
 			}
+		}
 
-			else if(raw_parm3[f] == 'o')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'o' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " jest teraz superoperatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " jest teraz superoperatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.op = true;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.op = true;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
+			}
+		}
 
-				else if(raw_parm3[s] == '-')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'o' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już superoperatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już superoperatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.op = false;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.op = false;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
 			}
+		}
 
-			else if(raw_parm3[f] == 'h')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'h' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " jest teraz operatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " jest teraz operatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.halfop = true;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.halfop = true;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
+			}
+		}
 
-				else if(raw_parm3[s] == '-')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'h' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już operatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już operatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.halfop = false;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.halfop = false;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
 			}
+		}
 
-			else if(raw_parm3[f] == 'v')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'v' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " jest teraz gościem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " jest teraz gościem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.voice = true;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.voice = true;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
+			}
+		}
 
-				else if(raw_parm3[s] == '-')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'v' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już gościem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już gościem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.voice = false;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.voice = false;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
 			}
+		}
 
-			else if(raw_parm3[f] == 'X')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'X' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " jest teraz moderatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " jest teraz moderatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.moderator = true;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.moderator = true;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
+			}
+		}
 
-				else if(raw_parm3[s] == '-')
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'X' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już moderatorem pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+
+			// zaktualizuj flagę
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
 				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już moderatorem pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
 
-					// zaktualizuj flagę
-					for(int i = 0; i < CHAN_CHAT; ++i)
+					if(it != chan_parm[i]->nick_parm.end())
 					{
-						if(chan_parm[i] && chan_parm[i]->channel == raw_parm2)
+						it->second.flags.moderator = false;
+
+						// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+						if(i == ga.current)
 						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							if(it != chan_parm[i]->nick_parm.end())
-							{
-								it->second.flags.moderator = false;
-
-								// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym
-								// pokoju)
-								if(i == ga.current)
-								{
-									ga.nicklist_refresh = true;
-								}
-							}
-
-							break;
+							ga.nicklist_refresh = true;
 						}
 					}
+
+					break;
 				}
 			}
+		}
 
-			else if(raw_parm3[f] == 'b')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xRED "* " + nick_receives + " otrzymuje bana w pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie posiada już bana w pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xRED "* " + nick_receives + " otrzymuje bana w pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 'e')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* " + nick_receives + " posiada teraz wyjątek od bana w pokoju " + raw_parm2
-							+ " (ustawił " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie posiada już wyjątku od bana w pokoju " + raw_parm2
-							+ " (ustawił " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie posiada już bana w pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 'I')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xCYAN "* " + nick_receives + " jest teraz na liście zaproszonych w pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'e' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* " + nick_receives + " nie jest już na liście zaproszonych w pokoju " + raw_parm2
-							+ " (ustawił" + a + " " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* " + nick_receives + " posiada teraz wyjątek od bana w pokoju " + raw_parm2
+					+ " (ustawił " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 'm')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* Pokój " + raw_parm2 + " jest teraz moderowany (ustawił" + a + " " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'e' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* Pokój " + raw_parm2 + " nie jest już moderowany (ustawił" + a + " " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie posiada już wyjątku od bana w pokoju " + raw_parm2
+					+ " (ustawił " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 'i')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* Pokój " + raw_parm2 + " jest teraz niewidoczny (ustawił " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'I' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* Pokój " + raw_parm2 + " nie jest już niewidoczny (ustawił " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xCYAN "* " + nick_receives + " jest teraz na liście zaproszonych w pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 'p')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* Pokój " + raw_parm2 + " jest teraz prywatny (ustawił " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'I' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* Pokój " + raw_parm2 + " nie jest już prywatny (ustawił " + nick_gives + ").");
-				}
-			}
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* " + nick_receives + " nie jest już na liście zaproszonych w pokoju " + raw_parm2
+					+ " (ustawił" + a + " " + nick_gives + ").");
+		}
 
-			else if(raw_parm3[f] == 's')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xMAGENTA "* Pokój " + raw_parm2 + " jest teraz sekretny (ustawił " + nick_gives + ").");
-				}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'm' && raw_parm3[s] == '+')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xMAGENTA "* Pokój " + raw_parm2 + " jest teraz moderowany (ustawił" + a + " " + nick_gives + ").");
+		}
 
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, raw_parm2,
-							xWHITE "* Pokój " + raw_parm2 + " nie jest już sekretny (ustawił " + nick_gives + ").");
-				}
-			}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'm' && raw_parm3[s] == '-')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2,
+					xWHITE "* Pokój " + raw_parm2 + " nie jest już moderowany (ustawił" + a + " " + nick_gives + ").");
+		}
 
-			else
-			{
-				raw_mode_unknown = true;
-			}
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'i' && raw_parm3[s] == '+')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xMAGENTA "* Pokój " + raw_parm2 + " jest teraz niewidoczny (ustawił " + nick_gives + ").");
+		}
+
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'i' && raw_parm3[s] == '-')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xWHITE "* Pokój " + raw_parm2 + " nie jest już niewidoczny (ustawił " + nick_gives + ").");
+		}
+
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'p' && raw_parm3[s] == '+')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xMAGENTA "* Pokój " + raw_parm2 + " jest teraz prywatny (ustawił " + nick_gives + ").");
+		}
+
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 'p' && raw_parm3[s] == '-')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xWHITE "* Pokój " + raw_parm2 + " nie jest już prywatny (ustawił " + nick_gives + ").");
+		}
+
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 's' && raw_parm3[s] == '+')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xMAGENTA "* Pokój " + raw_parm2 + " jest teraz sekretny (ustawił " + nick_gives + ").");
+		}
+
+		else if(raw_parm2[0] == '#' && raw_parm3[f] == 's' && raw_parm3[s] == '-')
+		{
+			win_buf_add_str(ga, chan_parm, raw_parm2, xWHITE "* Pokój " + raw_parm2 + " nie jest już sekretny (ustawił " + nick_gives + ").");
 		}
 
 /*
 	Zmiany flag osób.
 */
-		else
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'O' && raw_parm3[s] == '+')
 		{
-			nick_receives = raw_parm2;
+			std::string nick_receives = raw_parm2;
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
 
-			// klucz nicka trzymany jest wielkimi literami, używany podczas aktualizacji wybranych flag
-			nick_receives_key = buf_lower2upper(nick_receives);
-
-			if(raw_parm3[f] == 'O')
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
 			{
-				if(raw_parm3[s] == '+')
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
 				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xMAGENTA "* " + nick_receives + " jest teraz deweloperem czata (ustawił(a) "
-									+ nick_gives + ").");
-						}
-					}
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xMAGENTA "* " + nick_receives + " jest teraz deweloperem czata (ustawił(a) " + nick_gives + ").");
 				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xWHITE "* " + nick_receives + " nie jest już deweloperem czata (ustawił(a) "
-									+ nick_gives + ").");
-						}
-					}
-				}
-			}
-
-			else if(raw_parm3[f] == 'W')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
-									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza publiczną kamerkę.");
-
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.public_webcam = true;
-
-							// ze względu na obecny brak zmiany flagi V (brak MODE) należy ją wyzerować po włączeniu W
-							it->second.flags.private_webcam = false;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
-									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza publiczną kamerkę.");
-
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.public_webcam = false;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-			}
-
-			else if(raw_parm3[f] == 'V')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
-									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza prywatną kamerkę.");
-
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.private_webcam = true;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					// pokaż informację we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
-									xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
-									+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza prywatną kamerkę.");
-
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.private_webcam = false;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-			}
-
-			// aktualizacja flagi busy na liście nicków
-			else if(raw_parm3[f] == 'b')
-			{
-				if(raw_parm3[s] == '+')
-				{
-					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.busy = true;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
-					for(int i = 0; i < CHAN_CHAT; ++i)
-					{
-						if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
-						{
-							auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
-
-							// zaktualizuj flagę
-							it->second.flags.busy = false;
-
-							// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
-							if(i == ga.current)
-							{
-								ga.nicklist_refresh = true;
-							}
-						}
-					}
-				}
-			}
-
-			// pokazuj tylko moje szyfrowanie IP (w pokoju "Status")
-			else if(raw_parm3[f] == 'x' && raw_parm2 == buf_iso2utf(ga.zuousername))
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, "Status",
-							xGREEN "* " + get_value_from_buf(raw_buf, ":", "!")
-							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] - masz teraz szyfrowane IP.");
-
-					my_flag_x = true;
-				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, "Status",
-							xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
-							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] - nie masz już szyfrowanego IP.");
-				}
-			}
-
-			// pokazuj tylko mój zarejestrowany nick (w pokoju "Status")
-			else if(raw_parm3[f] == 'r' && raw_parm2 == buf_iso2utf(ga.zuousername))
-			{
-				if(raw_parm3[s] == '+')
-				{
-					win_buf_add_str(ga, chan_parm, "Status", xGREEN "* Jesteś teraz zarejestrowanym użytkownikiem (ustawił "
-							+ nick_gives + ").");
-
-					my_flag_r = true;
-				}
-
-				else if(raw_parm3[s] == '-')
-				{
-					win_buf_add_str(ga, chan_parm, "Status", xWHITE "* Nie jesteś już zarejestrowanym użytkownikiem (ustawił "
-							+ nick_gives + ").");
-				}
-			}
-
-			else
-			{
-				raw_mode_unknown = true;
 			}
 		}
 
-		// niezaimplementowane RAW z MODE wyświetl bez zmian w oknie "RawUnknown"
-		if(raw_mode_unknown)
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'O' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives = raw_parm2;
+			std::string nick_receives_key = buf_lower2upper(nick_receives);
+
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xWHITE "* " + nick_receives + " nie jest już deweloperem czata (ustawił(a) " + nick_gives + ").");
+				}
+			}
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'W' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
+							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza publiczną kamerkę.");
+
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.public_webcam = true;
+
+					// ze względu na obecny brak zmiany flagi V (brak MODE) należy ją wyzerować po włączeniu W
+					it->second.flags.private_webcam = false;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'W' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
+							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza publiczną kamerkę.");
+
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.public_webcam = false;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'V' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
+							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] włącza prywatną kamerkę.");
+
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.private_webcam = true;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'V' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż informację we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					win_buf_add_str(ga, chan_parm, chan_parm[i]->channel,
+							xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
+							+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] wyłącza prywatną kamerkę.");
+
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.private_webcam = false;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		// aktualizacja flagi busy na liście nicków
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '+')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.busy = true;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '-')
+		{
+			std::string nick_receives_key = buf_lower2upper(raw_parm2);
+
+			// pokaż zmianę we wszystkich pokojach, gdzie jest dany nick
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(chan_parm[i] && chan_parm[i]->nick_parm.find(nick_receives_key) != chan_parm[i]->nick_parm.end())
+				{
+					auto it = chan_parm[i]->nick_parm.find(nick_receives_key);
+
+					// zaktualizuj flagę
+					it->second.flags.busy = false;
+
+					// odśwież listę w aktualnym pokoju (o ile zmiana dotyczyła nicka, który też jest w tym pokoju)
+					if(i == ga.current)
+					{
+						ga.nicklist_refresh = true;
+					}
+				}
+			}
+		}
+
+		// pokazuj tylko moje szyfrowanie IP (w pokoju "Status")
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'x' && raw_parm3[s] == '+' && raw_parm2 == buf_iso2utf(ga.zuousername))
+		{
+			win_buf_add_str(ga, chan_parm, "Status",
+					xGREEN "* " + get_value_from_buf(raw_buf, ":", "!")
+					+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] - masz teraz szyfrowane IP.");
+
+			my_flag_x = true;
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'x' && raw_parm3[s] == '-' && raw_parm2 == buf_iso2utf(ga.zuousername))
+		{
+			win_buf_add_str(ga, chan_parm, "Status",
+					xWHITE "* " + get_value_from_buf(raw_buf, ":", "!")
+					+ " [" + get_value_from_buf(raw_buf, "!", " ") + "] - nie masz już szyfrowanego IP.");
+		}
+
+		// pokazuj tylko mój zarejestrowany nick (w pokoju "Status")
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'r' && raw_parm3[s] == '+' && raw_parm2 == buf_iso2utf(ga.zuousername))
+		{
+			win_buf_add_str(ga, chan_parm, "Status", xGREEN "* Jesteś teraz zarejestrowanym użytkownikiem (ustawił " + nick_gives + ").");
+
+			my_flag_r = true;
+		}
+
+		else if(raw_parm2[0] != '#' && raw_parm3[f] == 'r' && raw_parm3[s] == '-' && raw_parm2 == buf_iso2utf(ga.zuousername))
+		{
+			win_buf_add_str(ga, chan_parm, "Status", xWHITE "* Nie jesteś już zarejestrowanym użytkownikiem (ustawił " + nick_gives + ").");
+		}
+
+		// nieznane lub niezaimplementowane RAW z MODE wyświetl bez zmian w oknie "RawUnknown"
+		else
 		{
 			new_chan_raw_unknown(ga, chan_parm);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
 			win_buf_add_str(ga, chan_parm, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
 		}
-
-	}	// for()
+	}
 
 	// jeśli wylogowaliśmy się, ale nie zamknęliśmy programu i były otwarte jakieś pokoje, wejdź do nich ponownie po zalogowaniu
 	// - po +r dla nicka zarejestrowanego
@@ -4462,10 +4417,10 @@ void raw_notice_404(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_406(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string unknown_command = get_value_from_buf(raw_buf, " :406 ", " :");
 
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-			xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": " + raw_parm4 + " - nieznane polecenie.");
+			xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": " + unknown_command + " - nieznane polecenie.");
 }
 
 
@@ -4659,7 +4614,8 @@ void raw_notice_458(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 /*
 	NOTICE 459 (CS opcja #pokój ADD nick - nadanie istniejącego już statusu/uprawnienia)
-	 :ChanServ!service@service.onet NOTICE ucieszony86 :459 #ucc q ucieszony86 :channel privilege already given
+	:ChanServ!service@service.onet NOTICE ucieszony86 :459 #ucc q ucieszony86 :channel privilege already given
+	:ChanServ!service@service.onet NOTICE ucieszony86 :459 #ucc v ucieszony86 :channel privilege already given
 */
 
 
