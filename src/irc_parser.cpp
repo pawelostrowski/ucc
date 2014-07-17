@@ -2610,6 +2610,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	std::string nick;
 	struct nick_flags flags;
+	bool was_open_chan = false;
 
 	std::stringstream names_stream;
 	names_stream << ga.names;
@@ -2617,6 +2618,19 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	// zmienne używane, gdy wpiszemy /nick wraz z podaniem pokoju (w celu wyświetlenia osób w oknie, a nie na liście)
 	std::string nick_onet, nick_key;
 	std::map<std::string, struct nick_irc> nick_chan;
+
+	// sprawdź, czy szukany pokój jest na liście otwartych pokoi (aby dopisać osoby na listę, gdy wpiszemy /names z podaniem pokoju)
+	if(ga.command_names && ! ga.command_names_empty)
+	{
+		for(int i = 0; i < CHAN_CHAT; ++i)
+		{
+			if(chan_parm[i] && chan_parm[i]->channel == raw_parm3)
+			{
+				was_open_chan = true;
+				break;
+			}
+		}
+	}
 
 	while(getline(names_stream, nick, ' '))
 	{
@@ -2689,9 +2703,15 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			}
 
 			// jeśli to NAMES po wejściu do pokoju po użyciu /join, wczytaj nicki na listę, tak samo jeśli to NAMES po użyciu /names bez podania
-			// pokoju (ma znaczenie przy kamerkach prywatnych, bo serwer nie zwraca obecnie flagi V dla MODE, za wyjątkiem własnego nicka)
-			if(! ga.command_names || ga.command_names_empty)
+			// pokoju (ma znaczenie przy kamerkach prywatnych, bo serwer nie zwraca obecnie flagi V dla MODE, za wyjątkiem własnego nicka,
+			// a dzięki temu można zaktualizować listę osób z kamerkami prywatnymi, bo NAMES zwraca flagę V), wczytaj również nicki, jeśli
+			// szukany pokój jest na liście otwartych pokoi, a wpisano /names z podaniem pokoju
+			if(! ga.command_names || ga.command_names_empty || was_open_chan)
 			{
+				// ! ga.command_names		- występuje po /join pokój (wtedy flaga ta jest na false)
+				// ga.command_names_empty	- występuje po /names bez podania pokoju
+				// was_open_chan		- występuje po /names z podaniem pokoju, o ile sprawdzany pokój jest na liście otwartych pokoi
+
 				// wpisz nick na listę
 				new_or_update_nick_chan(ga, chan_parm, raw_parm3, nick, "");
 
@@ -2699,9 +2719,9 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 				update_nick_flags_chan(ga, chan_parm, raw_parm3, nick, flags);
 			}
 
-			// jeśli to NAMES po użyciu /names z podaniem pokoju, wyświetl listę nicków w aktualnie otwartym oknie (można podejrzeć listę osób,
-			// nie będąc w tym pokoju)
-			else
+			// jeśli to NAMES po użyciu /names z podaniem pokoju, pobierz listę nicków, która zostanie później wyświetlona w oknie rozmowy
+			// (można podejrzeć listę osób, nie będąc w tym pokoju)
+			if(ga.command_names && ! ga.command_names_empty)
 			{
 				// klucz nicka trzymaj wielkimi literami w celu poprawienia sortowania zapewnianego przez std::map
 				nick_key = buf_lower2upper(nick);
@@ -2713,19 +2733,19 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	}
 
 	// odśwież listę (o ile zmiana dotyczyła aktualnie otwartego pokoju)
-	if((! ga.command_names || ga.command_names_empty) && chan_parm[ga.current]->channel == raw_parm3)
+	if(chan_parm[ga.current]->channel == raw_parm3)
 	{
 		ga.nicklist_refresh = true;
 	}
 
 	// jeśli to było /names bez podania pokoju, pokaż komunikat o aktualizacji listy pokoi
-	if(ga.command_names_empty)
+	if(ga.command_names && ga.command_names_empty)
 	{
 		win_buf_add_str(ga, chan_parm, raw_parm3, xWHITE "# Zaktualizowano listę osób w pokoju " + raw_parm3);
 	}
 
 	// jeśli wpisano /names wraz z podaniem pokoju, wyświetl w oknie rozmowy nicki (w formie zwracanej przez serwer) w kolejności statusów, alfabetycznie
-	if(ga.command_names && ! ga.command_names_empty)
+	else if(ga.command_names && ! ga.command_names_empty)
 	{
 		if(nick_chan.size() > 0)
 		{
@@ -2780,7 +2800,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			nicklist = nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
 
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xYELLOW "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
+					xGREEN "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
 
 			nicklist_stream << nicklist;
 
