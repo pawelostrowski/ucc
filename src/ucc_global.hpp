@@ -86,6 +86,25 @@
 // maksymalna łączna liczba pokoi
 #define CHAN_MAX		(CHAN_CHAT + 3)
 
+// struktura wizytówki pobieranej z serwera
+struct card_onet
+{
+	std::string avatar;
+	std::string birthdate;
+	std::string city;
+	std::string country;
+	std::string email;
+	std::string long_desc;
+	std::string offmsg;
+	std::string prefs;
+	std::string rank;
+	std::string sex;
+	std::string short_desc;
+	std::string type;
+	std::string v_email;
+	std::string www;
+};
+
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
@@ -126,9 +145,7 @@ struct global_args
 
 	std::string cs_homes;
 
-	// używane podczas pobierania wizytówki
-	std::string card_avatar, card_birthdate, card_city, card_country, card_email, card_long_desc, card_offmsg, card_prefs,
-			card_rank, card_sex, card_short_desc, card_type, card_v_email, card_www;
+	std::map<std::string, struct card_onet> card;
 
 	std::string my_friend, my_ignore, my_favourites;
 

@@ -2874,7 +2874,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 		}
 	}
 
-	// po wyświetleniu nicków wyczyść bufor
+	// po wyświetleniu nicków wyczyść bufor przetwarzanego pokoju
 	ga.names.erase(raw_parm3);
 
 	// skasuj ewentualne użycie /names
@@ -3733,90 +3733,91 @@ void raw_notice_109(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 avatar :http://foto0.m.ocdn.eu/_m/3e7c4b7dec69eb13ed9f013f1fa2abd4,1,19,0.jpg
 	if(raw_parm5 == "avatar")
 	{
-		ga.card_avatar = get_rest_from_buf(raw_buf, "avatar :");
+		ga.card[raw_parm4].avatar = get_rest_from_buf(raw_buf, "avatar :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 birthdate :1986-02-12
 	else if(raw_parm5 == "birthdate")
 	{
-		ga.card_birthdate = get_rest_from_buf(raw_buf, "birthdate :");
+		ga.card[raw_parm4].birthdate = get_rest_from_buf(raw_buf, "birthdate :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 city :
 	else if(raw_parm5 == "city")
 	{
-		ga.card_city = get_rest_from_buf(raw_buf, "city :");
+		ga.card[raw_parm4].city = get_rest_from_buf(raw_buf, "city :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 country :
 	else if(raw_parm5 == "country")
 	{
-		ga.card_country = get_rest_from_buf(raw_buf, "country :");
+		ga.card[raw_parm4].country = get_rest_from_buf(raw_buf, "country :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 email :
 	else if(raw_parm5 == "email")
 	{
-		ga.card_email = get_rest_from_buf(raw_buf, "email :");
+		ga.card[raw_parm4].email = get_rest_from_buf(raw_buf, "email :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 longDesc :
 	else if(raw_parm5 == "longDesc")
 	{
-		ga.card_long_desc = get_rest_from_buf(raw_buf, "longDesc :");
+		ga.card[raw_parm4].long_desc = get_rest_from_buf(raw_buf, "longDesc :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 offmsg :friend
 	else if(raw_parm5 == "offmsg")
 	{
-		ga.card_offmsg = get_rest_from_buf(raw_buf, "offmsg :");
+		ga.card[raw_parm4].offmsg = get_rest_from_buf(raw_buf, "offmsg :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 prefs :111000001001110100;1|100|100|0;verdana;006699;14
 	else if(raw_parm5 == "prefs")
 	{
-		ga.card_prefs = get_rest_from_buf(raw_buf, "prefs :");
+		ga.card[raw_parm4].prefs = get_rest_from_buf(raw_buf, "prefs :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 rank :1.6087
 	else if(raw_parm5 == "rank")
 	{
-		ga.card_rank = get_rest_from_buf(raw_buf, "rank :");
+		ga.card[raw_parm4].rank = get_rest_from_buf(raw_buf, "rank :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 sex :M
 	else if(raw_parm5 == "sex")
 	{
-		ga.card_sex = get_rest_from_buf(raw_buf, "sex :");
+		ga.card[raw_parm4].sex = get_rest_from_buf(raw_buf, "sex :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 shortDesc :Timeout.
 	else if(raw_parm5 == "shortDesc")
 	{
-		ga.card_short_desc = get_rest_from_buf(raw_buf, "shortDesc :");
+		ga.card[raw_parm4].short_desc = get_rest_from_buf(raw_buf, "shortDesc :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 type :1
 	else if(raw_parm5 == "type")
 	{
-		ga.card_type = get_rest_from_buf(raw_buf, "type :");
+		ga.card[raw_parm4].type = get_rest_from_buf(raw_buf, "type :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 vEmail :0
 	else if(raw_parm5 == "vEmail")
 	{
-		ga.card_v_email = get_rest_from_buf(raw_buf, "vEmail :");
+		ga.card[raw_parm4].v_email = get_rest_from_buf(raw_buf, "vEmail :");
 	}
 
 	// :NickServ!service@service.onet NOTICE ucieszony86 :111 ucieszony86 www :
 	else if(raw_parm5 == "www")
 	{
-		ga.card_www = get_rest_from_buf(raw_buf, "www :");
+		ga.card[raw_parm4].www = get_rest_from_buf(raw_buf, "www :");
 	}
 
 	// nieznany typ danych w wizytówce pokaż w "RawUnknown"
@@ -3834,200 +3835,206 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *chan_parm[], std
 */
 void raw_notice_112(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
 {
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
 	// wyświetl wizytówkę tylko po użyciu polecenia /card, natomiast ukryj ją po zalogowaniu na czat
 	if(ga.command_card)
 	{
-		std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+		auto it = ga.card.find(raw_parm4);
 
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xMAGENTA + raw_parm4 + xTERMC " [Wizytówka]");
-
-		if(ga.card_avatar.size() > 0)
+		if(it != ga.card.end())
 		{
-			size_t card_avatar_full = ga.card_avatar.find(",1");
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xBOLD_ON xMAGENTA + raw_parm4 + xTERMC " [Wizytówka]");
 
-			if(card_avatar_full != std::string::npos)
+			if(it->second.avatar.size() > 0)
 			{
-				ga.card_avatar.replace(card_avatar_full + 1, 1, "0");
+				size_t card_avatar_full = it->second.avatar.find(",1");
+
+				if(card_avatar_full != std::string::npos)
+				{
+					it->second.avatar.replace(card_avatar_full + 1, 1, "0");
+				}
+
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " awatar: " + it->second.avatar);
 			}
 
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " awatar: " + ga.card_avatar);
-		}
-
-		if(ga.card_birthdate.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm4 + xNORMAL " data urodzenia: " + ga.card_birthdate);
-
-			// oblicz wiek (wersja uproszczona zakłada, że data zapisana jest za pomocą 10 znaków łącznie z separatorami)
-			if(ga.card_birthdate.size() == 10)
+			if(it->second.birthdate.size() > 0)
 			{
-				std::string y_bd_str, m_bd_str, d_bd_str;
-				int y_bd, m_bd, d_bd;
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " data urodzenia: " + it->second.birthdate);
 
-				y_bd_str.insert(0, ga.card_birthdate, 0, 4);
-				y_bd = std::stoi("0" + y_bd_str);
-
-				m_bd_str.insert(0, ga.card_birthdate, 5, 2);
-				m_bd = std::stoi("0" + m_bd_str);
-
-				d_bd_str.insert(0, ga.card_birthdate, 8, 2);
-				d_bd = std::stoi("0" + d_bd_str);
-
-				// żadna z liczb nie może być zerem
-				if(y_bd != 0 && m_bd != 0 && d_bd != 0)
+				// oblicz wiek (wersja uproszczona zakłada, że data zapisana jest za pomocą 10 znaków łącznie z separatorami)
+				if(it->second.birthdate.size() == 10)
 				{
-					int y, m, d, age;
+					std::string y_bd_str, m_bd_str, d_bd_str;
+					int y_bd, m_bd, d_bd;
 
-					// pobierz aktualną datę
-					time_t time_g;
-					struct tm *time_l;
+					y_bd_str.insert(0, it->second.birthdate, 0, 4);
+					y_bd = std::stoi("0" + y_bd_str);
 
-					time(&time_g);
-					time_l = localtime(&time_g);
+					m_bd_str.insert(0, it->second.birthdate, 5, 2);
+					m_bd = std::stoi("0" + m_bd_str);
 
-					y = time_l->tm_year + 1900;	// + 1900, bo rok jest liczony od 1900
-					m = time_l->tm_mon + 1;		// + 1, bo miesiąc jest od zera
-					d = time_l->tm_mday;
+					d_bd_str.insert(0, it->second.birthdate, 8, 2);
+					d_bd = std::stoi("0" + d_bd_str);
 
-					age = y - y_bd;
-
-					if(m <= m_bd && d < d_bd)
+					// żadna z liczb nie może być zerem
+					if(y_bd != 0 && m_bd != 0 && d_bd != 0)
 					{
-						--age;		// wykryj urodziny, jeśli ich jeszcze nie było w danym roku, trzeba odjąć rok
-					}
+						int y, m, d, age;
 
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							"* " xMAGENTA + raw_parm4 + xNORMAL " wiek: " + std::to_string(age));
+						// pobierz aktualną datę
+						time_t time_g;
+						struct tm *time_l;
+
+						time(&time_g);
+						time_l = localtime(&time_g);
+
+						y = time_l->tm_year + 1900;	// + 1900, bo rok jest liczony od 1900
+						m = time_l->tm_mon + 1;		// + 1, bo miesiąc jest od zera
+						d = time_l->tm_mday;
+
+						age = y - y_bd;
+
+						if(m <= m_bd && d < d_bd)
+						{
+							--age;		// wykryj urodziny, jeśli ich jeszcze nie było w danym roku, trzeba odjąć rok
+						}
+
+						win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+								"* " xMAGENTA + raw_parm4 + xNORMAL " wiek: " + std::to_string(age));
+					}
 				}
 			}
-		}
 
-		if(ga.card_sex.size() > 0)
-		{
-			if(ga.card_sex == "M")
+			if(it->second.sex.size() > 0)
 			{
-				ga.card_sex = "mężczyzna";
+				if(it->second.sex == "M")
+				{
+					it->second.sex = "mężczyzna";
+				}
+
+				else if(it->second.sex == "F")
+				{
+					it->second.sex = "kobieta";
+				}
+
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " płeć: " + it->second.sex);
 			}
 
-			else if(ga.card_sex == "F")
+			if(it->second.city.size() > 0)
 			{
-				ga.card_sex = "kobieta";
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " miasto: " + it->second.city);
 			}
 
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " płeć: " + ga.card_sex);
+			if(it->second.country.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " kraj: " + it->second.country);
+			}
+
+			if(it->second.short_desc.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " krótki opis: " + it->second.short_desc);
+			}
+
+			if(it->second.long_desc.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " długi opis: " + it->second.long_desc);
+			}
+
+			if(it->second.email.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " email: " + it->second.email);
+			}
+
+			if(it->second.v_email.size() > 0)
+			{
+				/* win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " vEmail: " + it->second.v_email); */
+			}
+
+			if(it->second.www.size() > 0)
+			{
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " www: " + it->second.www);
+			}
+
+			if(it->second.offmsg.size() > 0)
+			{
+				if(it->second.offmsg == "all")
+				{
+					it->second.offmsg = "przyjmuje wiadomości offline od wszystkich";
+				}
+
+				else if(it->second.offmsg == "friend")
+				{
+					it->second.offmsg = "przyjmuje wiadomości offline od przyjaciół";
+				}
+
+				else if(it->second.offmsg == "none")
+				{
+					it->second.offmsg = "nie przyjmuje wiadomości offline";
+				}
+
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " " + it->second.offmsg + ".");
+			}
+
+			if(it->second.type.size() > 0)
+			{
+				if(it->second.type == "0")
+				{
+					it->second.type = "nowicjusz";
+				}
+
+				else if(it->second.type == "1")
+				{
+					it->second.type = "bywalec";
+				}
+
+				else if(it->second.type == "2")
+				{
+					it->second.type = "wyjadacz";
+				}
+
+				else if(it->second.type == "3")
+				{
+					it->second.type = "guru";
+				}
+
+				// dla mojego nicka zwracana jest dokładniejsza informacja o randze, dodaj ją w nawiasie
+				if(it->second.rank.size() > 0)
+				{
+					it->second.type += " (" + it->second.rank + ")";
+				}
+
+				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " ranga: " + it->second.type);
+			}
+
+			if(it->second.prefs.size() > 0)
+			{
+				/* win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+						"* " xMAGENTA + raw_parm4 + xNORMAL " preferencje: " + it->second.prefs); */
+			}
 		}
 
-		if(ga.card_city.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " miasto: " + ga.card_city);
-		}
-
-		if(ga.card_country.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,"* " xMAGENTA + raw_parm4 + xNORMAL " kraj: " + ga.card_country);
-		}
-
-		if(ga.card_short_desc.size() > 0)
+		else
 		{
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm4 + xNORMAL " krótki opis: " + ga.card_short_desc);
-		}
-
-		if(ga.card_long_desc.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm4 + xNORMAL " długi opis: " + ga.card_long_desc);
-		}
-
-		if(ga.card_email.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " email: " + ga.card_email);
-		}
-
-		if(ga.card_v_email.size() > 0)
-		{
-			/* win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm4 + xNORMAL " vEmail: " + ga.card_v_email); */
-		}
-
-		if(ga.card_www.size() > 0)
-		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " www: " + ga.card_www);
-		}
-
-		if(ga.card_offmsg.size() > 0)
-		{
-			if(ga.card_offmsg == "all")
-			{
-				ga.card_offmsg = "przyjmuje wiadomości offline od wszystkich";
-			}
-
-			else if(ga.card_offmsg == "friend")
-			{
-				ga.card_offmsg = "przyjmuje wiadomości offline od przyjaciół";
-			}
-
-			else if(ga.card_offmsg == "none")
-			{
-				ga.card_offmsg = "nie przyjmuje wiadomości offline";
-			}
-
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " " + ga.card_offmsg + ".");
-		}
-
-		if(ga.card_type.size() > 0)
-		{
-			if(ga.card_type == "0")
-			{
-				ga.card_type = "nowicjusz";
-			}
-
-			else if(ga.card_type == "1")
-			{
-				ga.card_type = "bywalec";
-			}
-
-			else if(ga.card_type == "2")
-			{
-				ga.card_type = "wyjadacz";
-			}
-
-			else if(ga.card_type == "3")
-			{
-				ga.card_type = "guru";
-			}
-
-			// dla mojego nicka zwraca dokładniejszą informację o randze, dodaj ją w nawiasie
-			if(ga.card_rank.size() > 0)
-			{
-				ga.card_type += " (" + ga.card_rank + ")";
-			}
-
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, "* " xMAGENTA + raw_parm4 + xNORMAL " ranga: " + ga.card_type);
-		}
-
-		if(ga.card_prefs.size() > 0)
-		{
-			/* win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					"* " xMAGENTA + raw_parm4 + xNORMAL " preferencje: " + ga.card_prefs); */
+					xRED "# Wystąpił błąd podczas przetwarzania wizytówki użytkownika " + raw_parm4);
 		}
 	}
 
-	// dla pewności wyczyść informacje (nie wszystkie muszą pojawić się ponownie dla innego nicka)
-	ga.card_avatar.clear();
-	ga.card_birthdate.clear();
-	ga.card_city.clear();
-	ga.card_country.clear();
-	ga.card_email.clear();
-	ga.card_long_desc.clear();
-	ga.card_offmsg.clear();
-	ga.card_prefs.clear();
-	ga.card_rank.clear();
-	ga.card_sex.clear();
-	ga.card_short_desc.clear();
-	ga.card_type.clear();
-	ga.card_v_email.clear();
-	ga.card_www.clear();
+	// po przetworzeniu wizytówki wyczyść informacje o użytkowniku
+	ga.card.erase(raw_parm4);
 
 	// skasuj ewentualne użycie /card
 	ga.command_card = false;

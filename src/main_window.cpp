@@ -367,7 +367,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		// jeśli busy lub away jest aktywne, pokaż o tym informację (sprawdzaj tylko po zalogowaniu)
 		if(ga.irc_ok && (ga.my_away || ga.my_busy))
 		{
-			printw(" [Masz włączone: ");
+			printw(" [Włączone: ");
 			attron(A_BOLD);
 
 			if(ga.my_away)
