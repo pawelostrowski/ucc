@@ -115,13 +115,16 @@ struct global_args
 	std::string zuousername;
 	std::string uokey;
 	std::string cookies;
+	std::string my_zuo;
 
 	long ping, pong, lag;
 	bool lag_timeout;
 
-	bool busy_state;
+	bool my_away, my_busy;
 
-	std::string names, cs_homes;
+	std::map<std::string, std::string> names;
+
+	std::string cs_homes;
 
 	// używane podczas pobierania wizytówki
 	std::string card_avatar, card_birthdate, card_city, card_country, card_email, card_long_desc, card_offmsg, card_prefs,
@@ -132,7 +135,7 @@ struct global_args
 	std::string msg_away;
 
 	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
-	bool command_card, command_join, command_names, command_names_empty, command_vhost;
+	bool command_card, command_join, command_names, command_names_empty, command_vhost, command_whois_short;
 };
 
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)
@@ -152,7 +155,7 @@ struct nick_flags
 struct nick_irc
 {
 	std::string nick;
-	std::string zuo;
+	std::string zuo_ip;
 	struct nick_flags flags;
 };
 

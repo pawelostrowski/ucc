@@ -30,7 +30,7 @@ void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *chan_parm[
 
 void nicklist_on(struct global_args &ga);
 
-std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick);
+std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick_key);
 
 void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 

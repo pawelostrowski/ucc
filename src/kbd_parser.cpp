@@ -396,7 +396,7 @@ void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
 	if(ga.irc_ok)
 	{
 		// zmień stan flagi busy (faktyczna zmiana zostanie odnotowana po odebraniu potwierdzenia z serwera w parserze IRC)
-		if(ga.busy_state)
+		if(ga.my_busy)
 		{
 			irc_send(ga, chan_parm, "BUSY 0");
 		}
@@ -524,6 +524,7 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		ga.command_names = false;
 		ga.command_names_empty = false;
 		ga.command_vhost = false;
+		ga.command_whois_short = false;
 
 		// gdy wpisano nick, rozpocznij łączenie
 		if(! auth_http_init(ga, chan_parm))
@@ -1100,7 +1101,7 @@ void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], 
 		// jeśli nie podano parametrów, pokaż ostrzeżenie
 		if(vhost_nick.size() == 0)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie podano parametrów (nicka i hasła dla VHost).");
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie podano nicka i hasła dla VHost.");
 		}
 
 		// jeśli podano nick, sprawdź, czy podano hasło
@@ -1148,6 +1149,12 @@ void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], 
 
 		// polecenie do IRC
 		irc_send(ga, chan_parm, "WHOIS " + whois_nick + " " + whois_nick);	// 2x nick, aby zawsze pokazało idle
+
+		// wpisanie 's' za nickiem wyświetli krótką formę (tylko nick, ZUO i host)
+		if(get_arg(kbd_buf, pos_arg_start, true) == "S")
+		{
+                        ga.command_whois_short = true;
+		}
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie

@@ -145,7 +145,7 @@ void del_all_chan(struct channel_irc *chan_parm[])
 }
 
 
-void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo)
+void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo_ip)
 {
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
 	std::string nick_key = buf_lower2upper(nick);
@@ -156,17 +156,17 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
 			// jeśli nick istniał, posiadał ZUO na liście i nie podano nowego ZUO, to nie nadpisuj ZUO
-			if(zuo.size() == 0)
+			if(zuo_ip.size() == 0)
 			{
 				auto it = chan_parm[i]->nick_parm.find(nick_key);
 
-				if(it != chan_parm[i]->nick_parm.end() && it->second.zuo.size() > 0)
+				if(it != chan_parm[i]->nick_parm.end() && it->second.zuo_ip.size() > 0)
 				{
-					zuo = it->second.zuo;
+					zuo_ip = it->second.zuo_ip;
 				}
 			}
 
-			chan_parm[i]->nick_parm[nick_key] = {nick, zuo};
+			chan_parm[i]->nick_parm[nick_key] = {nick, zuo_ip};
 
 			break;		// po odnalezieniu pokoju przerwij pętlę
 		}

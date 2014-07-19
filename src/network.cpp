@@ -415,7 +415,7 @@ void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 		irc_send_buf_stream << buf_iso2utf(irc_send_buf);
 
-		while(getline(irc_send_buf_stream, irc_send_buf_line))
+		while(std::getline(irc_send_buf_stream, irc_send_buf_line))
 		{
 			win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_line, 1, true, false);
 		}
@@ -541,7 +541,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 			irc_recv_buf_stream << irc_recv_buf;
 
-			while(getline(irc_recv_buf_stream, irc_recv_buf_line))
+			while(std::getline(irc_recv_buf_stream, irc_recv_buf_line))
 			{
 				win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_line, 1, true, false);
 			}

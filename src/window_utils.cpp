@@ -687,11 +687,11 @@ void nicklist_on(struct global_args &ga)
 }
 
 
-std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick)
+std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick_key)
 {
 	std::string nick_tmp;
 
-	auto it = chan_parm[ga.current]->nick_parm.find(nick);
+	auto it = chan_parm[ga.current]->nick_parm.find(nick_key);
 
 	if(it != chan_parm[ga.current]->nick_parm.end())
 	{

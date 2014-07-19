@@ -41,7 +41,7 @@ void raw_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 void raw_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf, std::string &raw_parm0);
 
-void raw_001(struct global_args &ga, struct channel_irc *chan_parm[]);
+void raw_001(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
 
 void raw_002();
 
@@ -93,7 +93,7 @@ void raw_314(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 void raw_317(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
 
-void raw_318();
+void raw_318(struct global_args &ga);
 
 void raw_319(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf);
 

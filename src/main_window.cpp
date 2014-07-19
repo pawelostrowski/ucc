@@ -358,7 +358,45 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 		printw("]");
 
 		// nazwa pokoju
-		printw(" [%s]", chan_parm[ga.current]->channel.c_str());
+		printw(" [");
+		attron(A_BOLD);
+		printw(chan_parm[ga.current]->channel.c_str());
+		attroff(A_BOLD);
+		printw("]");
+
+		// jeśli busy lub away jest aktywne, pokaż o tym informację (sprawdzaj tylko po zalogowaniu)
+		if(ga.irc_ok && (ga.my_away || ga.my_busy))
+		{
+			printw(" [Masz włączone: ");
+			attron(A_BOLD);
+
+			if(ga.my_away)
+			{
+				printw("away");
+			}
+
+			if(ga.my_busy)
+			{
+				if(ga.my_away)
+				{
+					attroff(A_BOLD);
+					printw(", ");
+					attron(A_BOLD);
+				}
+
+				printw("busy");
+			}
+
+			attroff(A_BOLD);
+			printw("]");
+		}
+
+		// przy braku połączenia wyzeruj flagi
+		else if(! ga.irc_ok)
+		{
+			ga.my_away = false;
+			ga.my_busy = false;
+		}
 
 		// pokaż lag
 		if(ga.lag > 0)
@@ -658,7 +696,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
-//				win_buf_add_str(ga, chan_parm, "Status", "tab_buf: " + tab_buf);
 			}
 
 			// Tab
