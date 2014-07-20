@@ -10,8 +10,6 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	if(chan_parm[CHAN_STATUS] == 0)
 	{
-		ga.current = CHAN_STATUS;		// ustaw nowoutworzony kanał jako aktywny
-
 		chan_parm[CHAN_STATUS] = new channel_irc;
 		chan_parm[CHAN_STATUS]->channel = "Status";
 		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
@@ -22,6 +20,9 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 		// ustaw w nim kursor na pozycji początkowej (to pierwszy tworzony pokój, więc zawsze należy zacząć od pozycji początkowej)
 		ga.wcur_y = 0;
 		ga.wcur_x = 0;
+
+		// ustaw nowoutworzony kanał jako aktywny
+		ga.current = CHAN_STATUS;
 	}
 }
 
@@ -66,7 +67,8 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		// nie twórz dwóch kanałów o takiej samej nazwie
 		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 		{
-			return true;	// co prawda nie utworzono nowego kanału, ale nie jest to błąd, bo kanał już istnieje
+			// co prawda nie utworzono nowego kanału, ale nie jest to błąd, bo kanał już istnieje, dlatego zakończ z kodem sukcesu
+			return true;
 		}
 	}
 
@@ -94,7 +96,8 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 				ga.wcur_x = 0;
 			}
 
-			return true;	// gdy utworzono kanał, przerwij szukanie wolnego kanału z kodem sukcesu
+			// gdy utworzono kanał, przerwij szukanie wolnego kanału z kodem sukcesu
+			return true;
 		}
 	}
 
@@ -123,6 +126,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 			// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
 			chan_parm[i] = 0;
 
+			// po odnalezieniu pokoju przerwij pętlę
 			break;
 		}
 	}
@@ -145,7 +149,8 @@ void del_all_chan(struct channel_irc *chan_parm[])
 }
 
 
-void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, std::string zuo_ip)
+void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &channel,
+				std::string &nick, std::string zuo_ip, struct nick_flags flags)
 {
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
 	std::string nick_key = buf_lower2upper(nick);
@@ -153,43 +158,22 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		if(chan_parm[i] && chan_parm[i]->channel == channel)
 		{
-			// jeśli nick istniał, posiadał ZUO na liście i nie podano nowego ZUO, to nie nadpisuj ZUO
-			if(zuo_ip.size() == 0)
-			{
-				auto it = chan_parm[i]->nick_parm.find(nick_key);
+			// wpisz nick
+			chan_parm[i]->nick_parm[nick_key].nick = nick;
 
-				if(it != chan_parm[i]->nick_parm.end() && it->second.zuo_ip.size() > 0)
-				{
-					zuo_ip = it->second.zuo_ip;
-				}
+			// jeśli nie podano ZUO i IP (podano puste), nie nadpisuj aktualnego
+			if(zuo_ip.size() > 0)
+			{
+				chan_parm[i]->nick_parm[nick_key].zuo_ip = zuo_ip;
 			}
 
-			chan_parm[i]->nick_parm[nick_key] = {nick, zuo_ip};
+			// wpisz flagi nicka
+			chan_parm[i]->nick_parm[nick_key].flags = flags;
 
-			break;		// po odnalezieniu pokoju przerwij pętlę
-		}
-	}
-}
-
-
-void update_nick_flags_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &chan_name, std::string nick, struct nick_flags flags)
-{
-	std::string nick_key = buf_lower2upper(nick);
-
-	for(int i = 0; i < CHAN_CHAT; ++i)
-	{
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
-		{
-			auto it = chan_parm[i]->nick_parm.find(nick_key);
-
-			if(it != chan_parm[i]->nick_parm.end())
-			{
-				it->second.flags = flags;
-			}
-
-			break;		// po odnalezieniu pokoju przerwij pętlę
+			// po odnalezieniu pokoju przerwij pętlę
+			break;
 		}
 	}
 }
@@ -206,7 +190,8 @@ void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		{
 			chan_parm[i]->nick_parm.erase(nick_key);
 
-			break;		// po odnalezieniu pokoju przerwij pętlę
+			// po odnalezieniu pokoju przerwij pętlę
+			break;
 		}
 	}
 }
@@ -236,6 +221,7 @@ void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::strin
 			else
 			{
 				hist_nick = i;
+
 				break;
 			}
 		}
@@ -250,6 +236,7 @@ void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::strin
 				{
 					// przepisz jedną spację za nick
 					hist_ignore_nick += " ";
+
 					break;
 				}
 

@@ -10,54 +10,6 @@
 #include "ucc_global.hpp"
 
 
-int get_command(std::string &kbd_buf, std::string &command, std::string &command_org, size_t &pos_arg_start)
-{
-/*
-	Pobierz wpisane polecenie do bufora command (przekonwertowane na wielkie litery) oraz do command_org (bez konwersji).
-	Polecenie może się zakończyć spacją (polecenie z parametrem ) lub końcem bufora (polecenie bez parametru).
-*/
-
-	// sprawdź, czy za poleceniem są jakieś znaki (sam znak / nie jest poleceniem)
-	if(kbd_buf.size() <= 1)
-	{
-		return 1;
-	}
-
-	// sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
-	if(kbd_buf[1] == ' ')
-	{
-		return 2;
-	}
-
-	size_t pos_command_end;		// pozycja, gdzie się kończy polecenie
-
-	// wykryj pozycję końca polecenia (gdzie jest spacja za poleceniem)
-	pos_command_end = kbd_buf.find(" ");
-
-	// jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
-	if(pos_command_end == std::string::npos)
-	{
-		pos_command_end = kbd_buf.size();
-	}
-
-	// wstaw szukane polecenie
-	command.clear();
-	command.insert(0, kbd_buf, 1, pos_command_end - 1);	// 1, - 1, bo pomijamy znak /
-
-	// znalezione polecenie zapisz w drugim buforze, który użyty zostanie, jeśli wpiszemy nieistniejące polecenie (pokazane będzie dokładnie tak,
-	// jak je wpisaliśmy, bez konwersji małych liter na wielkie)
-	command_org = command;
-
-	// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
-	command = buf_lower2upper(command);
-
-	// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
-	pos_arg_start = pos_command_end;
-
-	return 0;
-}
-
-
 std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2upper)
 {
 /*
@@ -76,7 +28,7 @@ std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2uppe
 	// pomiń spacje pomiędzy poleceniem a argumentem lub pomiędzy kolejnymi argumentami (z uwzględnieniem rozmiaru bufora, aby nie czytać poza niego)
 	while(pos_arg_start < kbd_buf.size() && kbd_buf[pos_arg_start] == ' ')
 	{
-		++pos_arg_start;		// kolejny znak w buforze
+		++pos_arg_start;	// kolejny znak w buforze
 	}
 
 	// jeśli po pominięciu spacji pozycja w pos_arg_start jest równa wielkości bufora, oznacza to, że nie ma szukanego argumentu, więc zakończ
@@ -129,7 +81,7 @@ std::string get_rest_args(std::string &kbd_buf, size_t pos_arg_start)
 	// znajdź miejsce, od którego zaczynają się znaki różne od spacji
 	while(pos_arg_start < kbd_buf.size() && kbd_buf[pos_arg_start] == ' ')
 	{
-		++pos_arg_start;
+		++pos_arg_start;	// kolejny znak w buforze
 	}
 
 	// jeśli po pominięciu spacji pozycja w pos_arg_start jest równa wielkości bufora, oznacza to, że nie ma argumentu lub argumentów, więc zakończ
@@ -175,12 +127,15 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	if(kbd_buf.size() == 0)
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Błąd bufora klawiatury (bufor jest pusty)!");
+
 		return;
 	}
 
-	// wykryj, czy wpisano polecenie (znak / na pierwszej pozycji o tym świadczy), dwa znaki // również traktuj jak zwykły tekst
-	// (np. w przypadku emotikon)
-	if(kbd_buf[0] != '/' || (kbd_buf.size() > 1 && kbd_buf[1] == '/'))
+/*
+	Jeśli nie wpisano / na początku, wpisano // na początku (ma znaczenie w przypadku emotikon) lub wpisano inne znaki, traktuj to jako normalne
+	pisanie w pokoju czata.
+*/
+	else if(kbd_buf[0] != '/' || (kbd_buf.size() > 1 && kbd_buf[1] == '/'))
 	{
 		// jeśli brak połączenia z IRC, wiadomości nie można wysłać, więc pokaż ostrzeżenie
 		if(! ga.irc_ok)
@@ -188,15 +143,10 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			msg_err_first_login(ga, chan_parm);
 		}
 
-		// jeśli nie jesteśmy w aktywnym pokoju czata, wiadomości nie można wysłać, więc pokaż ostrzeżenie
-		else if(ga.current >= CHAN_CHAT)
-		{
-			msg_err_not_active_chan(ga, chan_parm);
-		}
-
-		// gdy połączono z IRC oraz jest się w aktywnym pokoju, przygotuj komunikat do wyświetlenia w terminalu (jeśli wpisano coś w formatowaniu
-		// zwracanym przez serwer, funkcja form_from_chat() przekształci to tak, aby w terminalu wyświetlić to, jakby było to odebrane z serwera)
-		else
+		// gdy połączono z IRC oraz jesteśmy w aktywnym pokoju czata, przygotuj komunikat do wyświetlenia w terminalu (jeśli wpisano coś w
+		// formatowaniu zwracanym przez serwer, funkcja form_from_chat() przekształci to tak, aby w terminalu wyświetlić to, jakby było to
+		// odebrane z serwera)
+		else if(ga.current < CHAN_CHAT)
 		{
 			std::string term_buf_tmp = buf_iso2utf(kbd_buf);
 
@@ -207,150 +157,180 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 			irc_send(ga, chan_parm, "PRIVMSG " + buf_utf2iso(chan_parm[ga.current]->channel) + " :" + form_to_chat(kbd_buf));
 		}
 
-		return;		// zakończ dla wpisywanych komunikatów (obsługa poleceń jest poniżej)
+		// jeśli nie jesteśmy w aktywnym pokoju czata, wiadomości nie można wysłać, więc pokaż ostrzeżenie
+		else
+		{
+			msg_err_not_active_chan(ga, chan_parm);
+		}
 	}
 
 /*
-	Wpisano / na początku, więc pobierz polecenie do bufora.
+	Dojście tu oznacza, że wpisano / na początku. Pobierz w takim razie wpisane polecenie za / (zwracając uwagę, czy to nie jedyny znak lub czy nie ma
+	za nim spacji, bo to oznacza błędne polecenie).
 */
-
-	size_t pos_arg_start = 1;	// pozycja początkowa kolejnego argumentu (od 1, bo pomijamy znak / )
-	std::string command;		// znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
-	std::string command_org;	// j/w, ale małe litery nie są zamieniane na wielkie
-
-	// pobierz wpisane polecenie
-	int command_status = get_command(kbd_buf, command, command_org, pos_arg_start);
-
-	// wykryj błędnie wpisane polecenie
-	if(command_status == 1)
+	else
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Polecenie błędne, sam znak / nie jest poleceniem.");
-		return;
-	}
+		// sprawdź, czy za poleceniem są jakieś znaki (sam znak / nie jest poleceniem)
+		if(kbd_buf.size() <= 1)
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Polecenie błędne, sam znak / nie jest poleceniem.");
 
-	else if(command_status == 2)
-	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Polecenie błędne, po znaku / nie może być spacji.");
-		return;
-	}
+			return;
+		}
+
+		// sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
+		if(kbd_buf[1] == ' ')
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Polecenie błędne, po znaku / nie może być spacji.");
+
+			return;
+		}
+
+		std::string command;		// znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
+		std::string command_org;	// j/w, ale małe litery nie są zamieniane na wielkie
+		size_t pos_command_end;		// pozycja, gdzie się kończy polecenie
+		size_t pos_arg_start;		// pozycja początkowa kolejnego argumentu (w tym miejscu, o ile wpisano polecenie, będzie to jego koniec)
+
+		// wykryj pozycję końca polecenia (gdzie jest spacja za poleceniem)
+		pos_command_end = kbd_buf.find(" ");
+
+		// jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
+		if(pos_command_end == std::string::npos)
+		{
+			pos_command_end = kbd_buf.size();
+		}
+
+		// wstaw szukane polecenie
+		command.insert(0, kbd_buf, 1, pos_command_end - 1);	// 1, - 1, bo pomijamy znak /
+
+		// znalezione polecenie zapisz w drugim buforze, który użyty zostanie, jeśli wpiszemy nieistniejące polecenie (pokazane będzie dokładnie tak,
+		// jak je wpisaliśmy, bez konwersji małych liter na wielkie)
+		command_org = command;
+
+		// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
+		command = buf_lower2upper(command);
+
+		// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
+		pos_arg_start = pos_command_end;
 
 /*
 	Wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej.
 */
-	if(command == "AWAY")
-	{
-		kbd_command_away(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		if(command == "AWAY")
+		{
+			command_away(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "BUSY")
-	{
-		kbd_command_busy(ga, chan_parm);
-	}
+		else if(command == "BUSY")
+		{
+			command_busy(ga, chan_parm);
+		}
 
-	else if(command == "CAPTCHA" || command == "CAP")
-	{
-		kbd_command_captcha(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "CAPTCHA" || command == "CAP")
+		{
+			command_captcha(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "CARD")
-	{
-		kbd_command_card(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "CARD")
+		{
+			command_card(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "CONNECT" || command == "C")
-	{
-		kbd_command_connect(ga, chan_parm);
-	}
+		else if(command == "CONNECT" || command == "C")
+		{
+			command_connect(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "DISCONNECT" || command == "D")
-	{
-		kbd_command_disconnect(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "DISCONNECT" || command == "D")
+		{
+			command_disconnect(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "HELP" || command == "H")
-	{
-		kbd_command_help(ga, chan_parm);
-	}
+		else if(command == "HELP" || command == "H")
+		{
+			command_help(ga, chan_parm);
+		}
 
-	else if(command == "JOIN" || command == "J")
-	{
-		kbd_command_join(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "JOIN" || command == "J")
+		{
+			command_join(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "KICK")
-	{
-		kbd_command_kick(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "KICK")
+		{
+			command_kick(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "LIST" || command == "L")
-	{
-		kbd_command_list(ga, chan_parm);
-	}
+		else if(command == "LIST" || command == "L")
+		{
+			command_list(ga, chan_parm);
+		}
 
-	else if(command == "ME")
-	{
-		kbd_command_me(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "ME")
+		{
+			command_me(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "NAMES" || command == "N")
-	{
-		kbd_command_names(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "NAMES" || command == "N")
+		{
+			command_names(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "NICK")
-	{
-		kbd_command_nick(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "NICK")
+		{
+			command_nick(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "PART" || command == "P")
-	{
-		kbd_command_part(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "PART" || command == "P")
+		{
+			command_part(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "PRIV")
-	{
-		kbd_command_priv(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "PRIV")
+		{
+			command_priv(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "QUIT" || command == "Q")
-	{
-		kbd_command_quit(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "QUIT" || command == "Q")
+		{
+			command_quit(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "RAW")
-	{
-		kbd_command_raw(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "RAW")
+		{
+			command_raw(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "TIME")
-	{
-		kbd_command_time(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "TIME")
+		{
+			command_time(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "TOPIC")
-	{
-		kbd_command_topic(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "TOPIC")
+		{
+			command_topic(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "VHOST")
-	{
-		kbd_command_vhost(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "VHOST")
+		{
+			command_vhost(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "WHOIS")
-	{
-		kbd_command_whois(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "WHOIS")
+		{
+			command_whois(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	else if(command == "WHOWAS")
-	{
-		kbd_command_whowas(ga, chan_parm, kbd_buf, pos_arg_start);
-	}
+		else if(command == "WHOWAS")
+		{
+			command_whowas(ga, chan_parm, kbd_buf, pos_arg_start);
+		}
 
-	// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
-	else
-	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nieznane polecenie: /" + buf_iso2utf(command_org));
+		// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
+		else
+		{
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nieznane polecenie: /" + buf_iso2utf(command_org));
+		}
 	}
 }
 
@@ -360,9 +340,9 @@ void kbd_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 */
 
 
-void kbd_command_away(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_away(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		std::string away = get_rest_args(kbd_buf, pos_arg_start);
@@ -390,9 +370,9 @@ void kbd_command_away(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
+void command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		// zmień stan flagi busy (faktyczna zmiana zostanie odnotowana po odebraniu potwierdzenia z serwera w parserze IRC)
@@ -415,7 +395,7 @@ void kbd_command_busy(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_captcha(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	if(ga.irc_ok)
 	{
@@ -464,7 +444,7 @@ void kbd_command_captcha(struct global_args &ga, struct channel_irc *chan_parm[]
 }
 
 
-void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_card(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
@@ -492,7 +472,7 @@ void kbd_command_card(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[])
+void command_connect(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// gdy już połączono z czatem
 	if(ga.irc_ok)
@@ -506,17 +486,11 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie wpisano nicka.");
 	}
 
-	// jeśli podano nick i można rozpocząć łączenie z czatem
+	// podano nick i można rozpocząć łączenie z czatem
 	else
 	{
-		// komunikat o łączeniu we wszystkich otwartych pokojach z wyjątkiem "Debug" i "RawUnknown"
-		for(int i = 0; i < CHAN_NORMAL; ++i)
-		{
-			if(chan_parm[i])
-			{
-				win_buf_add_str(ga, chan_parm, chan_parm[i]->channel, xBOLD_ON xGREEN "# Łączenie z czatem...");
-			}
-		}
+		// komunikat o łączeniu we wszystkich otwartych pokojach (z wyjątkiem "Debug" i "RawUnknown")
+		win_buf_all_chan_msg(ga, chan_parm, xBOLD_ON xGREEN "# Łączenie z czatem...");
 
 		// skasuj użycie wybranych flag poleceń w celu odpowiedniego sterowania wyświetlaniem komunikatów podczas logowania na czat
 		ga.command_card = false;
@@ -526,10 +500,12 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		ga.command_vhost = false;
 		ga.command_whois_short = false;
 
-		// gdy wpisano nick, rozpocznij łączenie
+		// rozpocznij łączenie z czatem
 		if(! auth_http_init(ga, chan_parm))
 		{
+			// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 			msg_err_disconnect(ga, chan_parm);
+
 			return;
 		}
 
@@ -539,7 +515,9 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 			// pobierz captcha
 			if(! auth_http_getcaptcha(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 
@@ -553,38 +531,44 @@ void kbd_command_connect(struct global_args &ga, struct channel_irc *chan_parm[]
 		{
 			if(! auth_http_getsk(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 
 			if(! auth_http_mlogin(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 
 			if(! auth_http_getuokey(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 
-/*
-			// dodać override jako polecenie, gdy wykryty zostanie zalogowany nick
-			if(! auth_http_useroverride(ga, chan_parm))
+			// wpisanie 'o' w parametrze oznacza próbę zalogowania na zalogowanym już nicku, przydaje się po zmianie IP, aby nie czekać na timeout
+			if(get_arg(kbd_buf, pos_arg_start, true) == "O" && ! auth_http_useroverride(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
-*/
 		}
 	}
 }
 
 
-void kbd_command_disconnect(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_disconnect(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli było połączenie z czatem, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		std::string disconnect_reason = get_rest_args(kbd_buf, pos_arg_start);
@@ -602,7 +586,7 @@ void kbd_command_disconnect(struct global_args &ga, struct channel_irc *chan_par
 		}
 	}
 
-	// jeśli nie było połączenia z czatem, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
+	// jeśli nie połączono z IRC, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
 	else
 	{
 		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# Nie zalogowano się.");
@@ -610,7 +594,7 @@ void kbd_command_disconnect(struct global_args &ga, struct channel_irc *chan_par
 }
 
 
-void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
+void command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
 			xGREEN "# Dostępne polecenia (w kolejności alfabetycznej):\n"
@@ -640,7 +624,7 @@ void kbd_command_help(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_join(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
@@ -685,7 +669,7 @@ void kbd_command_join(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_kick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
@@ -726,7 +710,7 @@ void kbd_command_kick(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_list(struct global_args &ga, struct channel_irc *chan_parm[])
+void command_list(struct global_args &ga, struct channel_irc *chan_parm[])
 {
 	std::string chan_nr;
 
@@ -762,7 +746,7 @@ void kbd_command_list(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_me(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
@@ -796,9 +780,9 @@ void kbd_command_me(struct global_args &ga, struct channel_irc *chan_parm[], std
 }
 
 
-void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_names(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		// /names może działać z parametrem lub bez (wtedy dotyczy aktywnego pokoju)
@@ -845,7 +829,7 @@ void kbd_command_names(struct global_args &ga, struct channel_irc *chan_parm[], 
 }
 
 
-void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// po połączeniu z IRC nie można zmienić nicka
 	if(ga.irc_ok)
@@ -917,7 +901,7 @@ void kbd_command_nick(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_part(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// w oknie "Status" i "Debug" pokaż ostrzeżenie, że tych okien nie można zamknąć
 	if(ga.current == CHAN_STATUS || ga.current == CHAN_DEBUG_IRC)
@@ -967,9 +951,9 @@ void kbd_command_part(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_priv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_priv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		// pobierz nick, który zapraszamy do rozmowy prywatnej
@@ -996,9 +980,9 @@ void kbd_command_priv(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_quit(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		std::string quit_reason = get_rest_args(kbd_buf, pos_arg_start);
@@ -1021,9 +1005,9 @@ void kbd_command_quit(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_raw(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_raw(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		std::string raw_args = get_rest_args(kbd_buf, pos_arg_start);
@@ -1049,11 +1033,12 @@ void kbd_command_raw(struct global_args &ga, struct channel_irc *chan_parm[], st
 }
 
 
-void kbd_command_time(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_time(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
-	{	// opcjonalnie można podać serwer
+	{
+		// opcjonalnie można podać serwer
 		irc_send(ga, chan_parm, "TIME " + get_arg(kbd_buf, pos_arg_start));
 	}
 
@@ -1065,9 +1050,9 @@ void kbd_command_time(struct global_args &ga, struct channel_irc *chan_parm[], s
 }
 
 
-void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_topic(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		// temat można zmienić tylko w aktywnym oknie czata (nie w "Status" i "Debug)
@@ -1091,9 +1076,9 @@ void kbd_command_topic(struct global_args &ga, struct channel_irc *chan_parm[], 
 }
 
 
-void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	// jeśli połączono z IRC, przygotuj polecenie do wysłania do IRC
+	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
 		std::string vhost_nick = get_arg(kbd_buf, pos_arg_start);
@@ -1134,7 +1119,7 @@ void kbd_command_vhost(struct global_args &ga, struct channel_irc *chan_parm[], 
 }
 
 
-void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_whois(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
@@ -1165,7 +1150,7 @@ void kbd_command_whois(struct global_args &ga, struct channel_irc *chan_parm[], 
 }
 
 
-void kbd_command_whowas(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
+void command_whowas(struct global_args &ga, struct channel_irc *chan_parm[], std::string &kbd_buf, size_t pos_arg_start)
 {
 	// jeśli połączono z IRC
 	if(ga.irc_ok)

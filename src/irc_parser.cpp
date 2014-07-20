@@ -983,10 +983,7 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		win_buf_add_str(ga, chan_parm, raw_parm2, xGREEN "* " + nick_who + " [" + nick_zuo_ip + "] wchodzi do pokoju " + raw_parm2);
 	}
 
-	// dodaj nick do listy
-	new_or_update_nick_chan(ga, chan_parm, raw_parm2, nick_who, nick_zuo_ip);
-
-	// dodaj flagi nicka
+	// pobierz wybrane flagi nicka
 	struct nick_flags flags = {};
 	std::string join_flags = get_rest_from_buf(raw_buf, " :");
 
@@ -1005,7 +1002,8 @@ void raw_join(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		flags.busy = true;
 	}
 
-	update_nick_flags_chan(ga, chan_parm, raw_parm2, nick_who, flags);
+	// dodaj nick do listy
+	new_or_update_nick_chan(ga, chan_parm, raw_parm2, nick_who, nick_zuo_ip, flags);
 
 	// jeśli nick ma kamerkę, wyświetl o tym informację
 	if(flags.public_webcam)
@@ -2746,10 +2744,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 				// was_open_chan		- występuje po /names z podaniem pokoju, o ile sprawdzany pokój jest na liście otwartych pokoi
 
 				// wpisz nick na listę
-				new_or_update_nick_chan(ga, chan_parm, raw_parm3, nick, "");
-
-				// wpisz flagi nicka
-				update_nick_flags_chan(ga, chan_parm, raw_parm3, nick, flags);
+				new_or_update_nick_chan(ga, chan_parm, raw_parm3, nick, "", flags);
 			}
 
 			// jeśli to NAMES po użyciu /names z podaniem pokoju, pobierz listę nicków, która zostanie później wyświetlona w oknie rozmowy
@@ -3153,9 +3148,10 @@ void raw_433(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* Nick " + raw_parm3 + " jest już w użyciu.");
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* Nick " + raw_parm3 + " jest już w użyciu. Spróbuj wpisać " xCYAN "/connect o " xRED "lub " xCYAN "/c o");
 
-	ga.irc_ok = false;	// tymczasowo, przerobić to na coś lepszego, np. pytanie o useroverride
+	ga.irc_ok = false;
 }
 
 
