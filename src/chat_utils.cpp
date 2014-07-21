@@ -15,7 +15,7 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
 		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
 
-		chan_parm[CHAN_STATUS]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+		chan_parm[CHAN_STATUS]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 
 		// ustaw w nim kursor na pozycji początkowej (to pierwszy tworzony pokój, więc zawsze należy zacząć od pozycji początkowej)
 		ga.wcur_y = 0;
@@ -36,7 +36,7 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
 		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
 
-		chan_parm[CHAN_DEBUG_IRC]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+		chan_parm[CHAN_DEBUG_IRC]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 	}
 }
 
@@ -50,7 +50,7 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[
 		chan_parm[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
 		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;	// zacznij od braku aktywności kanału
 
-		chan_parm[CHAN_RAW_UNKNOWN]->win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+		chan_parm[CHAN_RAW_UNKNOWN]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 	}
 }
 
@@ -81,7 +81,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 			chan_parm[i]->channel = chan_name;	// nazwa kanału czata
 			chan_parm[i]->chan_act = 0;		// zacznij od braku aktywności kanału
 
-			chan_parm[i]->win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
+			chan_parm[i]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
 
 			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join
 			if(active)
@@ -211,7 +211,7 @@ void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::strin
 		int hist_nick = 5;
 
 		// przepisz spację lub spacje (jeśli są)
-		for(int i = 5; i < static_cast<int>(kbd_buf.size()); ++i)	// i = 5, bo pomijamy "/nick"
+		for(unsigned int i = 5; i < kbd_buf.size(); ++i)	// i = 5, bo pomijamy "/nick"
 		{
 			if(kbd_buf[i] == ' ')
 			{
@@ -229,7 +229,7 @@ void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::strin
 		// przepisz nick za spacją (lub spacjami), o ile go wpisano
 		if(hist_nick > 5)
 		{
-			for(int i = hist_nick; i < static_cast<int>(kbd_buf.size()); ++i)
+			for(unsigned int i = hist_nick; i < kbd_buf.size(); ++i)
 			{
 				// pojawienie się spacji oznacza, że dalej jest hasło
 				if(kbd_buf[i] == ' ')
@@ -266,7 +266,7 @@ void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::strin
 
 void destroy_my_password(std::string &buf)
 {
-	for(int i = 0; i < static_cast<int>(buf.size()); ++i)
+	for(unsigned int i = 0; i < buf.size(); ++i)
 	{
 		buf[i] = rand();
 	}

@@ -394,7 +394,7 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 	move(term_y - 1, 0);
 
 	// wyświetl nick (z czata, nie ustawiony przez /nick) oraz zawartość przekonwertowanego bufora (w pętli ze względu na tabulator)
-	for(int i = 0; i < static_cast<int>(kbd_buf.size()); ++i)
+	for(unsigned int i = 0; i < kbd_buf.size(); ++i)
 	{
 		// kod tabulatora wyświetl jako t w odwróconych kolorach, aby można było kursorami manipulować we wprowadzanym tekście
 		if(kbd_buf[i] == '\t')
@@ -887,7 +887,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	++y;
 
 	// wyświetl listę
-	for(int i = 0; i >= 0 && i < static_cast<int>(nicklist.size()) - 1 && y <= wterm_y; ++i)	// - 1, bo bez ostatniego kodu \n z listy
+	for(unsigned int i = 0; i >= 0 && i < nicklist.size() - 1 && y <= wterm_y; ++i)	// - 1, bo bez ostatniego kodu \n z listy
 	{
 		if(nicklist[i] == '\n')
 		{
@@ -900,10 +900,10 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 		else
 		{
 			// wykryj formatowanie kolorów i bolda
-			if(nicklist[i] == dCOLOR && i + 1 < static_cast<int>(nicklist.size()))
+			if(nicklist[i] == dCOLOR && i + 1 < nicklist.size())
 			{
 				++i;	// przejdź na kod koloru
-				wattron_color(ga.win_info, ga.use_colors, static_cast<short>(nicklist[i]));
+				wattron_color(ga.win_info, ga.use_colors, nicklist[i]);
 			}
 
 			else if(nicklist[i] == dBOLD_ON)
@@ -958,7 +958,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 					wattrset(ga.win_info, A_NORMAL);
 					++y;
 
-					for(++i; i < static_cast<int>(nicklist.size()) - 1; ++i)
+					for(++i; i < nicklist.size() - 1; ++i)
 					{
 						if(nicklist[i] == '\n')
 						{

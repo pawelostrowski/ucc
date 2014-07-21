@@ -49,7 +49,7 @@ std::string buf_iso2utf(std::string &in_buf)
 
 std::string buf_lower2upper(std::string buf)
 {
-	for(int i = 0; i < static_cast<int>(buf.size()); ++i)
+	for(unsigned int i = 0; i < buf.size(); ++i)
 	{
 		if(islower(buf[i]))
 		{

@@ -531,7 +531,7 @@ std::string remove_form(std::string &in_buf)
 	std::string out_buf;
 
 	// usuń formatowanie fontu i kolorów
-	for(int i = 0; i < static_cast<int>(in_buf.size()); ++i)
+	for(unsigned int i = 0; i < in_buf.size(); ++i)
 	{
 		if(in_buf[i] == dCOLOR)
 		{

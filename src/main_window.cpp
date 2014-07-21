@@ -38,8 +38,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 */
 	int term_y, term_x;		// wymiary terminala
 
-	int kbd_buf_pos = 0;		// początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
-	int kbd_buf_end = 0;		// początkowy koniec (rozmiar) bufora klawiatury
+	int kbd_buf_pos = 0;	// początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
+	int kbd_buf_end = 0;	// początkowy koniec (rozmiar) bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
 

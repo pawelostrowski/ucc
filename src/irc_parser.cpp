@@ -359,8 +359,16 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				raw_369();
 				break;
 
+			case 371:
+				raw_371(ga, chan_parm, raw_buf, raw_parm0);
+				break;
+
 			case 372:
 				raw_372(ga, chan_parm, raw_buf);
+				break;
+
+			case 374:
+				raw_374();
 				break;
 
 			case 375:
@@ -423,6 +431,14 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				raw_441(ga, chan_parm, raw_buf);
 				break;
 
+			case 445:
+				raw_445(ga, chan_parm, raw_buf);
+				break;
+
+			case 446:
+				raw_446(ga, chan_parm, raw_buf);
+				break;
+
 			case 451:
 				raw_451(ga, chan_parm, raw_buf);
 				break;
@@ -465,6 +481,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 			case 605:
 				raw_605(ga, chan_parm, raw_buf);
+				break;
+
+			case 666:
+				raw_666(ga, chan_parm);
 				break;
 
 			case 801:
@@ -1174,7 +1194,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 	int s = 0;	// pozycja znaku +/- od początku raw_parm3
 	int x = -1;	// ile znaków +/- było minus 1
 
-	for(int f = 0; f < static_cast<int>(raw_parm3.size()); ++f)
+	for(unsigned int f = 0; f < raw_parm3.size(); ++f)
 	{
 		if(raw_parm3[f] == '+' || raw_parm3[f] == '-')
 		{
@@ -2611,7 +2631,7 @@ void raw_333(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
-	341 (INVITE - bez informowania, bo podobną informację zwraca RAW NOTICE)
+	341 (INVITE - pojawia się, gdy ja zapraszam, bez informowania, bo podobną informację zwraca RAW NOTICE)
 	:cf1f3.onet 341 ucc_test Kernel_Panic #ucc
 */
 void raw_341()
@@ -2674,7 +2694,7 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			flags = {};
 
 			// pobierz statusy użytkownika
-			for(int i = 0; i < static_cast<int>(nick.size()); ++i)
+			for(unsigned int i = 0; i < nick.size(); ++i)
 			{
 				if(nick[i] == '`')
 				{
@@ -2780,7 +2800,10 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 			std::string nicklist, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
 			std::string nicklist_part;
 			std::stringstream nicklist_stream;
-			int x = 0;
+			int width = getmaxx(ga.win_chat) - get_time().size();	// odejmij rozmiar zajmowany przez wyświetlenie czasu
+			int nick_len;
+			int count_char = 0;
+			int spaces;
 
 			for(auto it = nick_chan.begin(); it != nick_chan.end(); ++it)
 			{
@@ -2827,38 +2850,58 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 			nicklist = nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
 
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xGREEN "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
-
 			nicklist_stream << nicklist;
 
-			while(std::getline(nicklist_stream, nick))
+			std::getline(nicklist_stream, nick);
+			nick_len = buf_utf2iso(nick).size() + 2;	// + 2 na nawias
+
+			while(true)
 			{
-				if(x == 0)
+				if(count_char == 0)
 				{
 					nicklist_part += xWHITE;
 				}
 
-				++x;
-
 				nicklist_part += "[" + nick + "]";
 
-				if(x < 6)
+				count_char += nick_len;
+
+				if(nick_len <= 20)
 				{
-					nicklist_part += " ";
+					spaces = 21 - nick_len;
 				}
 
 				else
 				{
+					spaces = 42 - nick_len;
+				}
+
+				count_char += spaces;
+
+				if(! std::getline(nicklist_stream, nick))
+				{
+					break;
+				}
+
+				nick_len = buf_utf2iso(nick).size() + 2;
+
+				if(width - count_char > nick_len - 2)
+				{
+					for(int i = 0; i < spaces; ++i)
+					{
+						nicklist_part += " ";
+					}
+				}
+
+				else
+				{
+					count_char = 0;
 					nicklist_part += "\n";
-					x = 0;
 				}
 			}
 
-			if(nicklist_part.size() > 0)
-			{
-				nicklist_part.erase(nicklist_part.size() - 1, 1);
-			}
+			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+					xYELLOW "* Osoby przebywające w pokoju " + raw_parm3 + " (liczba osób: " + std::to_string(nick_chan.size()) + ")");
 
 			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, nicklist_part);
 		}
@@ -2883,6 +2926,26 @@ void raw_366(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 	:cf1f3.onet 369 ucc_test devi85 :End of WHOWAS
 */
 void raw_369()
+{
+}
+
+
+/*
+	371 (INFO)
+	:cf1f1.onet 371 ucieszony86 :                   -/\- InspIRCd -\/-
+*/
+void raw_371(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf, std::string &raw_parm0)
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			"* -" xMAGENTA + raw_parm0 + xNORMAL "- " + get_rest_from_buf(raw_buf, " :"));
+}
+
+
+/*
+	374 (INFO - koniec)
+	:cf1f1.onet 374 ucieszony86 :End of /INFO list
+*/
+void raw_374()
 {
 }
 
@@ -3169,6 +3232,32 @@ void raw_441(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
+	445 (SUMMON)
+	:cf1f2.onet 445 ucieszony86 :SUMMON has been disabled (depreciated command)
+*/
+void raw_445(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm3 + " - to polecenie czata zostało wyłączone (jest przestarzałe).");
+}
+
+
+/*
+	446 (USERS)
+	:cf1f2.onet 446 ucieszony86 :USERS has been disabled (depreciated command)
+*/
+void raw_446(struct global_args &ga, struct channel_irc *chan_parm[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* " + raw_parm3 + " - to polecenie czata zostało wyłączone (jest przestarzałe).");
+}
+
+
+/*
 	451
 	:cf1f4.onet 451 PING :You have not registered
 	:cf1f3.onet 451 VHOST :You have not registered
@@ -3376,6 +3465,17 @@ void raw_605(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	// wyświetl w pokoju "Status"
 	win_buf_add_str(ga, chan_parm, "Status", xWHITE "* Twojego przyjaciela " + raw_parm3 + " nie ma na czacie.");
+}
+
+
+/*
+	666 (SERVER)
+	:cf1f2.onet 666 ucieszony86 :You cannot identify as a server, you are a USER. IRC Operators informed.
+*/
+void raw_666(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
+			xRED "* Nie możesz zidentyfikować się jako serwer, jesteś użytkownikiem. Operatorzy IRC poinformowani.");
 }
 
 
@@ -4407,7 +4507,7 @@ void raw_notice_257()
 
 
 /*
-	NOTICE 258
+	NOTICE 258 (np. CS SET #ucc GUARDIAN 0 - zwraca 'i')
 	:ChanServ!service@service.onet NOTICE #ucc :258 ucieszony86 * :channel settings changed
 	:ChanServ!service@service.onet NOTICE #ucc :258 ucieszony86 i :channel settings changed
 */

@@ -185,7 +185,7 @@ struct channel_irc
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
-	size_t win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
+	size_t pos_win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
 
         std::map<std::string, struct nick_irc> nick_parm;
 };

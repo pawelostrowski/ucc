@@ -556,10 +556,10 @@ void command_connect(struct global_args &ga, struct channel_irc *chan_parm[], st
 			// wpisanie 'o' w parametrze oznacza próbę zalogowania na zalogowanym już nicku, przydaje się po zmianie IP, aby nie czekać na timeout
 			if(get_arg(kbd_buf, pos_arg_start, true) == "O" && ! auth_http_useroverride(ga, chan_parm))
 			{
-				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu
 				msg_err_disconnect(ga, chan_parm);
 
-				return;
+				// bez return, bo to koniec funkcji
 			}
 		}
 	}
