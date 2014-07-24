@@ -15,11 +15,13 @@ std::string time_unixtimestamp2local_full(std::string &time_unixtimestamp);
 
 std::string time_sec2time(std::string &sec);
 
+int line_size(struct global_args &ga, struct channel_irc *chan_parm[], int line_number);
+
 std::string key_utf2iso(int key_code);
 
 void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int term_x, int kbd_buf_pos);
 
-void win_buf_show(struct global_args &ga, std::string &win_buf, int pos_win_buf_start);
+void win_buf_show(struct global_args &ga, struct channel_irc *chan_parm[], int line_number);
 
 void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[]);
 

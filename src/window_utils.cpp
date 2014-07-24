@@ -1,4 +1,4 @@
-#include <string>		// std::string
+#include <sstream>		// std::string, std::stringstream
 
 // -std=gnu++11 - time_t, time(), localtime(), strftime()
 
@@ -245,6 +245,32 @@ std::string time_sec2time(std::string &sec)
 }
 
 
+int line_size(struct global_args &ga, struct channel_irc *chan_parm[], int line_number)
+{
+	int line_len = chan_parm[ga.current]->win_buf[line_number].size();
+	int count_char = 0;
+	char c;
+
+	for(int i = 0; line_number >= 0 && i < line_len; ++i)
+	{
+		c = chan_parm[ga.current]->win_buf[line_number][i];
+
+		if(c == dCOLOR)
+		{
+			++i;
+		}
+
+		else if(c != dBOLD_ON && c != dBOLD_OFF && c != dREVERSE_ON && c != dREVERSE_OFF && c != dUNDERLINE_ON && c != dUNDERLINE_OFF
+			&& c != dNORMAL && (c & 0xE0) != 0xC0)
+		{
+			++count_char;
+		}
+	}
+
+	return count_char;
+}
+
+
 std::string key_utf2iso(int key_code)
 {
 /*
@@ -422,77 +448,128 @@ void kbd_buf_show(std::string kbd_buf, std::string &zuousername, int term_y, int
 }
 
 
-void win_buf_show(struct global_args &ga, std::string &win_buf, int pos_win_buf_start)
+void win_buf_show(struct global_args &ga, struct channel_irc *chan_parm[], int line_number)
 {
-	int wcur_x;
-	int win_buf_len = win_buf.size();
+	int wterm_y, wterm_x;
+	int win_buf_len, line_len;
+	char c;
+	int count_char = 0;
+	bool last = false;
 
-	// wypisywanie w pętli
-	for(int i = pos_win_buf_start; i < win_buf_len; ++i)
+	// scroll w oknie czata zależnie od stanu scrolla historii okna
+	if(chan_parm[ga.current]->pos_win_scroll == -1)
 	{
-		// pobierz pozycję X kursora, aby przy wyświetlaniu kolejnych znaków wykryć, czy należy pominąć wyświetlanie kodu \n
-		wcur_x = getcurx(ga.win_chat);
-
-		// wykryj formatowanie kolorów w buforze (kod dCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
-		if(win_buf[i] == dCOLOR && i + 1 < win_buf_len)		// i + 1 < win_buf_len - nie czytaj poza bufor (przy czytaniu kodu koloru)
-		{
-			++i;	// przejdź na kod koloru
-			wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(win_buf[i]));
-		}
-
-		// wykryj włączenie pogrubienia tekstu
-		else if(win_buf[i] == dBOLD_ON)
-		{
-			wattron(ga.win_chat, A_BOLD);
-		}
-
-		// wykryj wyłączenie pogrubienia tekstu
-		else if(win_buf[i] == dBOLD_OFF)
-		{
-			wattroff(ga.win_chat, A_BOLD);
-		}
-
-		// wykryj włączenie odwrócenia kolorów
-		else if(win_buf[i] == dREVERSE_ON)
-		{
-			wattron(ga.win_chat, A_REVERSE);
-		}
-
-		// wykryj wyłączenie odwrócenia kolorów
-		else if(win_buf[i] == dREVERSE_OFF)
-		{
-			wattroff(ga.win_chat, A_REVERSE);
-		}
-
-		// wykryj włączenie podkreślenia tekstu
-		else if(win_buf[i] == dUNDERLINE_ON)
-		{
-			wattron(ga.win_chat, A_UNDERLINE);
-		}
-
-		// wykryj wyłączenie podkreślenia tekstu
-		else if(win_buf[i] == dUNDERLINE_OFF)
-		{
-			wattroff(ga.win_chat, A_UNDERLINE);
-		}
-
-		// wykryj przywrócenie domyślnych ustawień bez formatowania
-		else if(win_buf[i] == dNORMAL)
-		{
-			wattrset(ga.win_chat, A_NORMAL);
-		}
-
-		// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem), wykryj też czy pozycja
-		// kursora jest na początku wiersza i jest wtedy kod \n, w takiej sytuacji nie wyświetlaj go, aby nie tworzyć pustego wiersza
-		else if(win_buf[i] != '\r' && (wcur_x != 0 || win_buf[i] != '\n'))
-		{
-			// wyświetl aktualną zawartość bufora dla pozycji w 'i'
-			wprintw(ga.win_chat, "%c", win_buf[i]);
-		}
+		scrollok(ga.win_chat, TRUE);
 	}
 
-	// zapamiętaj pozycję kursora w oknie "wirtualnym"
-	getyx(ga.win_chat, ga.wcur_y, ga.wcur_x);
+	else
+	{
+		scrollok(ga.win_chat, FALSE);
+	}
+
+	getmaxyx(ga.win_chat, wterm_y, wterm_x);
+
+	// pobierz całkowity rozmiar std::vector
+	win_buf_len = chan_parm[ga.current]->win_buf.size();
+
+	// wypisywanie w pętli
+	for(int l = line_number; line_number >= 0 && l < win_buf_len; ++l)
+	{
+		if(chan_parm[ga.current]->pos_win_scroll != -1 && getcury(ga.win_chat) + 1 == wterm_y)
+		{
+			break;
+		}
+
+		// nowy wiersz tylko, gdy nie jest to początek okna
+		if((getcury(ga.win_chat) != 0 || getcurx(ga.win_chat) != 0) && ! last)
+		{
+			wprintw(ga.win_chat, "\n");
+		}
+
+		count_char = 0;
+		last = false;
+
+		// pobierz rozmiar aktualnie przetwarzanego elementu (wiersza)
+		line_len = chan_parm[ga.current]->win_buf[l].size();
+
+		// ta pętla wyświetli konkretny element (wiersz) w std::vector
+		for(int i = 0; i < line_len; ++i)
+		{
+			if(i + 1 == line_len && getcurx(ga.win_chat) + 1 == getmaxx(ga.win_chat))
+			{
+				last = true;
+			}
+
+			// aktualnie przetwarzany znak (lub kod formatowania)
+			c = chan_parm[ga.current]->win_buf[l][i];
+
+			// wykryj formatowanie kolorów w buforze (kod dCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
+			if(c == dCOLOR && i + 1 < line_len)	// i + 1 < line_len - nie czytaj poza bufor (przy czytaniu kodu koloru)
+			{
+				++i;	// przejdź na kod koloru
+				wattron_color(ga.win_chat, ga.use_colors, static_cast<short>(chan_parm[ga.current]->win_buf[l][i]));
+			}
+
+			// wykryj włączenie pogrubienia tekstu
+			else if(c == dBOLD_ON)
+			{
+				wattron(ga.win_chat, A_BOLD);
+			}
+
+			// wykryj wyłączenie pogrubienia tekstu
+			else if(c == dBOLD_OFF)
+			{
+				wattroff(ga.win_chat, A_BOLD);
+			}
+
+			// wykryj włączenie odwrócenia kolorów
+			else if(c == dREVERSE_ON)
+			{
+				wattron(ga.win_chat, A_REVERSE);
+			}
+
+			// wykryj wyłączenie odwrócenia kolorów
+			else if(c == dREVERSE_OFF)
+			{
+				wattroff(ga.win_chat, A_REVERSE);
+			}
+
+			// wykryj włączenie podkreślenia tekstu
+			else if(c == dUNDERLINE_ON)
+			{
+				wattron(ga.win_chat, A_UNDERLINE);
+			}
+
+			// wykryj wyłączenie podkreślenia tekstu
+			else if(c == dUNDERLINE_OFF)
+			{
+				wattroff(ga.win_chat, A_UNDERLINE);
+			}
+
+			// wykryj przywrócenie domyślnych ustawień bez formatowania
+			else if(c == dNORMAL)
+			{
+				wattrset(ga.win_chat, A_NORMAL);
+			}
+
+			// pomiń kod \r, który powoduje, że w ncurses znika tekst (przynajmniej na Linuksie, na Windowsie nie sprawdzałem)
+			else if(c != '\r')
+			{
+				wprintw(ga.win_chat, "%c", c);
+
+				// pomijaj w liczniku znaków kody UTF-8, aby znak w tym kodzie liczyć raz, a nie kilka razy
+				if((c & 0xE0) != 0xC0)
+				{
+					++count_char;
+				}
+			}
+
+			if(chan_parm[ga.current]->pos_win_scroll != -1 && getcury(ga.win_chat) + 1 == wterm_y && getcurx(ga.win_chat) + 1 == count_char)
+			{
+				break;
+			}
+		}
+	}
 
 	// odśwież okna (w takiej kolejności, aby wszystko wyświetliło się prawidłowo)
 	refresh();
@@ -507,48 +584,34 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 	Odśwież zawartość okna aktualnie otwartego pokoju (ga.current).
 */
 
-	int wterm_y;		// wymiar Y okna "wirtualnego"
+	int pos_line;
 
-	size_t pos_win_buf_start;
-	int rows = 1;
-
-	// usuń starą zawartość okna, aby uniknąć ewentualnych "śmieci" na ekranie
+	// usuń starą zawartość okna przed wyświetleniem nowej
 	wclear(ga.win_chat);
 
 	// zacznij od początku okna "wirtualnego" (co prawda wclear() powinien przenieść kursor na początek okna, ale nie jest to udokumentowane w każdej
 	// implementacji ncurses, dlatego na wszelki wypadek bezpieczniej jest przenieść kursor)
 	wmove(ga.win_chat, 0, 0);
 
-	// pobierz wymiary okna "wirtualnego" (tutaj chodzi o Y)
-	wterm_y = getmaxy(ga.win_chat);
-
-	// wykryj początek, od którego należy zacząć wyświetlać zawartość bufora (na podstawie kodu \n)
-	pos_win_buf_start = chan_parm[ga.current]->win_buf.rfind("\n");
-
-	if(pos_win_buf_start != std::string::npos)
+	if(chan_parm[ga.current]->pos_win_scroll == -1)
 	{
-		// zakończ szukanie, gdy pozycja zejdzie do zera lub liczba znalezionych wierszy zrówna się z liczbą wierszy okna "wirtualnego"
-		while(pos_win_buf_start != std::string::npos && pos_win_buf_start > 0 && rows < wterm_y)
+		if(getmaxy(ga.win_chat) > static_cast<int>(chan_parm[ga.current]->win_buf.size()))
 		{
-			pos_win_buf_start = chan_parm[ga.current]->win_buf.rfind("\n", pos_win_buf_start - 1);	// - 1, aby pominąć kod \n
-			++rows;
+			pos_line = 0;
+		}
+
+		else
+		{
+			pos_line = chan_parm[ga.current]->win_buf.size() - getmaxy(ga.win_chat);
 		}
 	}
 
-	// jeśli nie wykryto żadnego kodu \n lub nie wykryto go na początku bufora (np. przy pustym buforze), ustal początek wyświetlania na 0
-	if(pos_win_buf_start == std::string::npos)
+	else
 	{
-		pos_win_buf_start = 0;
+		pos_line = chan_parm[ga.current]->pos_win_scroll;
 	}
 
-	// jeśli na początku wyświetlanej części bufora jest kod \n, pomiń go, aby nie tworzyć pustego wiersza
-	if(chan_parm[ga.current]->win_buf[pos_win_buf_start] == '\n')
-	{
-		++pos_win_buf_start;
-	}
-
-	// wyświetl ustaloną część bufora
-	win_buf_show(ga, chan_parm[ga.current]->win_buf, pos_win_buf_start);
+	win_buf_show(ga, chan_parm, pos_line);
 
 	ga.nicklist_refresh = true;
 }
@@ -581,7 +644,9 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		{
 			if(chan_parm[i] && chan_parm[i]->channel == chan_name)
 			{
-				which_chan = i;		// wpisz numer znalezionego kanału
+				// wpisz numer znalezionego kanału
+				which_chan = i;
+
 				break;
 			}
 		}
@@ -599,56 +664,43 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *chan_parm[], st
 		chan_parm[which_chan]->chan_act = act_type;
 	}
 
-	// jeśli trzeba, wstaw czas na początku każdego wiersza (opcja domyślna)
-	if(add_time)
+	std::stringstream in_buf_stream;
+	std::string line;
+
+	int pos_line = chan_parm[ga.current]->win_buf.size();
+
+	in_buf_stream << in_buf;
+
+	// obsłuż bufor wejściowy
+	while(std::getline(in_buf_stream, line))
 	{
-		// początek bufora pomocniczego nie powinien zawierać kodu \n, więc aby wstawianie czasu w poniższej pętli zadziałało prawidłowo dla początku,
-		// trzeba go wstawić na początku bufora pomocniczego (+ 1 załatwia sprawę, w kolejnych obiegach + 1 wstawia czas za kodem \n)
-		size_t pos_n_in_buf = -1;
-
-		// pobierz rozmiar zajmowany przez wyświetlenie czasu, potrzebne przy szukaniu kodu \n
-		int time_len = get_time().size();
-
-		// poniższa pętla wstawia czas za każdym kodem \n (poza początkiem, gdzie go nie ma i wstawia na początku bufora pomocniczego)
-		do
+		// jeśli trzeba, wstaw czas na początku każdego wiersza (opcja domyślna)
+		if(add_time)
 		{
-			in_buf.insert(pos_n_in_buf + 1, get_time());	// wstaw czas na początku każdego wiersza
+			chan_parm[which_chan]->win_buf.push_back(get_time() + line);
+		}
 
-			pos_n_in_buf = in_buf.find("\n", pos_n_in_buf + time_len + 1);	// kolejny raz szukaj za czasem i kodem \n
-
-		} while(pos_n_in_buf != std::string::npos);
+		else
+		{
+			chan_parm[which_chan]->win_buf.push_back(line);
+		}
 	}
 
-	// ze względu na przyjęty sposób trzymania danych w buforze, na końcu bufora głównego danego kanału nie ma kodu \n, więc aby przejść do nowego
-	// wiersza, należy przed dopisaniem bufora pomocniczego dodać kod \n
-	if(in_buf.size() > 0 && in_buf[0] != '\n')	// na wszelki wypadek sprawdź, czy na początku nie ma już kodu \n
-	{
-		chan_parm[which_chan]->win_buf += "\n" + in_buf;
-	}
-
-	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy)
-	if(ga.current != which_chan)
+	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy oraz gdy nie użyliśmy scrolla okna)
+	if(ga.current != which_chan || (chan_parm[which_chan]->pos_win_scroll != -1 && getcury(ga.win_chat) + 1 == getmaxy(ga.win_chat)))
 	{
 		return;
 	}
 
-	// przenieś kursor na pozycję, gdzie jest koniec aktualnego tekstu
-	wmove(ga.win_chat, ga.wcur_y, ga.wcur_x);
-
-	// jeśli kursor jest na początku okna "wirtualnego", i jest tam kod \n, to go usuń, aby nie tworzyć pustego wiersza
-	if(ga.wcur_y == 0 && ga.wcur_x == 0 && in_buf.size() > 0 && in_buf[0] == '\n')
+	if(getcury(ga.win_chat) + 1 == getmaxy(ga.win_chat))	// ??? błąd czasami
 	{
-		in_buf.erase(0, 1);
-	}
-
-	// jeśli kursor nie jest na początku okna "wirtualnego", dodaj kod \n, aby przejść do nowego wiersza
-	else if(ga.wcur_y != 0 || ga.wcur_x != 0)
-	{
-		in_buf.insert(0, "\n");
+		wclear(ga.win_chat);
+		wmove(ga.win_chat, 0, 0);
+		pos_line = chan_parm[ga.current]->win_buf.size() - getmaxy(ga.win_chat);
 	}
 
 	// wyświetl otrzymaną część bufora
-	win_buf_show(ga, in_buf, 0);
+	win_buf_show(ga, chan_parm, pos_line);
 }
 
 
@@ -903,7 +955,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *chan_parm[])
 			if(nicklist[i] == dCOLOR && i + 1 < nicklist.size())
 			{
 				++i;	// przejdź na kod koloru
-				wattron_color(ga.win_info, ga.use_colors, nicklist[i]);
+				wattron_color(ga.win_info, ga.use_colors, static_cast<short>(nicklist[i]));
 			}
 
 			else if(nicklist[i] == dBOLD_ON)

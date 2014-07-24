@@ -4,9 +4,10 @@
 #include <ncursesw/ncurses.h>
 #include <fstream>
 #include <map>
+#include <vector>
 
 #define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VER "v1.0 alpha2"
+#define UCC_VER "v1.0 alpha3"
 
 #define FILE_DBG_HTTP "/tmp/ucc_dbg_http.txt"
 #define FILE_DBG_IRC "/tmp/ucc_dbg_irc.txt"
@@ -109,7 +110,6 @@ struct card_onet
 struct global_args
 {
 	WINDOW *win_chat, *win_info;
-	int wcur_y, wcur_x;
 
 	bool use_colors;
 
@@ -179,13 +179,14 @@ struct nick_irc
 // struktura kanału
 struct channel_irc
 {
-	std::string win_buf;
+//	std::string win_buf;
+	std::vector<std::string> win_buf;
 	std::string channel;
 	std::string topic;
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
-	size_t pos_win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
+	int pos_win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
 
         std::map<std::string, struct nick_irc> nick_parm;
 };

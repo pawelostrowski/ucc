@@ -447,6 +447,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 				raw_461(ga, chan_parm, raw_buf);
 				break;
 
+			case 462:
+				raw_462(ga, chan_parm);
+				break;
+
 			case 473:
 				raw_473(ga, chan_parm, raw_buf);
 				break;
@@ -481,6 +485,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 
 			case 605:
 				raw_605(ga, chan_parm, raw_buf);
+				break;
+
+			case 607:
+				raw_607();
 				break;
 
 			case 666:
@@ -3284,6 +3292,16 @@ void raw_461(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 
 /*
+	462 (USER)
+	:cf1f3.onet 462 ucc :You may not reregister
+*/
+void raw_462(struct global_args &ga, struct channel_irc *chan_parm[])
+{
+	win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "* Nie możesz zarejestrować się ponownie.");
+}
+
+
+/*
 	473
 	:cf1f2.onet 473 ucc_test #a :Cannot join channel (Invite only)
 */
@@ -3465,6 +3483,15 @@ void raw_605(struct global_args &ga, struct channel_irc *chan_parm[], std::strin
 
 	// wyświetl w pokoju "Status"
 	win_buf_add_str(ga, chan_parm, "Status", xWHITE "* Twojego przyjaciela " + raw_parm3 + " nie ma na czacie.");
+}
+
+
+/*
+	607 (WATCH)
+	:cf1f4.onet 607 ucieszony86 :End of WATCH list
+*/
+void raw_607()
+{
 }
 
 
@@ -4883,7 +4910,9 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *chan_parm[], std
 	// nieznany lub niezaimplementowany powód zmiany ustawień (należy dodać jeszcze te popularne)
 	else
 	{
-		win_buf_add_str(ga, chan_parm, raw_parm4, xRED "* " + raw_parm5 + ": nie posiadasz uprawnień do zmiany tego ustawienia.");
+		std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
+
+		win_buf_add_str(ga, chan_parm, raw_parm4, xRED "* " + nick_who + ": " + raw_parm5 + " - nie posiadasz uprawnień do zmiany tego ustawienia.");
 	}
 }
 

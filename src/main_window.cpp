@@ -38,8 +38,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 */
 	int term_y, term_x;		// wymiary terminala
 
-	int kbd_buf_pos = 0;	// początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
-	int kbd_buf_end = 0;	// początkowy koniec (rozmiar) bufora klawiatury
+	int kbd_buf_pos = 0;		// początkowa pozycja bufora klawiatury (istotne podczas używania strzałek, Home, End, Delete itd.)
+	int kbd_buf_end = 0;		// początkowy koniec (rozmiar) bufora klawiatury
 	int key_code;			// kod ostatnio wciśniętego klawisza
 	std::string kbd_buf;		// bufor odczytanych znaków z klawiatury
 
@@ -126,8 +126,6 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 	{
 		ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
 	}
-
-	scrollok(ga.win_chat, TRUE);		// włącz przewijanie w tym oknie
 
 	// tablica kanałów
 	struct channel_irc *chan_parm[CHAN_MAX] = {};		// wyzeruj od razu tablicę
@@ -411,6 +409,8 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 				printw(" [Lag: %.2fs]", ga.lag / 1000.00);
 			}
 		}
+
+		printw(" [%d]", chan_parm[ga.current]->pos_win_scroll);
 /*
 	Koniec informacji na pasku dolnym.
 */
@@ -691,11 +691,47 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			// Page Up
 			else if(key_code == KEY_PPAGE)
 			{
+				if(static_cast<int>(chan_parm[ga.current]->win_buf.size()) > getmaxy(ga.win_chat))
+				{
+					if(chan_parm[ga.current]->pos_win_scroll == -1)
+					{
+						chan_parm[ga.current]->pos_win_scroll = chan_parm[ga.current]->win_buf.size() - getmaxy(ga.win_chat);
+					}
+
+					chan_parm[ga.current]->pos_win_scroll -= getmaxy(ga.win_chat) - 1;
+
+					if(chan_parm[ga.current]->pos_win_scroll < 0)
+					{
+						chan_parm[ga.current]->pos_win_scroll = 0;
+					}
+
+					win_buf_refresh(ga, chan_parm);
+				}
 			}
 
 			// Page Down
 			else if(key_code == KEY_NPAGE)
 			{
+				if(chan_parm[ga.current]->pos_win_scroll != -1)
+				{
+					if(static_cast<int>(chan_parm[ga.current]->win_buf.size()) - chan_parm[ga.current]->pos_win_scroll
+						< 2 * getmaxy(ga.win_chat))
+					{
+						chan_parm[ga.current]->pos_win_scroll = -1;
+					}
+
+					else
+					{
+						chan_parm[ga.current]->pos_win_scroll += getmaxy(ga.win_chat) - 1;
+					}
+
+					if(chan_parm[ga.current]->pos_win_scroll > static_cast<int>(chan_parm[ga.current]->win_buf.size()))
+					{
+//						chan_parm[ga.current]->pos_win_scroll = -1;
+					}
+
+					win_buf_refresh(ga, chan_parm);
+				}
 			}
 
 			// Tab

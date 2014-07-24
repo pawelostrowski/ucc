@@ -13,13 +13,8 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_STATUS] = new channel_irc;
 		chan_parm[CHAN_STATUS]->channel = "Status";
 		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
-		chan_parm[CHAN_STATUS]->chan_act = 0;		// zacznij od braku aktywności kanału
-
-		chan_parm[CHAN_STATUS]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
-
-		// ustaw w nim kursor na pozycji początkowej (to pierwszy tworzony pokój, więc zawsze należy zacząć od pozycji początkowej)
-		ga.wcur_y = 0;
-		ga.wcur_x = 0;
+		chan_parm[CHAN_STATUS]->chan_act = 0;			// zacznij od braku aktywności kanału
+		chan_parm[CHAN_STATUS]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
 
 		// ustaw nowoutworzony kanał jako aktywny
 		ga.current = CHAN_STATUS;
@@ -34,9 +29,8 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
 		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
 		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
 		chan_parm[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
-		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;	// zacznij od braku aktywności kanału
-
-		chan_parm[CHAN_DEBUG_IRC]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;		// zacznij od braku aktywności kanału
+		chan_parm[CHAN_DEBUG_IRC]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
 	}
 }
 
@@ -48,8 +42,7 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[
 		chan_parm[CHAN_RAW_UNKNOWN] = new channel_irc;
 		chan_parm[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
 		chan_parm[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
-		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;	// zacznij od braku aktywności kanału
-
+		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;		// zacznij od braku aktywności kanału
 		chan_parm[CHAN_RAW_UNKNOWN]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
 	}
 }
@@ -78,9 +71,8 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		if(chan_parm[i] == 0)
 		{
 			chan_parm[i] = new channel_irc;
-			chan_parm[i]->channel = chan_name;	// nazwa kanału czata
-			chan_parm[i]->chan_act = 0;		// zacznij od braku aktywności kanału
-
+			chan_parm[i]->channel = chan_name;		// nazwa kanału czata
+			chan_parm[i]->chan_act = 0;			// zacznij od braku aktywności kanału
 			chan_parm[i]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
 
 			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join
@@ -92,8 +84,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 				wclear(ga.win_chat);
 
 				// ustaw w nim kursor na pozycji początkowej
-				ga.wcur_y = 0;
-				ga.wcur_x = 0;
+				wmove(ga.win_chat, 0, 0);
 			}
 
 			// gdy utworzono kanał, przerwij szukanie wolnego kanału z kodem sukcesu
@@ -101,7 +92,8 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 		}
 	}
 
-	return false;	// zakończ z błędem, gdy nie znaleziono wolnych miejsc w tablicy
+	// zakończ z błędem, gdy nie znaleziono wolnych miejsc w tablicy
+	return false;
 }
 
 

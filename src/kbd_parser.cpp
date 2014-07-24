@@ -424,13 +424,17 @@ void command_captcha(struct global_args &ga, struct channel_irc *chan_parm[], st
 			// gdy kod wpisano i ma 6 znaków, wyślij go na serwer
 			if(! auth_http_checkcode(ga, chan_parm, captcha))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 
 			if(! auth_http_getuokey(ga, chan_parm))
 			{
+				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
 				msg_err_disconnect(ga, chan_parm);
+
 				return;
 			}
 		}
