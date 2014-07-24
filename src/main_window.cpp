@@ -410,7 +410,7 @@ int main_window(bool use_colors_main, bool ucc_dbg_irc_main)
 			}
 		}
 
-		printw(" [%d]", chan_parm[ga.current]->pos_win_scroll);
+//		printw(" [%d]", chan_parm[ga.current]->pos_win_scroll);
 /*
 	Koniec informacji na pasku dolnym.
 */
