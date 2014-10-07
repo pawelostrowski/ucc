@@ -1,4 +1,26 @@
-#include <string>		// std::string
+/*
+	Ucieszony Chat Client
+	Copyright (C) 2013, 2014 Paweł Ostrowski
+
+	This file is part of Ucieszony Chat Client.
+
+	Ucieszony Chat Client is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+
+	Ucieszony Chat Client is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Ucieszony Chat Client (in the file LICENSE); if not,
+	see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+
+
+#include <sstream>		// std::string, std::stringstream
 
 #include "debug.hpp"
 #include "enc_str.hpp"
@@ -6,10 +28,10 @@
 #include "ucc_global.hpp"
 
 
-void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, short port, std::string &stock,
-			std::string &msg_dbg_http)
+void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, uint16_t port, std::string &stock,
+	std::string &dbg_http_msg)
 {
-	if(ga.f_dbg_http.good())
+	if(ga.debug_http_f.good())
 	{
 		// jeśli wysyłane było hasło, ukryj je oraz długość zapytania (zdradza długość hasła)
 		size_t exp_start, exp_end;
@@ -53,15 +75,21 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			dbg_recv.erase(exp_start + gif_str.size() + 3, dbg_recv.size() - exp_start - gif_str.size() - 3);
 		}
 
-		// usuń \r z buforów, aby w pliku nie było go
-		while(dbg_sent.find("\r") != std::string::npos)
+		// usuń \r z buforów
+		size_t code_erase = dbg_sent.find("\r");
+
+		while(code_erase != std::string::npos)
 		{
 			dbg_sent.erase(dbg_sent.find("\r"), 1);
+			code_erase = dbg_sent.find("\r");
 		}
 
-		while(dbg_recv.find("\r") != std::string::npos)
+		code_erase = dbg_recv.find("\r");
+
+		while(code_erase != std::string::npos)
 		{
 			dbg_recv.erase(dbg_recv.find("\r"), 1);
+			code_erase = dbg_recv.find("\r");
 		}
 
 		// dodaj datę i czas
@@ -72,74 +100,50 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		std::string time_str = std::to_string(time_g);
 
 		// zapisz dane
-		std::string s;
+		ga.debug_http_f << "================================================================================" << std::endl;
 
-		if(port == 443)
+		ga.debug_http_f << dbg_http_msg << " (" << time_utimestamp_to_local_full(time_str) << "):" << std::endl << std::endl << std::endl;
+
+		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):" << std::endl << std::endl;
+
+		ga.debug_http_f << dbg_sent << std::endl;
+
+		if(dbg_sent.size() > 0 && dbg_sent[dbg_sent.size() - 1] != '\n')
 		{
-			s = "s";
+			ga.debug_http_f << std::endl << std::endl;
 		}
 
-		ga.f_dbg_http << "================================================================================\n";
+		ga.debug_http_f << "<-- RECV:" << std::endl << std::endl;
 
-		ga.f_dbg_http << msg_dbg_http + " (" + time_unixtimestamp2local_full(time_str) + "):\n\n\n";
+		ga.debug_http_f << buf_iso_to_utf(dbg_recv) << std::endl;
 
-		ga.f_dbg_http << "--> SENT (http" + s + "://" + host + stock + "):\n\n";
-
-		ga.f_dbg_http << dbg_sent + "\n";
-
-		if(dbg_sent[dbg_sent.size() - 1] != '\n')
+		if(dbg_sent.size() > 0 && dbg_recv[dbg_recv.size() - 1] != '\n')
 		{
-			ga.f_dbg_http << "\n\n";
+			ga.debug_http_f << std::endl << std::endl;
 		}
 
-		ga.f_dbg_http << "--> RECV:\n\n";
-
-		ga.f_dbg_http << buf_iso2utf(dbg_recv) + "\n";
-
-		if(dbg_recv[dbg_recv.size() - 1] != '\n')
-		{
-			ga.f_dbg_http << "\n\n";
-		}
-
-		ga.f_dbg_http.flush();
+		ga.debug_http_f.flush();
 	}
 }
 
 
-void irc_sent_dbg_to_file(struct global_args &ga, std::string dbg_sent)
+void irc_sent_dbg_to_file(struct global_args &ga, std::string &dbg_sent)
 {
-	if(ga.f_dbg_irc.good())
+	if(ga.debug_irc_f.good())
 	{
-		dbg_sent = buf_iso2utf(dbg_sent);	// zapis w UTF-8
+		ga.debug_irc_f << "--> " << dbg_sent << std::endl;
 
-		while(dbg_sent.find("\r") != std::string::npos)
-		{
-			dbg_sent.erase(dbg_sent.find("\r"), 1);
-		}
-
-		dbg_sent.insert(0, "--> ");
-
-		size_t next_n = dbg_sent.find("\n");
-
-		while(next_n != std::string::npos && next_n < dbg_sent.size() - 1)
-		{
-			dbg_sent.insert(next_n + 1, "--> ");
-			next_n = dbg_sent.find("\n", next_n + 1);
-		}
-
-		ga.f_dbg_irc << dbg_sent;
-
-		ga.f_dbg_irc.flush();
+		ga.debug_irc_f.flush();
 	}
 }
 
 
 void irc_recv_dbg_to_file(struct global_args &ga, std::string &dbg_recv)
 {
-	if(ga.f_dbg_irc.good())
+	if(ga.debug_irc_f.good())
 	{
-		ga.f_dbg_irc << dbg_recv;
+		ga.debug_irc_f << dbg_recv;
 
-		ga.f_dbg_irc.flush();
+		ga.debug_irc_f.flush();
 	}
 }

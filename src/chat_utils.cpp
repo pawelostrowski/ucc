@@ -1,20 +1,43 @@
+/*
+	Ucieszony Chat Client
+	Copyright (C) 2013, 2014 Paweł Ostrowski
+
+	This file is part of Ucieszony Chat Client.
+
+	Ucieszony Chat Client is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+
+	Ucieszony Chat Client is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Ucieszony Chat Client (in the file LICENSE); if not,
+	see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+
+
 #include <string>		// std::string
 
 #include "chat_utils.hpp"
-#include "enc_str.hpp"
 #include "window_utils.hpp"
 #include "ucc_global.hpp"
 
 
-void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
+void new_chan_status(struct global_args &ga, struct channel_irc *ci[])
 {
-	if(chan_parm[CHAN_STATUS] == 0)
+	if(ci[CHAN_STATUS] == 0)
 	{
-		chan_parm[CHAN_STATUS] = new channel_irc;
-		chan_parm[CHAN_STATUS]->channel = "Status";
-		chan_parm[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
-		chan_parm[CHAN_STATUS]->chan_act = 0;			// zacznij od braku aktywności kanału
-		chan_parm[CHAN_STATUS]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_STATUS] = new channel_irc;
+		ci[CHAN_STATUS]->channel = "Status";
+		ci[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
+		ci[CHAN_STATUS]->chan_act = 0;			// zacznij od braku aktywności kanału
+		ci[CHAN_STATUS]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_STATUS]->win_scroll_first = 0;
+		ci[CHAN_STATUS]->win_scroll_last = 0;
 
 		// ustaw nowoutworzony kanał jako aktywny
 		ga.current = CHAN_STATUS;
@@ -22,33 +45,37 @@ void new_chan_status(struct global_args &ga, struct channel_irc *chan_parm[])
 }
 
 
-void new_chan_debug_irc(struct global_args &ga, struct channel_irc *chan_parm[])
+void new_chan_debug_irc(struct global_args &ga, struct channel_irc *ci[])
 {
-	if(chan_parm[CHAN_DEBUG_IRC] == 0)
+	if(ci[CHAN_DEBUG_IRC] == 0)
 	{
-		chan_parm[CHAN_DEBUG_IRC] = new channel_irc;
-		chan_parm[CHAN_DEBUG_IRC]->channel = "Debug";
-		chan_parm[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
-		chan_parm[CHAN_DEBUG_IRC]->chan_act = 0;		// zacznij od braku aktywności kanału
-		chan_parm[CHAN_DEBUG_IRC]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_DEBUG_IRC] = new channel_irc;
+		ci[CHAN_DEBUG_IRC]->channel = "DebugIRC";
+		ci[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
+		ci[CHAN_DEBUG_IRC]->chan_act = 0;		// zacznij od braku aktywności kanału
+		ci[CHAN_DEBUG_IRC]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_DEBUG_IRC]->win_scroll_first = 0;
+		ci[CHAN_DEBUG_IRC]->win_scroll_last = 0;
 	}
 }
 
 
-void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *chan_parm[])
+void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *ci[])
 {
-	if(chan_parm[CHAN_RAW_UNKNOWN] == 0)
+	if(ci[CHAN_RAW_UNKNOWN] == 0)
 	{
-		chan_parm[CHAN_RAW_UNKNOWN] = new channel_irc;
-		chan_parm[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
-		chan_parm[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
-		chan_parm[CHAN_RAW_UNKNOWN]->chan_act = 0;		// zacznij od braku aktywności kanału
-		chan_parm[CHAN_RAW_UNKNOWN]->pos_win_scroll = -1;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_RAW_UNKNOWN] = new channel_irc;
+		ci[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
+		ci[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
+		ci[CHAN_RAW_UNKNOWN]->chan_act = 0;		// zacznij od braku aktywności kanału
+		ci[CHAN_RAW_UNKNOWN]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_RAW_UNKNOWN]->win_scroll_first = 0;
+		ci[CHAN_RAW_UNKNOWN]->win_scroll_last = 0;
 	}
 }
 
 
-bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, bool active)
+bool new_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, bool active)
 {
 /*
 	Utwórz nowy kanał czata w programie. Poniższa pętla wyszukuje pierwsze wolne miejsce w tablicy i wtedy tworzy kanał.
@@ -58,7 +85,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// nie twórz dwóch kanałów o takiej samej nazwie
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		if(ci[i] && ci[i]->channel == chan_name)
 		{
 			// co prawda nie utworzono nowego kanału, ale nie jest to błąd, bo kanał już istnieje, dlatego zakończ z kodem sukcesu
 			return true;
@@ -68,12 +95,14 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	// druga pętla szuka pierwszego wolnego kanału w tablicy pokoi i jeśli są wolne miejsca, to go tworzy
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
-		if(chan_parm[i] == 0)
+		if(ci[i] == 0)
 		{
-			chan_parm[i] = new channel_irc;
-			chan_parm[i]->channel = chan_name;		// nazwa kanału czata
-			chan_parm[i]->chan_act = 0;			// zacznij od braku aktywności kanału
-			chan_parm[i]->pos_win_scroll = -1;		// ciągłe przesuwanie aktualnego tekstu
+			ci[i] = new channel_irc;
+			ci[i]->channel = chan_name;		// nazwa kanału czata
+			ci[i]->chan_act = 0;			// zacznij od braku aktywności kanału
+			ci[i]->win_scroll_lock = false;		// ciągłe przesuwanie aktualnego tekstu
+			ci[i]->win_scroll_first = 0;
+			ci[i]->win_scroll_last = 0;
 
 			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join
 			if(active)
@@ -97,7 +126,7 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 }
 
 
-void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name)
+void del_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string chan_name)
 {
 /*
 	Usuń kanał czata w programie.
@@ -106,17 +135,17 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 	for(int i = 0; i < CHAN_CHAT; ++i)	// pokoje inne, niż pokoje czata nie mogą zostać usunięte (podczas normalnego działania programu)
 	{
 		// znajdź po nazwie kanału jego numer w tablicy
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		if(ci[i] && ci[i]->channel == chan_name)
 		{
 			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 			ga.current = CHAN_STATUS;
-			win_buf_refresh(ga, chan_parm);
+			ga.win_chat_refresh = true;
 
 			// usuń kanał, który był przed zmianą na "Status"
-			delete chan_parm[i];
+			delete ci[i];
 
 			// wyzeruj go w tablicy, w ten sposób wiadomo, że już nie istnieje
-			chan_parm[i] = 0;
+			ci[i] = 0;
 
 			// po odnalezieniu pokoju przerwij pętlę
 			break;
@@ -125,7 +154,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *chan_parm[], std:
 }
 
 
-void del_all_chan(struct channel_irc *chan_parm[])
+void del_all_chan(struct channel_irc *ci[])
 {
 /*
 	Usuń wszystkie aktywne kanały (zwolnij pamięć przez nie zajmowaną). Funkcja używana przed zakończeniem działania programu.
@@ -133,36 +162,36 @@ void del_all_chan(struct channel_irc *chan_parm[])
 
 	for(int i = 0; i < CHAN_MAX; ++i)
 	{
-		if(chan_parm[i])
+		if(ci[i])
 		{
-			delete chan_parm[i];
+			delete ci[i];
 		}
 	}
 }
 
 
-void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string &channel,
-				std::string &nick, std::string zuo_ip, struct nick_flags flags)
+void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *ci[], std::string &channel, std::string &nick, std::string zuo_ip,
+	struct nick_flags flags)
 {
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-	std::string nick_key = buf_lower2upper(nick);
+	std::string nick_key = buf_lower_to_upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
-		if(chan_parm[i] && chan_parm[i]->channel == channel)
+		if(ci[i] && ci[i]->channel == channel)
 		{
 			// wpisz nick
-			chan_parm[i]->nick_parm[nick_key].nick = nick;
+			ci[i]->ni[nick_key].nick = nick;
 
 			// jeśli nie podano ZUO i IP (podano puste), nie nadpisuj aktualnego
 			if(zuo_ip.size() > 0)
 			{
-				chan_parm[i]->nick_parm[nick_key].zuo_ip = zuo_ip;
+				ci[i]->ni[nick_key].zuo_ip = zuo_ip;
 			}
 
 			// wpisz flagi nicka
-			chan_parm[i]->nick_parm[nick_key].flags = flags;
+			ci[i]->ni[nick_key].nf = flags;
 
 			// po odnalezieniu pokoju przerwij pętlę
 			break;
@@ -171,95 +200,19 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *chan_pa
 }
 
 
-void del_nick_chan(struct global_args &ga, struct channel_irc *chan_parm[], std::string chan_name, std::string nick)
+void del_nick_chan(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string nick)
 {
-	std::string nick_key = buf_lower2upper(nick);
+	std::string nick_key = buf_lower_to_upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy usunięcie nicka
-		if(chan_parm[i] && chan_parm[i]->channel == chan_name)
+		if(ci[i] && ci[i]->channel == chan_name)
 		{
-			chan_parm[i]->nick_parm.erase(nick_key);
+			ci[i]->ni.erase(nick_key);
 
 			// po odnalezieniu pokoju przerwij pętlę
 			break;
 		}
-	}
-}
-
-
-void hist_erase_password(std::string &kbd_buf, std::string &hist_buf, std::string &hist_ignore)
-{
-	// gdy wpisano nick z hasłem, w historii nie trzymaj hasła
-	if(kbd_buf.find("/nick") == 0)	// reaguj tylko na wpisanie polecenia, dlatego 0
-	{
-		std::string hist_ignore_nick;
-
-		// początkowo wpisz do bufora "/nick"
-		hist_ignore_nick = "/nick";
-
-		// tu będzie tymczasowa pozycja nicka za spacją lub spacjami
-		int hist_nick = 5;
-
-		// przepisz spację lub spacje (jeśli są)
-		for(unsigned int i = 5; i < kbd_buf.size(); ++i)	// i = 5, bo pomijamy "/nick"
-		{
-			if(kbd_buf[i] == ' ')
-			{
-				hist_ignore_nick += " ";
-			}
-
-			else
-			{
-				hist_nick = i;
-
-				break;
-			}
-		}
-
-		// przepisz nick za spacją (lub spacjami), o ile go wpisano
-		if(hist_nick > 5)
-		{
-			for(unsigned int i = hist_nick; i < kbd_buf.size(); ++i)
-			{
-				// pojawienie się spacji oznacza, że dalej jest hasło
-				if(kbd_buf[i] == ' ')
-				{
-					// przepisz jedną spację za nick
-					hist_ignore_nick += " ";
-
-					break;
-				}
-
-				else
-				{
-					hist_ignore_nick += kbd_buf[i];
-				}
-			}
-		}
-
-		// jeśli wpisano w ten sam sposób nick (hasło nie jest sprawdzane), pomiń go w historii
-		if(hist_ignore != hist_ignore_nick)
-		{
-			hist_ignore = hist_ignore_nick;
-			hist_buf += hist_ignore_nick + "\n";
-		}
-	}
-
-	// gdy nie wpisano nicka, przepisz cały bufor
-	else
-	{
-		hist_ignore = kbd_buf;
-		hist_buf += kbd_buf + "\n";
-	}
-}
-
-
-void destroy_my_password(std::string &buf)
-{
-	for(unsigned int i = 0; i < buf.size(); ++i)
-	{
-		buf[i] = rand();
 	}
 }

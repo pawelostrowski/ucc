@@ -1,7 +1,32 @@
+/*
+	Ucieszony Chat Client
+	Copyright (C) 2013, 2014 Paweł Ostrowski
+
+	This file is part of Ucieszony Chat Client.
+
+	Ucieszony Chat Client is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+
+	Ucieszony Chat Client is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Ucieszony Chat Client (in the file LICENSE); if not,
+	see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+
+
 #include <sstream>		// std::string, std::stringstream
+#include <cstring>		// std::memcpy()
 #include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
-#include <openssl/ssl.h>	// poza SSL zawiera include do plików nagłówkowych, które zawierają m.in. bzero(), memcpy()
 #include <unistd.h>		// close() - socket
+#include <openssl/ssl.h>	// OpenSSL
+
+// -std=c++11 - std::malloc(), std::realloc()
 
 #include "network.hpp"
 #include "window_utils.hpp"
@@ -10,35 +35,36 @@
 #include "ucc_global.hpp"
 
 
-int socket_init(struct global_args &ga, struct channel_irc *chan_parm[], std::string host, short port, std::string msg_dbg)
+int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string host, uint16_t port, std::string dbg_msg)
 {
 /*
 	Utwórz gniazdo (socket) oraz połącz się z hostem.
 */
 
-	int socketfd;
-
 	struct hostent *host_info;
-	struct sockaddr_in serv_info;
 
 	// pobierz adres IP hosta
 	host_info = gethostbyname(host.c_str());
 
 	if(host_info == NULL)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg + ": Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				xRED "# " + dbg_msg + ": Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).");
+
 		return 0;
 	}
 
 	// utwórz deskryptor gniazda (socket)
-	socketfd = socket(AF_INET, SOCK_STREAM, 0);	// SOCK_STREAM - TCP, SOCK_DGRAM - UDP
+	int socketfd = socket(AF_INET, SOCK_STREAM, 0);		// SOCK_STREAM - TCP, SOCK_DGRAM - UDP
 
 	if(socketfd == -1)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg + ": Nie udało się utworzyć deskryptora gniazda.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_msg + ": Nie udało się utworzyć deskryptora gniazda.");
+
 		return 0;
 	}
+
+	struct sockaddr_in serv_info;
 
 	serv_info.sin_family = AF_INET;
 	serv_info.sin_port = htons(port);
@@ -48,8 +74,10 @@ int socket_init(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 	// połącz z hostem
 	if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
 	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_msg + ": Nie udało się połączyć z hostem: " + host);
+
 		close(socketfd);
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg + ": Nie udało się połączyć z hostem: " + host);
+
 		return 0;
 	}
 
@@ -57,39 +85,50 @@ int socket_init(struct global_args &ga, struct channel_irc *chan_parm[], std::st
 }
 
 
-bool http_get_cookies(struct global_args &ga, struct channel_irc *chan_parm[], char *http_recv_buf, std::string msg_dbg_http)
+bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::string http_recv_buf_str, std::string dbg_http_msg)
 {
-	size_t pos_cookie_start, pos_cookie_end;
+	std::string cookie;
 
-	const std::string cookie_string = "Set-Cookie:";	// celowo bez spacji na końcu, bo każde cookie będzie dopisywane ze spacją na początku
+	const std::string cookie_string = "Set-Cookie: ";
 
-	// znajdź pozycję pierwszego cookie (od miejsca: Set-Cookie:)
-	pos_cookie_start = std::string(http_recv_buf).find(cookie_string);	// std::string(http_recv_buf) zamienia C string na std::string
+	// znajdź pozycję pierwszego cookie (od miejsca: "Set-Cookie: ")
+	size_t pos_cookie_start = http_recv_buf_str.find(cookie_string);
 
 	if(pos_cookie_start == std::string::npos)
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg_http + ": Nie znaleziono żadnego cookie.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Nie znaleziono żadnego cookie.");
+
 		return false;
 	}
+
+	size_t pos_cookie_end;
 
 	do
 	{
 		// szukaj ";" od pozycji początku cookie
-		pos_cookie_end = std::string(http_recv_buf).find(";", pos_cookie_start);
+		pos_cookie_end = http_recv_buf_str.find(";", pos_cookie_start);
 
 		if(pos_cookie_end == std::string::npos)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Problem z cookie, brak wymaganego średnika na końcu.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Problem z cookie, brak wymaganego średnika na końcu.");
+
 			return false;
 		}
 
-		// dopisz kolejne cookie do bufora
-		ga.cookies.insert(ga.cookies.size(), std::string(http_recv_buf), pos_cookie_start + cookie_string.size(),
-						pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);	// + 1, bo dopisać też średnik
+		cookie.clear();
+
+		// wstaw cookie do bufora pomocniczego (+ 1, by dopisać też średnik)
+		cookie.insert(0, http_recv_buf_str, pos_cookie_start + cookie_string.size(), pos_cookie_end - pos_cookie_start - cookie_string.size() + 1);
+
+		// dopisz cookie do bufora głównego, pomiń onet_sgn
+		if(cookie.find("onet_sgn") == std::string::npos)
+		{
+			ga.cookies.push_back(cookie);
+		}
 
 		// znajdź kolejne cookie
-		pos_cookie_start = std::string(http_recv_buf).find(cookie_string, pos_cookie_start + cookie_string.size());
+		pos_cookie_start = http_recv_buf_str.find(cookie_string, pos_cookie_start + cookie_string.size());
 
 	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie zostanie znalezione kolejne cookie
 
@@ -97,45 +136,53 @@ bool http_get_cookies(struct global_args &ga, struct channel_irc *chan_parm[], c
 }
 
 
-char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std::string method, std::string host, short port, std::string stock,
-		std::string content, std::string &cookies, bool get_cookies, long &http_recv_offset, std::string msg_dbg_http)
+char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::string method, std::string host, uint16_t port, std::string stock,
+	std::string content, bool get_cookies, int &bytes_recv_all, std::string dbg_http_msg)
 {
 	if(method != "GET" && method != "POST")
 	{
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel, xRED "# " + msg_dbg_http + ": Nieobsługiwana metoda: " + method);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Nieobsługiwana metoda: " + method);
+
 		return NULL;
 	}
 
-	int socketfd;					// deskryptor gniazda (socket)
-	int bytes_sent, bytes_recv;			// liczba wysłanych i pobranych bajtów
-	std::string data_send;				// dane do wysłania do hosta
-	char *http_recv_buf = NULL;			// wskaźnik na bufor pobranych danych
-	char http_recv_buf_tmp[RECV_BUF_TMP_SIZE];	// bufor tymczasowy pobranych danych
-	bool first_recv = true;				// czy to pierwsze pobranie w pętli
-
-	// utwórz gniazdo (socket) oraz połącz się z hostem
-	socketfd = socket_init(ga, chan_parm, host, port, msg_dbg_http);
+	// utwórz deskryptor gniazda (socket) oraz połącz się z hostem
+	int socketfd = socket_init(ga, ci, host, port, dbg_http_msg);
 
 	if(socketfd == 0)
 	{
 		return NULL;
 	}
 
+	int bytes_sent, bytes_recv;			// liczba wysłanych i pobranych bajtów
+	char *http_recv_buf_ptr = NULL;			// wskaźnik na bufor pobranych danych
+	char http_recv_buf_tmp[RECV_BUF_TMP_SIZE];	// bufor tymczasowy pobranych danych
+	bool first_recv = true;				// czy to pierwsze pobranie w pętli
+
 	// utwórz dane do wysłania do hosta
-	data_send = method + " " + stock + " HTTP/1.1\r\n"
-			"Host: " + host + "\r\n"
-			"User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:" FF_VER ") Gecko/20100101 Firefox/" FF_VER "\r\n"
-			"Accept-Language: pl\r\n";
+	std::string data_send = method + " " + stock + " HTTP/1.1\r\n"
+				"Host: " + host + "\r\n"
+				"User-Agent: " BROWSER_USER_AGENT "\r\n"
+				"Accept-Language: pl\r\n";
 
 	if(method == "POST")
 	{
 		data_send += "Content-Type: application/x-www-form-urlencoded\r\n"
-				"Content-Length: " + std::to_string(content.size()) + "\r\n";
+			     "Content-Length: " + std::to_string(content.size()) + "\r\n";
 	}
 
-	if(cookies.size() > 0)
+	if(ga.cookies.size() > 0)
 	{
-		data_send += "Cookie:" + cookies + "\r\n";
+		data_send += "Cookie:";
+
+		int cookies_len = ga.cookies.size();
+
+		for(int i = 0; i < cookies_len; ++i)
+		{
+			data_send += " " + ga.cookies[i];
+		}
+
+		data_send += "\r\n";
 	}
 
 	data_send += "Connection: close\r\n\r\n";
@@ -145,37 +192,42 @@ char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std
 		data_send += content;
 	}
 
-	// offset pobranych danych (istotne do określenia później rozmiaru pobranych danych)
-	http_recv_offset = 0;
+	// początkowo wyzeruj całkowity rozmiar pobranych danych (istotne do określenia później rozmiaru pobranych danych)
+	bytes_recv_all = 0;
+
+	// rozmiar danych do wysłania do hosta
+	int data_send_len = data_send.size();
 
 	// połączenie na porcie różnym od 443 uruchomi transmisję nieszyfrowaną
 	if(port != 443)
 	{
 		// wyślij dane do hosta
-		bytes_sent = send(socketfd, data_send.c_str(), data_send.size(), 0);
+		bytes_sent = send(socketfd, data_send.c_str(), data_send_len, 0);
 
 		if(bytes_sent == -1)
 		{
-			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Nie udało się wysłać danych do hosta: " + host);
-			return NULL;
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Nie udało się wysłać danych do hosta: " + host);
 		}
 
 		else if(bytes_sent == 0)
 		{
-			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Podczas próby wysłania danych host " + host + " zakończył połączenie.");
-			return NULL;
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Podczas próby wysłania danych host " + host + " zakończył połączenie.");
 		}
 
 		// sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
-		else if(bytes_sent != static_cast<int>(data_send.size()))	// static_cast<int> - rzutowanie size_t (w tym przypadku) na int
+		else if(bytes_sent != data_send_len)
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Nie udało się wysłać wszystkich danych do hosta: " + host);
+		}
+
+		// w przypadku błędu podczas wysyłania danych do hosta, zakończ
+		if(bytes_sent != data_send_len)
 		{
 			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Nie udało się wysłać wszystkich danych do hosta: " + host);
+
 			return NULL;
 		}
 
@@ -183,66 +235,76 @@ char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std
 		// z wyjątkiem pierwszego obiegu
 		do
 		{
-			// wstępnie zaalokuj 1500 bajtów na bufor (przy pierwszym obiegu pętli)
-			if(http_recv_buf == NULL)
+			// wstępnie zaalokuj tyle bajtów na bufor (przy pierwszym obiegu pętli), ile wskazuje RECV_BUF_TMP_SIZE
+			if(http_recv_buf_ptr == NULL)
 			{
-				// reinterpret_cast<char *> - rzutowanie void* (w tym przypadku) na char*
-				http_recv_buf = reinterpret_cast<char *>(malloc(RECV_BUF_TMP_SIZE));
+				http_recv_buf_ptr = reinterpret_cast<char *>(std::malloc(RECV_BUF_TMP_SIZE));
 
-				if(http_recv_buf == NULL)
+				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							xRED "# " + msg_dbg_http + ": Błąd podczas alokacji pamięci przez malloc()");
-					return NULL;
+					win_buf_add_str(ga, ci, ci[ga.current]->channel,
+							xRED "# " + dbg_http_msg + ": Błąd podczas alokacji pamięci przez std::malloc()");
 				}
 			}
 
 			// gdy danych do pobrania jest więcej, zwiększ rozmiar bufora
 			else
 			{
-				http_recv_buf = reinterpret_cast<char *>(realloc(http_recv_buf, http_recv_offset + RECV_BUF_TMP_SIZE));
+				http_recv_buf_ptr = reinterpret_cast<char *>(std::realloc(http_recv_buf_ptr, bytes_recv_all + RECV_BUF_TMP_SIZE));
 
-				if(http_recv_buf == NULL)
+				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							xRED "# " + msg_dbg_http + ": Błąd podczas realokacji pamięci przez realloc()");
-					return NULL;
+					win_buf_add_str(ga, ci, ci[ga.current]->channel,
+							xRED "# " + dbg_http_msg + ": Błąd podczas realokacji pamięci przez std::realloc()");
 				}
 			}
 
+			// jeśli malloc() lub realloc() zwróciły NULL, zakończ
+			if(http_recv_buf_ptr == NULL)
+			{
+				close(socketfd);
+
+				return NULL;
+			}
+
 			// pobierz odpowiedź od hosta wraz z liczbą pobranych bajtów
-			bytes_recv = recv(socketfd, http_recv_buf_tmp, RECV_BUF_TMP_SIZE, 0);
+			bytes_recv = recv(socketfd, http_recv_buf_tmp, RECV_BUF_TMP_SIZE - 1, 0);
 
 			// sprawdź, czy pobieranie danych się powiodło
 			if(bytes_recv == -1)
 			{
-				close(socketfd);
-				free(http_recv_buf);	// w przypadku błędu zwolnij pamięć zajmowaną przez bufor
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-						xRED "# " + msg_dbg_http + ": Nie udało się pobrać danych z hosta: " + host);
-				return NULL;
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						xRED "# " + dbg_http_msg + ": Nie udało się pobrać danych z hosta: " + host);
 			}
 
 			// sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
 			else if(first_recv && bytes_recv == 0)
 			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						xRED "# " + dbg_http_msg + ": Podczas próby pobrania danych host " + host + " zakończył połączenie.");
+			}
+
+			// w przypadku błędu podczas pobierania danych od hosta, zakończ
+			if(bytes_recv == -1 || (first_recv && bytes_recv == 0))
+			{
 				close(socketfd);
-				free(http_recv_buf);
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-						xRED "# " + msg_dbg_http + ": Podczas próby pobrania danych host " + host + " zakończył połączenie.");
+
+				std::free(http_recv_buf_ptr);	// w przypadku błędu zwolnij pamięć zajmowaną przez bufor
+
 				return NULL;
 			}
 
 			first_recv = false;		// kolejne pobrania nie spowodują błędu zerowego rozmiaru pobranych danych
-			memcpy(http_recv_buf + http_recv_offset, http_recv_buf_tmp, bytes_recv);	// pobrane dane "dopisz" do bufora
-			http_recv_offset += bytes_recv;	// zwiększ offset pobranych danych (sumarycznych, nie w jednym obiegu pętli)
+
+			std::memcpy(http_recv_buf_ptr + bytes_recv_all, http_recv_buf_tmp, bytes_recv);	// pobrane dane dopisz do bufora
+
+			bytes_recv_all += bytes_recv;	// zwiększ całkowity rozmiar pobranych danych (sumaryczny, a nie w jednym obiegu pętli)
 
 		} while(bytes_recv > 0);
 
 		// zamknij połączenie z hostem
 		close(socketfd);
-
-	}	// if(port != 443)
+	}
 
 	// połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
 	else if(port == 443)
@@ -250,16 +312,14 @@ char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std
 		SSL_CTX *ssl_context;
 		SSL *ssl_handle;
 
-		SSL_load_error_strings();
 		SSL_library_init();
-		OpenSSL_add_all_algorithms();
 
-		ssl_context = SSL_CTX_new(SSLv23_client_method());
+		ssl_context = SSL_CTX_new(SSLv3_client_method());
 
 		if(ssl_context == NULL)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Błąd podczas tworzenia obiektu SSL_CTX");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Błąd podczas tworzenia obiektu SSL_CTX");
+
 			return NULL;
 		}
 
@@ -267,102 +327,140 @@ char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std
 
 		if(ssl_handle == NULL)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Błąd podczas tworzenia struktury SSL.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Błąd podczas tworzenia struktury SSL.");
+
+			SSL_CTX_free(ssl_context);
+
 			return NULL;
 		}
 
 		if(! SSL_set_fd(ssl_handle, socketfd))
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Błąd podczas łączenia deskryptora SSL.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Błąd podczas łączenia deskryptora SSL.");
+
+			SSL_free(ssl_handle);
+			SSL_CTX_free(ssl_context);
+
 			return NULL;
 		}
 
 		if(SSL_connect(ssl_handle) != 1)
 		{
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Błąd podczas łączenia się z " + host + " przez SSL.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Błąd podczas łączenia się z " + host + " przez SSL.");
+
+			close(socketfd);
+
+			SSL_shutdown(ssl_handle);
+			SSL_free(ssl_handle);
+			SSL_CTX_free(ssl_context);
+
 			return NULL;
 		}
 
 		// wyślij dane do hosta
-		bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send.size());
+		bytes_sent = SSL_write(ssl_handle, data_send.c_str(), data_send_len);
 
 		if(bytes_sent <= -1)
 		{
-			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Nie udało się wysłać danych do hosta: " + host + " (SSL).");
-			return NULL;
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Nie udało się wysłać danych do hosta: " + host + " [SSL]");
 		}
 
 		else if(bytes_sent == 0)
 		{
-			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Podczas próby wysłania danych host " + host + " zakończył połączenie (SSL).");
-			return NULL;
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]");
 		}
 
-		else if(bytes_sent != static_cast<int>(data_send.size()))
+		else if(bytes_sent != data_send_len)
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xRED "# " + dbg_http_msg + ": Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]");
+		}
+
+		// w przypadku błędu podczas wysyłania danych do hosta, zakończ
+		if(bytes_sent != data_send_len)
 		{
 			close(socketfd);
-			win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-					xRED "# " + msg_dbg_http + ": Nie udało się wysłać wszystkich danych do hosta: " + host + " (SSL).");
+
+			SSL_shutdown(ssl_handle);
+			SSL_free(ssl_handle);
+			SSL_CTX_free(ssl_context);
+
 			return NULL;
 		}
 
 		// pobierz odpowiedź
 		do
 		{
-			if(http_recv_buf == NULL)
+			if(http_recv_buf_ptr == NULL)
 			{
-				http_recv_buf = reinterpret_cast<char *>(malloc(RECV_BUF_TMP_SIZE));
+				http_recv_buf_ptr = reinterpret_cast<char *>(std::malloc(RECV_BUF_TMP_SIZE));
 
-				if(http_recv_buf == NULL)
+				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							xRED "# " + msg_dbg_http + ": Błąd podczas alokacji pamięci przez malloc() (SSL).");
-					return NULL;
+					win_buf_add_str(ga, ci, ci[ga.current]->channel,
+							xRED "# " + dbg_http_msg + ": Błąd podczas alokacji pamięci przez std::malloc() [SSL]");
 				}
 			}
 
 			else
 			{
-				http_recv_buf = reinterpret_cast<char *>(realloc(http_recv_buf, http_recv_offset + RECV_BUF_TMP_SIZE));
+				http_recv_buf_ptr = reinterpret_cast<char *>(std::realloc(http_recv_buf_ptr, bytes_recv_all + RECV_BUF_TMP_SIZE));
 
-				if(http_recv_buf == NULL)
+				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-							xRED "# " + msg_dbg_http + ": Błąd podczas realokacji pamięci przez realloc() (SSL).");
-					return NULL;
+					win_buf_add_str(ga, ci, ci[ga.current]->channel,
+							xRED "# " + dbg_http_msg + ": Błąd podczas realokacji pamięci przez std::realloc() [SSL]");
 				}
 			}
 
-			bytes_recv = SSL_read(ssl_handle, http_recv_buf_tmp, RECV_BUF_TMP_SIZE);
+			// jeśli malloc() lub realloc() zwróciły NULL, zakończ
+			if(http_recv_buf_ptr == NULL)
+			{
+				close(socketfd);
+
+				SSL_shutdown(ssl_handle);
+				SSL_free(ssl_handle);
+				SSL_CTX_free(ssl_context);
+
+				return NULL;
+			}
+
+			bytes_recv = SSL_read(ssl_handle, http_recv_buf_tmp, RECV_BUF_TMP_SIZE - 1);
 
 			if(bytes_recv <= -1)
 			{
-				close(socketfd);
-				free(http_recv_buf);
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-						xRED "# " + msg_dbg_http + ": Nie udało się pobrać danych z hosta: " + host + " (SSL).");
-				return NULL;
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						xRED "# " + dbg_http_msg + ": Nie udało się pobrać danych z hosta: " + host + " [SSL]");
 			}
 
 			else if(first_recv && bytes_recv == 0)
 			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						xRED "# " + dbg_http_msg + ": Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]");
+			}
+
+			// w przypadku błędu podczas pobierania danych od hosta, zakończ
+			if(bytes_recv <= -1 || (first_recv && bytes_recv == 0))
+			{
 				close(socketfd);
-				free(http_recv_buf);
-				win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-						xRED "# " + msg_dbg_http + ": Podczas próby pobrania danych host " + host + " zakończył połączenie (SSL).");
+
+				SSL_shutdown(ssl_handle);
+				SSL_free(ssl_handle);
+				SSL_CTX_free(ssl_context);
+
+				std::free(http_recv_buf_ptr);
+
 				return NULL;
 			}
 
 			first_recv = false;
-			memcpy(http_recv_buf + http_recv_offset, http_recv_buf_tmp, bytes_recv);
-			http_recv_offset += bytes_recv;
+
+			std::memcpy(http_recv_buf_ptr + bytes_recv_all, http_recv_buf_tmp, bytes_recv);
+
+			bytes_recv_all += bytes_recv;
 
 		} while(bytes_recv > 0);
 
@@ -372,118 +470,127 @@ char *http_get_data(struct global_args &ga, struct channel_irc *chan_parm[], std
 		SSL_shutdown(ssl_handle);
 		SSL_free(ssl_handle);
 		SSL_CTX_free(ssl_context);
-
-	}	// else if(port == 443)
+	}
 
 	// zakończ bufor kodem NULL
-	http_recv_buf[http_recv_offset] = '\x00';
+	http_recv_buf_ptr[bytes_recv_all] = '\x00';
 
 /*
 	DBG HTTP START
 */
-	http_dbg_to_file(ga, data_send, std::string(http_recv_buf), host, port, stock, msg_dbg_http);
+	http_dbg_to_file(ga, data_send, std::string(http_recv_buf_ptr), host, port, stock, dbg_http_msg);
 /*
 	DBG HTTP END
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
-	if(get_cookies && ! http_get_cookies(ga, chan_parm, http_recv_buf, msg_dbg_http))
+	if(get_cookies && ! http_get_cookies(ga, ci, std::string(http_recv_buf_ptr), dbg_http_msg))
 	{
-		free(http_recv_buf);
+		std::free(http_recv_buf_ptr);
+
 		return NULL;
 	}
 
-	return http_recv_buf;	// zwróć wskaźnik do bufora pobranych danych
+	// zwróć wskaźnik do bufora pobranych danych
+	return http_recv_buf_ptr;
 }
 
 
-void irc_send(struct global_args &ga, struct channel_irc *chan_parm[], std::string irc_send_buf, std::string msg_dbg_irc)
+void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_send_buf, std::string dbg_irc_msg)
 {
-	// do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
-	irc_send_buf += "\r\n";
-
 /*
 	DBG IRC START
 */
 	irc_sent_dbg_to_file(ga, irc_send_buf);
 
 	// debug w oknie
-	if(ga.ucc_dbg_irc)
+	if(ga.debug_irc)
 	{
+		std::stringstream irc_send_buf_stream(irc_send_buf);
 		std::string irc_send_buf_line;
-		std::stringstream irc_send_buf_stream;
-
-		irc_send_buf_stream << buf_iso2utf(irc_send_buf);
 
 		while(std::getline(irc_send_buf_stream, irc_send_buf_line))
 		{
-			win_buf_add_str(ga, chan_parm, "Debug", xYELLOW + irc_send_buf_line, 1, true, false);
+			win_buf_add_str(ga, ci, "DebugIRC", xYELLOW "> " + irc_send_buf_line, 1, true, false);
 		}
 	}
 /*
 	DBG IRC END
 */
 
+	// przekoduj UTF-8 na ISO-8859-2
+	irc_send_buf = buf_utf_to_iso(irc_send_buf);
+
+	// do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
+	irc_send_buf += "\r\n";
+
+	// rozmiar danych do wysłania
+	int irc_send_buf_len = irc_send_buf.size();
+
 	// wyślij dane do hosta
-	int bytes_sent = send(ga.socketfd_irc, irc_send_buf.c_str(), irc_send_buf.size(), 0);
+	int bytes_sent = send(ga.socketfd_irc, irc_send_buf.c_str(), irc_send_buf_len, 0);
 
 	if(bytes_sent == -1)
 	{
-		close(ga.socketfd_irc);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_irc_msg + "Nie udało się wysłać danych do serwera (IRC).");
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg_irc + "Nie udało się wysłać danych do serwera (IRC).");
 	}
 
 	else if(bytes_sent == 0)
 	{
-		close(ga.socketfd_irc);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				xRED "# " + dbg_irc_msg + "Podczas próby wysłania danych serwer zakończył połączenie (IRC).");
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg_irc + "Podczas próby wysłania danych serwer zakończył połączenie (IRC).");
 	}
 
-	else if(bytes_sent != static_cast<int>(irc_send_buf.size()))
+	else if(bytes_sent != irc_send_buf_len)
 	{
-		close(ga.socketfd_irc);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				xRED "# " + dbg_irc_msg + "Nie udało się wysłać wszystkich danych do serwera (IRC).");
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg_irc + "Nie udało się wysłać wszystkich danych do serwera (IRC).");
 	}
 }
 
 
-void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::string &irc_recv_buf, std::string msg_dbg_irc)
+void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc_recv_buf, std::string dbg_irc_msg)
 {
 	char irc_recv_buf_tmp[RECV_BUF_TMP_SIZE];
 
-	// pozycja oraz bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
-	size_t pos_incomplete;
+	// bufor pomocniczy do zachowania niepełnego fragmentu ostatniego wiersza, jeśli nie został pobrany w całości w jednej ramce
 	static std::string irc_recv_buf_incomplete;
+
+	// wstępnie załóż, że nie było niepełnego wiersza poprzednio, zmiana nastąpi, gdy był
+	bool was_irc_recv_buf_incomplete = false;
+
+	// wstępnie załóż, że nie będzie niepełnego wiersza, zmiana nastąpi, gdy taki wiersz będzie
+	ga.is_irc_recv_buf_incomplete = false;
 
 	// pobierz dane od hosta
 	int bytes_recv = recv(ga.socketfd_irc, irc_recv_buf_tmp, RECV_BUF_TMP_SIZE - 1, 0);	// - 1, aby zostawić miejsce na wstawienie NULL
 
 	if(bytes_recv == -1)
 	{
-		close(ga.socketfd_irc);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				xRED "# " + dbg_irc_msg + "Nie udało się pobrać danych z serwera (IRC).");
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg_irc + "Nie udało się pobrać danych z serwera (IRC).");
 	}
 
 	else if(bytes_recv == 0)
 	{
-		close(ga.socketfd_irc);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				xRED "# " + dbg_irc_msg + "Podczas próby pobrania danych serwer zakończył połączenie (IRC).");
+
 		ga.irc_ok = false;
-		win_buf_add_str(ga, chan_parm, chan_parm[ga.current]->channel,
-				xRED "# " + msg_dbg_irc + "Podczas próby pobrania danych serwer zakończył połączenie (IRC).");
 	}
 
 	// gdy nie było błędu
 	else
 	{
-		// zakończ tymczasowy bufor kodem NULL
+		// zakończ bufor tymczasowy kodem NULL
 		irc_recv_buf_tmp[bytes_recv] = '\x00';
 
 		// odebrane dane zwróć w buforze std::string
@@ -491,32 +598,41 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		irc_recv_buf = std::string(irc_recv_buf_tmp);
 
 		// usuń 0x02 z bufora (występuje zaraz po zalogowaniu się do IRC w komunikacie powitalnym)
-		while(irc_recv_buf.find("\x02") != std::string::npos)
+		size_t code_erase = irc_recv_buf.find("\x02");
+
+		while(code_erase != std::string::npos)
 		{
-			irc_recv_buf.erase(irc_recv_buf.find("\x02"), 1);
+			irc_recv_buf.erase(code_erase, 1);
+			code_erase = irc_recv_buf.find("\x02");
 		}
 
 		// usuń \r z bufora (w ncurses wyświetlenie tego na Linuksie powoduje, że linia jest niewidoczna)
-		while(irc_recv_buf.find("\r") != std::string::npos)
+		code_erase = irc_recv_buf.find("\r");
+
+		while(code_erase != std::string::npos)
 		{
-			irc_recv_buf.erase(irc_recv_buf.find("\r"), 1);
+			irc_recv_buf.erase(code_erase, 1);
+			code_erase = irc_recv_buf.find("\r");
 		}
 
 		// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
-		irc_recv_buf = buf_iso2utf(irc_recv_buf);
+		irc_recv_buf = buf_iso_to_utf(irc_recv_buf);
 
 		// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
 		if(irc_recv_buf_incomplete.size() > 0)
 		{
 			irc_recv_buf.insert(0, irc_recv_buf_incomplete);
-		}
 
-		// po (ewentualnym) przepisaniu wyczyść bufor pomocniczy
-		irc_recv_buf_incomplete.clear();
+			// po przepisaniu wyczyść bufor pomocniczy
+			irc_recv_buf_incomplete.clear();
+
+			// był niepełny wiersz poprzednio, jest to informacja potrzebna do ustalenia, czy odświeżyć okno "wirtualne" w pętli głównej
+			was_irc_recv_buf_incomplete = true;
+		}
 
 		// wykryj, czy w buforze głównym jest niepełny wiersz (brak \r\n na końcu), jeśli tak, przenieś go do bufora pomocniczego
 		// ( \r\n w domyśle, bo \r został usunięty z bufora podczas pobierania danych z serwera nieco wyżej)
-		pos_incomplete = irc_recv_buf.rfind("\n");
+		size_t pos_incomplete = irc_recv_buf.rfind("\n");
 
 		// - 1, bo pozycja jest liczona od zera, a długość jest całkowitą liczbą zajmowanych bajtów
 		if(pos_incomplete != irc_recv_buf.size() - 1)
@@ -526,6 +642,17 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 
 			// oraz usuń go z głównego bufora
 			irc_recv_buf.erase(pos_incomplete + 1, irc_recv_buf.size() - pos_incomplete - 1);
+
+			// był niepełny wiersz obecnie, jest to informacja potrzebna do ustalenia, czy odświeżyć okno "wirtualne" w pętli głównej
+			// (jeśli wcześniej nie było niepełnego wiersza, a był teraz, nieodświeżenie okna "wirtualnego" przyspiesza wczytywanie)
+			ga.is_irc_recv_buf_incomplete = true;
+		}
+
+		// jeśli wcześniej był niepełny wiersz, a teraz nie było, wymuś odświeżenie okna "wirtualnego" w pętli głównej, bo może się czasami zdarzyć,
+		// że ostatni wiersz nie wymaga wyświetlenia i wtedy poprzedni nie pokaże się w odpowiednim momencie
+		if(was_irc_recv_buf_incomplete && ! ga.is_irc_recv_buf_incomplete)
+		{
+			ga.win_chat_refresh = true;
 		}
 
 /*
@@ -534,16 +661,14 @@ void irc_recv(struct global_args &ga, struct channel_irc *chan_parm[], std::stri
 		irc_recv_dbg_to_file(ga, irc_recv_buf);
 
 		// debug w oknie
-		if(ga.ucc_dbg_irc)
+		if(ga.debug_irc)
 		{
+			std::stringstream irc_recv_buf_stream(irc_recv_buf);
 			std::string irc_recv_buf_line;
-			std::stringstream irc_recv_buf_stream;
-
-			irc_recv_buf_stream << irc_recv_buf;
 
 			while(std::getline(irc_recv_buf_stream, irc_recv_buf_line))
 			{
-				win_buf_add_str(ga, chan_parm, "Debug", xWHITE + irc_recv_buf_line, 1, true, false);
+				win_buf_add_str(ga, ci, "DebugIRC", xWHITE + irc_recv_buf_line, 1, true, false);
 			}
 		}
 /*

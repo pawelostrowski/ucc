@@ -1,21 +1,39 @@
+/*
+	Ucieszony Chat Client
+	Copyright (C) 2013, 2014 Paweł Ostrowski
+
+	This file is part of Ucieszony Chat Client.
+
+	Ucieszony Chat Client is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+
+	Ucieszony Chat Client is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with Ucieszony Chat Client (in the file LICENSE); if not,
+	see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+
+
 #ifndef UCC_GLOBAL_HPP
 #define UCC_GLOBAL_HPP
 
-#include <ncursesw/ncurses.h>
+#include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8
 #include <fstream>
 #include <map>
 #include <vector>
 
+// nazwa i numer wersji programu
 #define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VER "v1.0 alpha3"
-
-#define FILE_DBG_HTTP "/tmp/ucc_dbg_http.txt"
-#define FILE_DBG_IRC "/tmp/ucc_dbg_irc.txt"
-
-// szerokość listy nicków
-#define NICKLIST_WIDTH 36
+#define UCC_VER "1.0 alpha4"
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
+// (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)
 #define pRED		0x01
 #define pGREEN		0x02
 #define pYELLOW		0x03
@@ -23,14 +41,12 @@
 #define pMAGENTA	0x05
 #define pCYAN		0x06
 #define pWHITE		0x07
-#define pDARK		0x08
-#define pTERMC		0x09	// kolor zależny od ustawień terminala
-#define pWHITE_BLUE	0x0A	// biały font, niebieskie tło
-#define pCYAN_BLUE	0x0B	// cyjan font, niebieskie tło
-#define pMAGENTA_BLUE	0x0C	// magenta font, niebieskie tło
-#define pBLACK_BLUE	0x0D	// czarny font, niebieskie tło
-#define pYELLOW_BLACK	0x0E	// żółty font, czarne tło
-#define pBLUE_WHITE	0x0F	// niebieski font, białe tło
+#define pTERMC		0x08	// kolor zależny od ustawień terminala
+#define pYELLOW_BLACK	0x0B	// żółty font, czarne tło
+#define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
+#define pMAGENTA_BLUE	0x0D	// magenta font, niebieskie tło
+#define pCYAN_BLUE	0x0E	// cyjan font, niebieskie tło
+#define pWHITE_BLUE	0x0F	// biały font, niebieskie tło
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -41,14 +57,12 @@
 #define xMAGENTA	xCOLOR "\x05"
 #define xCYAN		xCOLOR "\x06"
 #define xWHITE		xCOLOR "\x07"
-#define xDARK		xCOLOR "\x08"
-#define xTERMC		xCOLOR "\x09"
-#define xWHITE_BLUE	xCOLOR "\x0A"
-#define xCYAN_BLUE	xCOLOR "\x0B"
-#define xMAGENTA_BLUE	xCOLOR "\x0C"
-#define xBLACK_BLUE	xCOLOR "\x0D"
-#define xYELLOW_BLACK	xCOLOR "\x0E"
-#define xBLUE_WHITE	xCOLOR "\x0F"
+#define xTERMC		xCOLOR "\x08"
+#define xYELLOW_BLACK	xCOLOR "\x0B"
+#define xBLACK_BLUE	xCOLOR "\x0C"
+#define xMAGENTA_BLUE	xCOLOR "\x0D"
+#define xCYAN_BLUE	xCOLOR "\x0E"
+#define xWHITE_BLUE	xCOLOR "\x0F"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"
@@ -75,7 +89,7 @@
 // numer dla "Status" w tablicy pokoi
 #define CHAN_STATUS		(CHAN_CHAT + 0)
 
-// numer dla "Debug" w tablicy pokoi
+// numer dla "DebugIRC" w tablicy pokoi
 #define CHAN_DEBUG_IRC		(CHAN_CHAT + 1)
 
 // numer dla "RawUnknown" w tablicy pokoi
@@ -86,6 +100,18 @@
 
 // maksymalna łączna liczba pokoi
 #define CHAN_MAX		(CHAN_CHAT + 3)
+
+// struktura flag do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
+struct command_flags
+{
+	bool card;
+	bool join_priv;
+	bool lusers;
+	bool names;
+	bool names_empty;
+	bool vhost;
+	bool whois;
+};
 
 // struktura wizytówki pobieranej z serwera
 struct card_onet
@@ -106,20 +132,37 @@ struct card_onet
 	std::string www;
 };
 
+// struktura dla /kban i /kbanip
+struct kban
+{
+	std::string nick;
+	std::string chan;
+	std::string reason;
+};
+
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
-	WINDOW *win_chat, *win_info;
+	WINDOW *win_chat;
+	WINDOW *win_info;
+
+	int wterm_y;
+	int wterm_x;
 
 	bool use_colors;
-
-	bool ucc_dbg_irc;
-
-	std::ofstream f_dbg_http, f_dbg_irc;
-
+	bool debug_irc;
 	bool ucc_quit;
+	bool ucc_quit_time;
 
-	bool nicklist, nicklist_refresh;
+	bool win_chat_refresh;
+
+	bool win_info_state;
+	bool win_info_refresh;
+
+	std::ofstream debug_http_f;
+	std::ofstream debug_irc_f;
+
+	bool is_irc_recv_buf_incomplete;
 
 	int socketfd_irc;
 
@@ -127,32 +170,46 @@ struct global_args
 	bool irc_ready;
 	bool irc_ok;
 
-	int current;			// aktualnie otwarty pokój
+	int current;		// aktualnie otwarty pokój
 
 	std::string my_nick;
 	std::string my_password;
 	std::string zuousername;
 	std::string uokey;
-	std::string cookies;
 	std::string my_zuo;
 
-	long ping, pong, lag;
+	std::vector<std::string> cookies;
+
+	bool my_away;
+	bool my_busy;
+
+	int64_t ping;
+	int64_t pong;
+	int64_t lag;
 	bool lag_timeout;
 
-	bool my_away, my_busy;
-
-	std::map<std::string, std::string> names;
+	bool nick_in_use;
 
 	std::string cs_homes;
 
-	std::map<std::string, struct card_onet> card;
+	std::string my_friend;
+	std::string my_ignore;
+	std::string my_favourites;
 
-	std::string my_friend, my_ignore, my_favourites;
+	std::string away_msg;
 
-	std::string msg_away;
+	struct command_flags cf;
 
-	// poniższe flagi służą do odpowiedniego sterowania wyświetlanych informacji zależnie od tego, czy serwer sam je zwrócił, czy po wpisaniu polecenia
-	bool command_card, command_join, command_names, command_names_empty, command_vhost, command_whois_short;
+	std::map<std::string, struct card_onet> co;
+
+	std::map<std::string, std::string> names;
+
+	std::string whois_short;
+	std::map<std::string, std::vector<std::string>> whois;
+
+	std::map<std::string, std::vector<std::string>> whowas;
+
+	std::map<std::string, struct kban> kb;
 };
 
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)
@@ -173,22 +230,24 @@ struct nick_irc
 {
 	std::string nick;
 	std::string zuo_ip;
-	struct nick_flags flags;
+
+	struct nick_flags nf;
 };
 
 // struktura kanału
 struct channel_irc
 {
-//	std::string win_buf;
 	std::vector<std::string> win_buf;
 	std::string channel;
 	std::string topic;
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
 
-	int pos_win_scroll;	// scroll okna, -1 oznacza ciągłe przesuwanie aktualnego tekstu
+	bool win_scroll_lock;	// scroll okna, false oznacza ciągłe przesuwanie aktualnego tekstu
+	int win_scroll_first;
+	int win_scroll_last;
 
-        std::map<std::string, struct nick_irc> nick_parm;
+        std::map<std::string, struct nick_irc> ni;
 };
 
 #endif		// UCC_GLOBAL_HPP
