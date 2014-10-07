@@ -932,6 +932,7 @@ void raw_error(struct global_args &ga, struct channel_irc *ci[], std::string &ra
 		ga.ucc_quit = true;
 	}
 
+/*
 	// wyczyść listy nicków otwartych pokoi oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "DebugIRC" i "RawUnknown")
 	for(int i = 0; i < CHAN_NORMAL; ++i)
 	{
@@ -942,6 +943,9 @@ void raw_error(struct global_args &ga, struct channel_irc *ci[], std::string &ra
 			win_buf_add_str(ga, ci, ci[i]->channel, xYELLOW "* " + get_rest_from_buf(raw_buf, " :"));
 		}
 	}
+*/
+
+	win_buf_all_chan_msg(ga, ci, xYELLOW "* " + get_rest_from_buf(raw_buf, " :"));
 }
 
 

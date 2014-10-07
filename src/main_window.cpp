@@ -792,6 +792,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 								win_buf_add_str(ga, ci, ci[i]->channel,
 										xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
 										+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
+
+								// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz
+								// zmiana dotyczyła nicka, który też jest w tym pokoju)
+								if(ga.win_info_state && ga.current == i)
+								{
+									ga.win_info_refresh = true;
+								}
 							}
 						}
 
@@ -1643,6 +1650,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 						ci[i]->ni.clear();
 
 						win_buf_add_str(ga, ci, ci[i]->channel, xBOLD_ON xRED "# Rozłączono.");
+
+						// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz zmiana dotyczyła
+						// nicka, który też jest w tym pokoju)
+						if(ga.win_info_state && ga.current == i)
+						{
+							ga.win_info_refresh = true;
+						}
 					}
 				}
 			}
