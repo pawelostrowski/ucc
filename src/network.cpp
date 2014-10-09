@@ -21,7 +21,7 @@
 
 
 #include <sstream>		// std::string, std::stringstream
-#include <cstring>		// std::memcpy()
+#include <cstring>		// std::memset(), std::memcpy()
 #include <netdb.h>		// gethostbyname(), socket(), htons(), connect(), send(), recv()
 #include <unistd.h>		// close() - socket
 #include <openssl/ssl.h>	// OpenSSL
@@ -69,7 +69,7 @@ int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string ho
 	serv_info.sin_family = AF_INET;
 	serv_info.sin_port = htons(port);
 	serv_info.sin_addr = *((struct in_addr *) host_info->h_addr);
-	bzero(&(serv_info.sin_zero), 8);
+	std::memset(&(serv_info.sin_zero), 0, 8);
 
 	// połącz z hostem
 	if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)

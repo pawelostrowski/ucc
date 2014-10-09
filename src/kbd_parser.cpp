@@ -294,6 +294,16 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_disconnect(ga, ci, kbd_buf, pos_arg_start);
 		}
 
+		else if(command == "DOP")
+		{
+			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
+		else if(command == "DSOP")
+		{
+			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
 		else if(command == "HELP" || command == "H")
 		{
 			command_help(ga, ci);
@@ -349,6 +359,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_nick(ga, ci, kbd_buf, pos_arg_start);
 		}
 
+		else if(command == "OP")
+		{
+			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
 		else if(command == "PART" || command == "P")
 		{
 			command_part(ga, ci, kbd_buf, pos_arg_start);
@@ -367,6 +382,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		else if(command == "RAW")
 		{
 			command_raw(ga, ci, kbd_buf, pos_arg_start);
+		}
+
+		else if(command == "SOP")
+		{
+			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
 		}
 
 		else if(command == "TIME")
@@ -709,6 +729,8 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/dban\n"
 			xCYAN  "/dbanip\n"
 			xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
+			xCYAN  "/dop\n"
+			xCYAN  "/dsop\n"
 			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xCYAN  "/invite " xGREEN "lub " xCYAN "/inv\n"
 			xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
@@ -720,10 +742,12 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/me\n"
 			xCYAN  "/names " xGREEN "lub " xCYAN "/n\n"
 			xCYAN  "/nick\n"
+			xCYAN  "/op\n"
 			xCYAN  "/part " xGREEN "lub " xCYAN "/p\n"
 			xCYAN  "/priv\n"
 			xCYAN  "/quit " xGREEN "lub " xCYAN "/q\n"
 			xCYAN  "/raw\n"
+			xCYAN  "/sop\n"
 			xCYAN  "/time\n"
 			xCYAN  "/topic\n"
 			xCYAN  "/vhost\n"
@@ -1109,6 +1133,149 @@ void command_nick(struct global_args &ga, struct channel_irc *ci[], std::string 
 					: xGREEN "# Nowy nick stały: ")
 					+ ga.my_nick);
 		}
+	}
+}
+
+
+void command_op_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, std::string &op_type)
+{
+	// op_type może przyjąć następujące wartości: OP, SOP, DOP, DSOP
+	if(op_type != "OP" && op_type != "SOP" && op_type != "DOP" && op_type != "DSOP")
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nieprawidłowa opcja dla command_op_common()");
+	}
+
+	// jeśli połączono z IRC
+	else if(ga.irc_ok)
+	{
+		// pobierz wpisany nick
+		std::string op_nick = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli nie wpisano nicka, pokaż ostrzeżenie
+		if(op_nick.size() == 0)
+		{
+			if(op_type == "OP")
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do nadania uprawnień operatora.");
+			}
+
+			else if(op_type == "SOP")
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do nadania uprawnień superoperatora.");
+			}
+
+			else if(op_type == "DOP")
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do zabrania uprawnień operatora.");
+			}
+
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do zabrania uprawnień superoperatora.");
+			}
+		}
+
+		else
+		{
+			// pobierz opcjonalny pokój
+			std::string op_chan = get_arg(kbd_buf, pos_arg_start);
+
+			// jeśli nie podano opcjonalnego pokoju
+			if(op_chan.size() == 0)
+			{
+				// bez podania pokoju dać/zabrać opa/sopa można tylko w aktywnym pokoju czata, bo ten pokój jest wtedy pokojem,
+				// w którym to robimy
+				if(ga.current < CHAN_CHAT)
+				{
+					if(op_type == "OP")
+					{
+						irc_send(ga, ci, "CS HALFOP " + ci[ga.current]->channel + " ADD " + op_nick);
+					}
+
+					else if(op_type == "SOP")
+					{
+						irc_send(ga, ci, "CS OP " + ci[ga.current]->channel + " ADD " + op_nick);
+					}
+
+					else if(op_type == "DOP")
+					{
+						irc_send(ga, ci, "CS HALFOP " + ci[ga.current]->channel + " DEL " + op_nick);
+					}
+
+					else
+					{
+						irc_send(ga, ci, "CS OP " + ci[ga.current]->channel + " DEL " + op_nick);
+					}
+				}
+
+				else
+				{
+					if(op_type == "OP")
+					{
+						win_buf_add_str(ga, ci, ci[ga.current]->channel,
+								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia operatora w takim pokoju "
+								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+					}
+
+					else if(op_type == "SOP")
+					{
+						win_buf_add_str(ga, ci, ci[ga.current]->channel,
+								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia superoperatora w takim pokoju "
+								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+					}
+
+					else if(op_type == "DOP")
+					{
+						win_buf_add_str(ga, ci, ci[ga.current]->channel,
+								xRED "# Nie jesteś w aktywnym pokoju czata. Zabrać uprawnienia operatora w takim pokoju "
+								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+					}
+
+					else
+					{
+						win_buf_add_str(ga, ci, ci[ga.current]->channel,
+								xRED "# Nie jesteś w aktywnym pokoju czata. Zabrać uprawnienia superoperatora w takim pokoju "
+								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+					}
+				}
+			}
+
+			// jeśli podano opcjonalny pokój
+			else
+			{
+				// jeśli nie podano # przed nazwą pokoju, dodaj #
+				if(op_chan[0] != '#')
+				{
+					op_chan.insert(0, "#");
+				}
+
+				if(op_type == "OP")
+				{
+					irc_send(ga, ci, "CS HALFOP " + op_chan + " ADD " + op_nick);
+				}
+
+				else if(op_type == "SOP")
+				{
+					irc_send(ga, ci, "CS OP " + op_chan + " ADD " + op_nick);
+				}
+
+				else if(op_type == "DOP")
+				{
+					irc_send(ga, ci, "CS HALFOP " + op_chan + " DEL " + op_nick);
+				}
+
+				else
+				{
+					irc_send(ga, ci, "CS OP " + op_chan + " DEL " + op_nick);
+				}
+			}
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
 	}
 }
 
