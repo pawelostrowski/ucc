@@ -279,6 +279,16 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_connect(ga, ci, kbd_buf, pos_arg_start);
 		}
 
+		else if(command == "DBAN")
+		{
+			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
+		else if(command == "DBANIP")
+		{
+			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
 		else if(command == "DISCONNECT" || command == "D")
 		{
 			command_disconnect(ga, ci, kbd_buf, pos_arg_start);
@@ -369,16 +379,6 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_topic(ga, ci, kbd_buf, pos_arg_start);
 		}
 
-		else if(command == "UNBAN")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
-
-		else if(command == "UNBANIP")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
-
 		else if(command == "VHOST")
 		{
 			command_vhost(ga, ci, kbd_buf, pos_arg_start);
@@ -431,8 +431,8 @@ void command_away(struct global_args &ga, struct channel_irc *ci[], std::string 
 
 void command_ban_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, std::string &ban_type)
 {
-	// ban_type może przyjąć następujące wartości: BAN, BANIP, UNBAN, UNBANIP
-	if(ban_type != "BAN" && ban_type != "BANIP" && ban_type != "UNBAN" && ban_type != "UNBANIP")
+	// ban_type może przyjąć następujące wartości: BAN, BANIP, DBAN, DBANIP
+	if(ban_type != "BAN" && ban_type != "BANIP" && ban_type != "DBAN" && ban_type != "DBANIP")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nieprawidłowa opcja dla command_ban_common()");
 	}
@@ -464,9 +464,9 @@ void command_ban_common(struct global_args &ga, struct channel_irc *ci[], std::s
 				if(ga.current < CHAN_CHAT)
 				{
 					irc_send(ga, ci,
-						// BAN lub UNBAN wpisuje polecenie BAN; BANIP lub UNBANIP wpisuje polecenie BANIP
-						(ban_type == "BAN" || ban_type == "UNBAN" ? "CS BAN " : "CS BANIP ") + ci[ga.current]->channel
-						// BAN lub BANIP wpisuje opcję ADD; UNBAN lub UNBANIP wpisuje opcję DEL
+						// BAN lub DBAN wpisuje polecenie BAN; BANIP lub DBANIP wpisuje polecenie BANIP
+						(ban_type == "BAN" || ban_type == "DBAN" ? "CS BAN " : "CS BANIP ") + ci[ga.current]->channel
+						// BAN lub BANIP wpisuje opcję ADD; DBAN lub DBANIP wpisuje opcję DEL
 						+ (ban_type == "BAN" || ban_type == "BANIP" ? " ADD " : " DEL ") + ban_nick);
 				}
 
@@ -490,9 +490,9 @@ void command_ban_common(struct global_args &ga, struct channel_irc *ci[], std::s
 				}
 
 				irc_send(ga, ci,
-					// BAN lub UNBAN wpisuje polecenie BAN; BANIP lub UNBANIP wpisuje polecenie BANIP
-					(ban_type == "BAN" || ban_type == "UNBAN" ? "CS BAN " : "CS BANIP ") + ban_chan
-					// BAN lub BANIP wpisuje opcję ADD; UNBAN lub UNBANIP wpisuje opcję DEL
+					// BAN lub DBAN wpisuje polecenie BAN; BANIP lub DBANIP wpisuje polecenie BANIP
+					(ban_type == "BAN" || ban_type == "DBAN" ? "CS BAN " : "CS BANIP ") + ban_chan
+					// BAN lub BANIP wpisuje opcję ADD; DBAN lub DBANIP wpisuje opcję DEL
 					+ (ban_type == "BAN" || ban_type == "BANIP" ? " ADD " : " DEL ") + ban_nick);
 			}
 		}
@@ -706,6 +706,8 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/captcha " xGREEN "lub " xCYAN "/cap\n"
 			xCYAN  "/card\n"
 			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
+			xCYAN  "/dban\n"
+			xCYAN  "/dbanip\n"
 			xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
 			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xCYAN  "/invite " xGREEN "lub " xCYAN "/inv\n"
@@ -724,8 +726,6 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/raw\n"
 			xCYAN  "/time\n"
 			xCYAN  "/topic\n"
-			xCYAN  "/unban\n"
-			xCYAN  "/unbanip\n"
 			xCYAN  "/vhost\n"
 			xCYAN  "/whois\n"
 			xCYAN  "/whowas");

@@ -5371,7 +5371,7 @@ void raw_notice_468(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	win_buf_add_str(ga, ci, raw_parm4, xRED "* Dostęp zabroniony, nie posiadasz wystarczających uprawnień w pokoju " + raw_parm4);
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "* Dostęp zabroniony, nie posiadasz wystarczających uprawnień w pokoju " + raw_parm4);
 }
 
 
