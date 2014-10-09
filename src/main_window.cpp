@@ -752,6 +752,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 			// obsługa PING (tylko przy połączeniu z IRC oraz gdy nie jest to zamykanie programu)
 			if(ga.irc_ok && ! ga.ucc_quit_time)
 			{
+				//win_buf_add_str(ga, ci, "Status", "Counter: " + std::to_string(ping_counter));
+
 				++ping_counter;
 
 				// gdy serwer nie dał odpowiedzi PONG, dolicz nowy lag (gdy odpowie, lag_timeout nie jest ustawiony)

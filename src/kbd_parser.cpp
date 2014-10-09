@@ -304,6 +304,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
 		}
 
+		else if(command == "DVIP")
+		{
+			command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
+		}
+
 		else if(command == "HELP" || command == "H")
 		{
 			command_help(ga, ci);
@@ -402,6 +407,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		else if(command == "VHOST")
 		{
 			command_vhost(ga, ci, kbd_buf, pos_arg_start);
+		}
+
+		else if(command == "VIP")
+		{
+			command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
 		}
 
 		else if(command == "WHOIS")
@@ -731,6 +741,7 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/disconnect " xGREEN "lub " xCYAN "/d\n"
 			xCYAN  "/dop\n"
 			xCYAN  "/dsop\n"
+			xCYAN  "/dvip\n"
 			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
 			xCYAN  "/invite " xGREEN "lub " xCYAN "/inv\n"
 			xCYAN  "/join " xGREEN "lub " xCYAN "/j\n"
@@ -751,6 +762,7 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/time\n"
 			xCYAN  "/topic\n"
 			xCYAN  "/vhost\n"
+			xCYAN  "/vip\n"
 			xCYAN  "/whois\n"
 			xCYAN  "/whowas");
 			// dopisać resztę poleceń
@@ -1166,12 +1178,12 @@ void command_op_common(struct global_args &ga, struct channel_irc *ci[], std::st
 
 			else if(op_type == "DOP")
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do zabrania uprawnień operatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do odebrania uprawnień operatora.");
 			}
 
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do zabrania uprawnień superoperatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie podano nicka do odebrania uprawnień superoperatora.");
 			}
 		}
 
@@ -1213,29 +1225,29 @@ void command_op_common(struct global_args &ga, struct channel_irc *ci[], std::st
 					if(op_type == "OP")
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
-								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia operatora w takim pokoju "
-								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia operatora w takim "
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
 					}
 
 					else if(op_type == "SOP")
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
-								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia superoperatora w takim pokoju "
-								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+								xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia superoperatora w takim "
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
 					}
 
 					else if(op_type == "DOP")
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
-								xRED "# Nie jesteś w aktywnym pokoju czata. Zabrać uprawnienia operatora w takim pokoju "
-								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+								xRED "# Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia operatora w takim "
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
 					}
 
 					else
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
-								xRED "# Nie jesteś w aktywnym pokoju czata. Zabrać uprawnienia superoperatora w takim pokoju "
-								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+								xRED "# Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia superoperatora w takim "
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
 					}
 				}
 			}
@@ -1527,6 +1539,77 @@ void command_vhost(struct global_args &ga, struct channel_irc *ci[], std::string
 				irc_send(ga, ci, "VHOST " + vhost_nick + " " + vhost_password);
 
 				ga.cf.vhost = true;
+			}
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
+}
+
+
+void command_vip_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, std::string &vip_type)
+{
+	// vip_type może przyjąć następujące wartości: VIP, DVIP
+	if(vip_type != "VIP" && vip_type != "DVIP")
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nieprawidłowa opcja dla command_vip_common()");
+	}
+
+	// jeśli połączono z IRC
+	else if(ga.irc_ok)
+	{
+		// pobierz wpisany nick
+		std::string vip_nick = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli nie wpisano nicka, pokaż ostrzeżenie
+		if(vip_nick.size() == 0)
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, (vip_type == "VIP" || vip_type == "DVIP"
+					? xRED "# Nie podano nicka do nadania uprawnień vipa."
+					: xRED "# Nie podano nicka do odebrania uprawnień vipa."));
+		}
+
+		else
+		{
+			// pobierz opcjonalny pokój
+			std::string vip_chan = get_arg(kbd_buf, pos_arg_start);
+
+			// jeśli nie podano opcjonalnego pokoju
+			if(vip_chan.size() == 0)
+			{
+				// bez podania pokoju nadać/odebrać uprawnienia vipa można tylko w aktywnym pokoju czata, bo ten pokój jest wtedy pokojem,
+				// w którym to robimy
+				if(ga.current < CHAN_CHAT)
+				{
+					// VIP wpisuje opcję ADD; DVIP wpisuje opcję DEL
+					irc_send(ga, ci, "CS VOICE " + ci[ga.current]->channel + (vip_type == "VIP" ? " ADD " : " DEL ") + vip_nick);
+				}
+
+				else
+				{
+					win_buf_add_str(ga, ci, ci[ga.current]->channel, (vip_type == "VIP"
+								? xRED "# Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia vipa w takim pokoju możesz "
+								"wtedy, gdy po nicku podasz pokój, w którym chcesz zbanować osobę."
+								: xRED "# Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia vipa w takim pokoju możesz "
+								"wtedy, gdy po nicku podasz pokój, w którym chcesz odbanować osobę."));
+				}
+			}
+
+			// jeśli podano opcjonalny pokój
+			else
+			{
+				// jeśli nie podano # przed nazwą pokoju, dodaj #
+				if(vip_chan[0] != '#')
+				{
+					vip_chan.insert(0, "#");
+				}
+
+				// VIP wpisuje opcję ADD; DVIP wpisuje opcję DEL
+				irc_send(ga, ci, "CS VOICE " + vip_chan + (vip_type == "VIP" ? " ADD " : " DEL ") + vip_nick);
 			}
 		}
 	}

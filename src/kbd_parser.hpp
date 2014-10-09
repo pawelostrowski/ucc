@@ -93,6 +93,8 @@ void command_topic(struct global_args &ga, struct channel_irc *ci[], std::string
 
 void command_vhost(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
+void command_vip_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, std::string &vip_type);
+
 void command_whois(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
 void command_whowas(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
