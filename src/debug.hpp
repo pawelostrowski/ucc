@@ -26,8 +26,4 @@
 void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, uint16_t port, std::string &stock,
 	std::string &dbg_http_msg);
 
-void irc_sent_dbg_to_file(struct global_args &ga, std::string &dbg_sent);
-
-void irc_recv_dbg_to_file(struct global_args &ga, std::string &dbg_recv);
-
 #endif		// DEBUG_HPP

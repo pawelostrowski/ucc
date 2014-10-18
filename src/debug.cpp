@@ -93,16 +93,17 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		}
 
 		// dodaj datę i czas
-		time_t time_g;
+//		time_t time_g;
 
-		time(&time_g);
+//		time(&time_g);
 
-		std::string time_str = std::to_string(time_g);
+//		std::string time_str = std::to_string(time_g);
 
 		// zapisz dane
 		ga.debug_http_f << "================================================================================" << std::endl;
 
-		ga.debug_http_f << dbg_http_msg << " (" << time_utimestamp_to_local_full(time_str) << "):" << std::endl << std::endl << std::endl;
+//		ga.debug_http_f << dbg_http_msg << " (" << time_utimestamp_to_local_full(time_str) << "):" << std::endl << std::endl << std::endl;
+		ga.debug_http_f << dbg_http_msg << " (" << get_time_full() << "):" << std::endl << std::endl << std::endl;
 
 		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):" << std::endl << std::endl;
 
@@ -123,27 +124,5 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		}
 
 		ga.debug_http_f.flush();
-	}
-}
-
-
-void irc_sent_dbg_to_file(struct global_args &ga, std::string &dbg_sent)
-{
-	if(ga.debug_irc_f.good())
-	{
-		ga.debug_irc_f << "--> " << dbg_sent << std::endl;
-
-		ga.debug_irc_f.flush();
-	}
-}
-
-
-void irc_recv_dbg_to_file(struct global_args &ga, std::string &dbg_recv)
-{
-	if(ga.debug_irc_f.good())
-	{
-		ga.debug_irc_f << dbg_recv;
-
-		ga.debug_irc_f.flush();
 	}
 }

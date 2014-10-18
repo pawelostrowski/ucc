@@ -27,9 +27,9 @@
 #define RECV_BUF_TMP_SIZE (1500 + 1 * sizeof(char))
 
 // numer wersji przeglądarki, wysyłany w ciągu User Agent podczas autoryzacji HTTP
-#define BROWSER_VER "32.0"
+#define BROWSER_VER "33.0"
 
-// User Agent przeglądarki, wysyłany podczas autoryzacji HTTP
+// User Agent przeglądarki, wysyłany podczas autoryzacji HTTP(S)
 #define BROWSER_USER_AGENT "Mozilla/5.0 (X11; Linux x86_64; rv:" BROWSER_VER ") Gecko/20100101 Firefox/" BROWSER_VER
 
 int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string host, uint16_t port, std::string dbg_msg);

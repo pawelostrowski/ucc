@@ -25,6 +25,7 @@
 #include <sys/select.h>		// select()
 #include <sys/time.h>		// gettimeofday()
 #include <unistd.h>		// close() - socket
+#include <sys/stat.h>		// mkdir()
 
 // -std=c++11 - errno
 
@@ -145,8 +146,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 	ga.is_irc_recv_buf_incomplete = false;
 
-	ga.debug_http_f.open(DEBUG_HTTP_FILE, std::ios::out);
-	ga.debug_irc_f.open(DEBUG_IRC_FILE, std::ios::out);
+	ga.ucc_home_dir = std::string(getenv("HOME")) + "/" UCC_DIR;
 /*
 	Koniec ustalania globalnych zmiennych.
 */
@@ -191,6 +191,18 @@ int main_window(bool _use_colors, bool _debug_irc)
 	fd_set readfds_tmp;
 	FD_ZERO(&readfds);
 	FD_SET(0, &readfds);		// klawiatura (stdin)
+
+	// utwórz katalog domowy
+	ga.ucc_home_dir_stat = mkdir(ga.ucc_home_dir.c_str(), 0700);
+
+	// jeśli katalog już istnieje, wyzeruj błąd
+	if(errno == EEXIST)
+	{
+		ga.ucc_home_dir_stat = 0;
+	}
+
+	// plik debugowania HTTP
+	ga.debug_http_f.open(ga.ucc_home_dir + "/" + DEBUG_HTTP_FILE, std::ios::out);
 
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	// (ze względu na przyjętą budowę bufora na końcu tekstu nie ma kodu "\n")
@@ -453,7 +465,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 					// brak aktywności
 					else
-						{
+					{
 						// numer aktualnie otwartego pokoju wyświetl na białym tle (przy włączonych kolorach) lub kontrastowym tle
 						// (przy braku kolorów)
 						if(i == ga.current)
@@ -713,8 +725,10 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				del_all_chan(ci);
 
-				ga.debug_irc_f.close();
-				ga.debug_http_f.close();
+				if(ga.debug_http_f.is_open())
+				{
+					ga.debug_http_f.close();
+				}
 
 				if(win_info_active)
 				{
@@ -752,8 +766,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 			// obsługa PING (tylko przy połączeniu z IRC oraz gdy nie jest to zamykanie programu)
 			if(ga.irc_ok && ! ga.ucc_quit_time)
 			{
-				//win_buf_add_str(ga, ci, "Status", "Counter: " + std::to_string(ping_counter));
-
 				++ping_counter;
 
 				// gdy serwer nie dał odpowiedzi PONG, dolicz nowy lag (gdy odpowie, lag_timeout nie jest ustawiony)
@@ -1684,8 +1696,10 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 	del_all_chan(ci);
 
-	ga.debug_irc_f.close();
-	ga.debug_http_f.close();
+	if(ga.debug_http_f.is_open())
+	{
+		ga.debug_http_f.close();
+	}
 
 	if(win_info_active)
 	{

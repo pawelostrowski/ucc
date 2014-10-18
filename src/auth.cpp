@@ -22,6 +22,7 @@
 
 #include <sstream>		// std::string, std::stringstream
 #include <cstring>		// std::memcpy(), std::strstr()
+#include <sys/stat.h>		// mkdir()
 
 // -std=c++11 - std::free(), std::system(), std::to_string()
 
@@ -128,7 +129,7 @@ bool auth_http_init(struct global_args &ga, struct channel_irc *ci[])
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "kropka.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "kropka.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
 				"", true, bytes_recv_all, "authHttpInit");
 
 	if(http_recv_buf_ptr == NULL)
@@ -151,7 +152,7 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/myimg.gif",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/myimg.gif",
 				"", true, bytes_recv_all, "authHttpGetCaptcha");
 
 	if(http_recv_buf_ptr == NULL)
@@ -289,7 +290,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	// zapobiega ponownemu wysłaniu kodu na serwer
 	ga.captcha_ready = false;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}", false, bytes_recv_all, "authHttpCheckCode");
 
 	if(http_recv_buf_ptr == NULL)
@@ -343,7 +344,7 @@ bool auth_http_getsk(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/sk.gif",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/sk.gif",
 				"", true, bytes_recv_all, "authHttpGetSk");
 
 	if(http_recv_buf_ptr == NULL)
@@ -361,7 +362,7 @@ bool auth_http_mlogin(struct global_args &ga, struct channel_irc *ci[])
 {
 /*
 	W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka: onet_uoi, onet_uid, połączenie jest szyfrowane zawsze, niezależnie od
-	wartości ALL_AUTH_HTTP_SSL.
+	wartości ALL_AUTH_HTTPS.
 */
 
 	int bytes_recv_all;
@@ -390,7 +391,7 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(buf_chars(ga.my_nick)) + ":\""
 				+ buf_utf_to_iso(ga.my_nick) + "\";}", false, bytes_recv_all, "authHttpUserOverride");
 
@@ -412,30 +413,17 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 	// wykonaj "kopię" nicka, aby nie modyfikować go z punktu widzenia użytkownika (gdy trzeba usunąć ~)
 	std::string my_nick_c = ga.my_nick;
 
-	std::string my_nick_i;
-
-	// wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła)
-	if(ga.my_password.size() == 0)
+	// wykryj, czy nick jest stały, czy tymczasowy (na podstawie obecności hasła), jeśli jest tymczasowy i podano tyldę na początku, to ja usuń,
+	// bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po zalogowaniu się
+	if(ga.my_password.size() == 0 && my_nick_c.size() > 0 && my_nick_c[0] == '~')
 	{
-		my_nick_i = "1";	// tymczasowy
-
-		// jeśli podano nick (tymczasowy) z tyldą na początku, usuń ją, bo serwer takiego nicka nie akceptuje, mimo iż potem taki nick zwraca po
-		// zalogowaniu się
-		if(my_nick_c.size() > 0 && my_nick_c[0] == '~')
-		{
-			my_nick_c.erase(0, 1);
-		}
+		my_nick_c.erase(0, 1);
 	}
 
-	else
-	{
-		my_nick_i = "0";	// stały
-	}
-
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTP_SSL ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(buf_chars(my_nick_c)) + ":\"" + buf_utf_to_iso(my_nick_c)
-				+ "\";s:8:\"tempNick\";i:" + my_nick_i + ";s:7:\"version\";s:" + std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}",
-				false, bytes_recv_all, "authHttpGetUoKey");
+				+ "\";s:8:\"tempNick\";i:" + (ga.my_password.size() == 0 ? "1" : "0") + ";s:7:\"version\";s:"
+				+ std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}", false, bytes_recv_all, "authHttpGetUoKey");
 
 	if(http_recv_buf_ptr == NULL)
 	{
@@ -517,6 +505,31 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	// zacznij od nieaktywnego away oraz busy
 	ga.my_away = false;
 	ga.my_busy = false;
+
+	// utwórz katalog użytkownika
+	ga.user_dir = ga.ucc_home_dir + "/" + ga.zuousername;
+	mkdir(ga.user_dir.c_str(), 0755);
+
+	// pliki debugowania "Status" oraz "DebugIRC", otwierane tu, bo wcześniej nie jest znany ga.zuousername
+	if(! ci[CHAN_STATUS]->chan_log.is_open())
+	{
+		ci[CHAN_STATUS]->chan_log.open(ga.user_dir + "/" + ci[CHAN_STATUS]->channel + ".txt", std::ios::out | std::ios::app);
+
+		if(ci[CHAN_STATUS]->chan_log.good())
+		{
+			ci[CHAN_STATUS]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+		}
+	}
+
+	if(ga.debug_irc && ! ci[CHAN_DEBUG_IRC]->chan_log.is_open())
+	{
+		ci[CHAN_DEBUG_IRC]->chan_log.open(ga.user_dir + "/" + ci[CHAN_DEBUG_IRC]->channel + ".txt", std::ios::out | std::ios::app);
+
+		if(ci[CHAN_DEBUG_IRC]->chan_log.good())
+		{
+			ci[CHAN_DEBUG_IRC]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+		}
+	}
 
 /*
 	Część 1 autoryzacji.

@@ -932,20 +932,9 @@ void raw_error(struct global_args &ga, struct channel_irc *ci[], std::string &ra
 		ga.ucc_quit = true;
 	}
 
-/*
-	// wyczyść listy nicków otwartych pokoi oraz wyświetl komunikat we wszystkich otwartych pokojach (poza "DebugIRC" i "RawUnknown")
-	for(int i = 0; i < CHAN_NORMAL; ++i)
-	{
-		if(ci[i])
-		{
-			ci[i]->ni.clear();
-
-			win_buf_add_str(ga, ci, ci[i]->channel, xYELLOW "* " + get_rest_from_buf(raw_buf, " :"));
-		}
-	}
-*/
-
-	win_buf_all_chan_msg(ga, ci, xYELLOW "* " + get_rest_from_buf(raw_buf, " :"));
+	win_buf_all_chan_msg(ga, ci, (get_value_from_buf(raw_buf, "ERROR :", " (") == "Closing link"
+				? xYELLOW "* Zamykanie połączenia " + get_rest_from_buf(raw_buf, " link ")
+				: xYELLOW "* " + get_rest_from_buf(raw_buf, " :")));
 }
 
 
@@ -3591,7 +3580,7 @@ void raw_443(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	win_buf_add_str(ga, ci, raw_parm4, xWHITE "* " + raw_parm3 + " jest już w pokoju " + raw_parm4);
+	win_buf_add_str(ga, ci, raw_parm4, xWHITE "* " + raw_parm3 + " przebywa już w pokoju " + raw_parm4);
 }
 
 
@@ -3680,7 +3669,7 @@ void raw_474(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
-	481 (SQUIT, CONNECT, TRACE, KILL, REHASH, DIE, RESTART, WALLOPS - przy braku uprawnień, to otrzyma każdy, kto nie jest adminem)
+	481 (SQUIT, CONNECT, TRACE, KILL, REHASH, DIE, RESTART, WALLOPS, KLINE - przy braku uprawnień, to otrzyma każdy, kto nie jest adminem)
 	:cf1f1.onet 481 Kernel_Panic :Permission Denied - You do not have the required operator privileges
 */
 void raw_481(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
@@ -5023,7 +5012,7 @@ void raw_notice_403(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 	win_buf_add_str(ga, ci, ci[ga.current]->channel, (nick_info.size() > 0
 			// opcja dla pierwszego RAW powyżej
-			? "* " xBOLD_ON xYELLOW_BLACK + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
+			? xBOLD_ON xYELLOW_BLACK "* " + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
 			// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
 			: xRED "* " + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
 }
@@ -5037,7 +5026,7 @@ void raw_notice_404(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, "* " xBOLD_ON xMAGENTA + raw_parm4 + xNORMAL " - użytkownik nie jest zarejestrowany.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "* " + raw_parm4 + xNORMAL " - użytkownik nie jest zarejestrowany.");
 }
 
 

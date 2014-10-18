@@ -314,7 +314,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		SSL_library_init();
 
-		ssl_context = SSL_CTX_new(SSLv3_client_method());
+		ssl_context = SSL_CTX_new(TLSv1_client_method());
 
 		if(ssl_context == NULL)
 		{
@@ -501,7 +501,7 @@ void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_
 /*
 	DBG IRC START
 */
-	irc_sent_dbg_to_file(ga, irc_send_buf);
+//	irc_sent_dbg_to_file(ga, irc_send_buf);
 
 	// debug w oknie
 	if(ga.debug_irc)
@@ -658,7 +658,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc
 /*
 	DBG IRC START
 */
-		irc_recv_dbg_to_file(ga, irc_recv_buf);
+//		irc_recv_dbg_to_file(ga, irc_recv_buf);
 
 		// debug w oknie
 		if(ga.debug_irc)

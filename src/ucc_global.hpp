@@ -32,6 +32,9 @@
 #define UCC_NAME "Ucieszony Chat Client"
 #define UCC_VER "1.0 alpha4"
 
+// katalog ucc (sama nazwa, nie jego położenie)
+#define UCC_DIR ".ucc"
+
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 // (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)
 #define pRED		0x01
@@ -159,8 +162,12 @@ struct global_args
 	bool win_info_state;
 	bool win_info_refresh;
 
+	std::string ucc_home_dir;
+	int ucc_home_dir_stat;
+
+	std::string user_dir;
+
 	std::ofstream debug_http_f;
-	std::ofstream debug_irc_f;
 
 	bool is_irc_recv_buf_incomplete;
 
@@ -248,6 +255,8 @@ struct channel_irc
 	int win_scroll_last;
 
         std::map<std::string, struct nick_irc> ni;
+
+        std::ofstream chan_log;
 };
 
 #endif		// UCC_GLOBAL_HPP

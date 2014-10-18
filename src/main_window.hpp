@@ -41,9 +41,8 @@
 // po jakim czasie braku odpowiedzi zerwać połączenie (w sekundach)
 #define PING_TIMEOUT 90
 
-// pliki debugowania
-#define DEBUG_HTTP_FILE	"/tmp/ucc_debug_http.txt"
-#define DEBUG_IRC_FILE	"/tmp/ucc_debug_irc.txt"
+// plik debugowania HTTP
+#define DEBUG_HTTP_FILE	"ucc_debug_http.txt"
 
 int main_window(bool _use_colors, bool _debug_irc);
 

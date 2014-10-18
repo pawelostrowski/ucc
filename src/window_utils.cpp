@@ -25,6 +25,7 @@
 // -std=c++11 - time_t, time(), localtime(), strftime()
 
 #include "window_utils.hpp"
+#include "form_conv.hpp"
 #include "ucc_global.hpp"
 
 
@@ -102,6 +103,18 @@ std::string time_utimestamp_to_local(std::string &time_unixtimestamp)
 	strftime(time_hms, 20, "[%H:%M:%S] ", time_l);
 
 	return std::string(time_hms);
+}
+
+
+std::string get_time_full()
+{
+	time_t time_g;
+
+	time(&time_g);
+
+	std::string time_str = std::to_string(time_g);
+
+	return time_utimestamp_to_local_full(time_str);
 }
 
 
@@ -926,6 +939,14 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 
 		// na początku każdego wiersza dodaj kod czyszczący formatowanie i, jeśli trzeba, wstaw czas (opcja domyślna)
 		ci[which_chan]->win_buf.push_back((add_time ? xNORMAL + get_time() : xNORMAL) + in_buf_line);
+
+		// zapisz log
+		if(ci[which_chan]->chan_log.good())
+		{
+			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line) << std::endl;
+
+			ci[which_chan]->chan_log.flush();
+		}
 	}
 
 	// sprawdź, czy wyświetlić otrzymaną część bufora (tylko gdy aktualny kanał jest tym, do którego wpisujemy, gdy nie użyliśmy scrolla okna

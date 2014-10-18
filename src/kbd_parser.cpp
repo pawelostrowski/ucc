@@ -206,228 +206,224 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		if(kbd_buf.size() <= 1)
 		{
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Polecenie błędne, sam znak / nie jest poleceniem.");
-
-			return;
 		}
 
 		// sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
-		if(kbd_buf[1] == ' ')
+		else if(kbd_buf[1] == ' ')
 		{
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Polecenie błędne, po znaku / nie może być spacji.");
-
-			return;
 		}
 
-		std::string command;		// znalezione polecenie w buforze klawiatury (małe litery będą zamienione na wielkie)
-		std::string command_org;	// j/w, ale małe litery nie są zamieniane na wielkie
-		size_t pos_command_end;		// pozycja, gdzie się kończy polecenie
-		size_t pos_arg_start;		// pozycja początkowa kolejnego argumentu (w tym miejscu, o ile wpisano polecenie, będzie to jego koniec)
-
-		// wykryj pozycję końca polecenia (gdzie jest spacja za poleceniem)
-		pos_command_end = kbd_buf.find(" ");
-
-		// jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
-		if(pos_command_end == std::string::npos)
+		// pobierz wpisane polecenie i je zinterpretuj
+		else
 		{
-			pos_command_end = kbd_buf.size();
-		}
+			// wykryj pozycję końca polecenia (gdzie jest spacja za poleceniem)
+			size_t pos_command_end = kbd_buf.find(" ");
 
-		// wstaw szukane polecenie
-		command_org.insert(0, kbd_buf, 1, pos_command_end - 1);		// 1, - 1, bo pomijamy znak /
+			// jeśli nie było spacji, koniec polecenia uznaje się za koniec bufora, czyli jego rozmiar
+			if(pos_command_end == std::string::npos)
+			{
+				pos_command_end = kbd_buf.size();
+			}
 
-		// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
-		command = buf_lower_to_upper(command_org);
+			// wstaw szukane polecenie
+			std::string command_org;
+			command_org.insert(0, kbd_buf, 1, pos_command_end - 1);		// 1, - 1, bo pomijamy znak /
 
-		// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
-		pos_arg_start = pos_command_end;
+			// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
+			std::string command = buf_lower_to_upper(command_org);
+
+			// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
+			size_t pos_arg_start = pos_command_end;
 
 /*
 	Wykonaj polecenie (o ile istnieje), poniższe polecenia są w kolejności alfabetycznej.
 */
-		if(command == "AWAY")
-		{
-			command_away(ga, ci, kbd_buf, pos_arg_start);
-		}
+			if(command == "AWAY")
+			{
+				command_away(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "BAN")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "BAN")
+			{
+				command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "BANIP")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "BANIP")
+			{
+				command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "BUSY")
-		{
-			command_busy(ga, ci);
-		}
+			else if(command == "BUSY")
+			{
+				command_busy(ga, ci);
+			}
 
-		else if(command == "CAPTCHA" || command == "CAP")
-		{
-			command_captcha(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "CAPTCHA" || command == "CAP")
+			{
+				command_captcha(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "CARD")
-		{
-			command_card(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "CARD")
+			{
+				command_card(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "CONNECT" || command == "C")
-		{
-			command_connect(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "CONNECT" || command == "C")
+			{
+				command_connect(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "DBAN")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "DBAN")
+			{
+				command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "DBANIP")
-		{
-			command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "DBANIP")
+			{
+				command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "DISCONNECT" || command == "D")
-		{
-			command_disconnect(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "DISCONNECT" || command == "D")
+			{
+				command_disconnect(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "DOP")
-		{
-			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "DOP")
+			{
+				command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "DSOP")
-		{
-			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "DSOP")
+			{
+				command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "DVIP")
-		{
-			command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "DVIP")
+			{
+				command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "HELP" || command == "H")
-		{
-			command_help(ga, ci);
-		}
+			else if(command == "HELP" || command == "H")
+			{
+				command_help(ga, ci);
+			}
 
-		else if(command == "INVITE" || command == "INV")
-		{
-			command_invite(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "INVITE" || command == "INV")
+			{
+				command_invite(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "JOIN" || command == "J")
-		{
-			command_join(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "JOIN" || command == "J")
+			{
+				command_join(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "KBAN")
-		{
-			command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "KBAN")
+			{
+				command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		//else if(command == "KBANIP")
-		//{
-		//	command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
-		//}
+			//else if(command == "KBANIP")
+			//{
+			//	command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			//}
 
-		else if(command == "KICK")
-		{
-			command_kick(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "KICK")
+			{
+				command_kick(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "LIST" || command == "L")
-		{
-			command_list(ga, ci);
-		}
+			else if(command == "LIST" || command == "L")
+			{
+				command_list(ga, ci);
+			}
 
-		else if(command == "LUSERS" || command == "LU")
-		{
-			command_lusers(ga, ci);
-		}
+			else if(command == "LUSERS" || command == "LU")
+			{
+				command_lusers(ga, ci);
+			}
 
-		else if(command == "ME")
-		{
-			command_me(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "ME")
+			{
+				command_me(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "NAMES" || command == "N")
-		{
-			command_names(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "NAMES" || command == "N")
+			{
+				command_names(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "NICK")
-		{
-			command_nick(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "NICK")
+			{
+				command_nick(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "OP")
-		{
-			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "OP")
+			{
+				command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "PART" || command == "P")
-		{
-			command_part(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "PART" || command == "P")
+			{
+				command_part(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "PRIV")
-		{
-			command_priv(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "PRIV")
+			{
+				command_priv(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "QUIT" || command == "Q")
-		{
-			command_quit(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "QUIT" || command == "Q")
+			{
+				command_quit(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "RAW")
-		{
-			command_raw(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "RAW")
+			{
+				command_raw(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "SOP")
-		{
-			command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "SOP")
+			{
+				command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "TIME")
-		{
-			command_time(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "TIME")
+			{
+				command_time(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "TOPIC")
-		{
-			command_topic(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "TOPIC")
+			{
+				command_topic(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "VHOST")
-		{
-			command_vhost(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "VHOST")
+			{
+				command_vhost(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "VIP")
-		{
-			command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
-		}
+			else if(command == "VIP")
+			{
+				command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
 
-		else if(command == "WHOIS")
-		{
-			command_whois(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "WHOIS")
+			{
+				command_whois(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		else if(command == "WHOWAS")
-		{
-			command_whowas(ga, ci, kbd_buf, pos_arg_start);
-		}
+			else if(command == "WHOWAS")
+			{
+				command_whowas(ga, ci, kbd_buf, pos_arg_start);
+			}
 
-		// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
-		else
-		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nieznane polecenie: /" + command_org);
+			// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nieznane polecenie: /" + command_org);
+			}
 		}
 	}
 }
@@ -579,6 +575,9 @@ void command_captcha(struct global_args &ga, struct channel_irc *ci[], std::stri
 		// gdy CAPTCHA ma 6 znaków, wykonaj sprawdzenie
 		else
 		{
+			// odświeżenie stdscr ma na celu "zadziałanie" erase() po wpisaniu /cap, aby od razu zniknęło wpisane polecenie po wciśnięciu Enter
+			refresh();
+
 			if(! auth_http_checkcode(ga, ci, captcha))
 			{
 				// w przypadku błędu komunikat został wyświetlony, pokaż jeszcze drugi komunikat o rozłączeniu i zakończ
@@ -1303,6 +1302,12 @@ void command_part(struct global_args &ga, struct channel_irc *ci[], std::string 
 	// jako wyjątek /part w oknie "RawUnknown" zamyka je
 	else if(ga.current == CHAN_RAW_UNKNOWN)
 	{
+		// zamknij log
+		if(ci[CHAN_RAW_UNKNOWN]->chan_log.good())
+		{
+			ci[CHAN_RAW_UNKNOWN]->chan_log.close();
+		}
+
 		// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 		ga.current = CHAN_STATUS;
 		ga.win_chat_refresh = true;
@@ -1487,7 +1492,7 @@ void command_topic(struct global_args &ga, struct channel_irc *ci[], std::string
 				irc_send(ga, ci, "CS SET " + ci[ga.current]->channel + " TOPIC");
 			}
 
-			// nie zmieniaj tematu (tylko go pokaż), jeśli za /topic nic nie wpisano
+			// nie zmieniaj tematu (tylko go pokaż), jeśli za /topic nic nie wpisano lub wpisano jedną spację
 			else
 			{
 				irc_send(ga, ci, "TOPIC " + ci[ga.current]->channel);

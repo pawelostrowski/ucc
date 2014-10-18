@@ -29,6 +29,8 @@ std::string get_time();
 
 std::string time_utimestamp_to_local(std::string &time_unixtimestamp);
 
+std::string get_time_full();
+
 std::string time_utimestamp_to_local_full(std::string &time_unixtimestamp);
 
 std::string time_sec2time(std::string &sec_str);
