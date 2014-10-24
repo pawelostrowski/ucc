@@ -2112,7 +2112,7 @@ void raw_part(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	if(reason.size() > 0)
 	{
 		reason.insert(0, " [");
-		reason += "]";
+		reason += xCYAN "]";
 	}
 
 	// jeśli jest ^ (rozmowa prywatna), wyświetl odpowiedni komunikat
@@ -2250,7 +2250,8 @@ void raw_quit(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 		{
 			// w pokoju, w którym był nick wyświetl komunikat o jego wyjściu
 			win_buf_add_str(ga, ci, ci[i]->channel,
-					xYELLOW "* " + nick_who + " [" + nick_zuo_ip + "] wychodzi z czata [" + get_rest_from_buf(raw_buf, " :") + "]");
+					xYELLOW "* " + nick_who + " [" + nick_zuo_ip + "] wychodzi z czata [" + get_rest_from_buf(raw_buf, " :")
+					+ xYELLOW "]");
 
 			// usuń nick z listy
 			ci[i]->ni.erase(nick_who_key);

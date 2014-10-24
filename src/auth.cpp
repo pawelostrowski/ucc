@@ -617,16 +617,9 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 
 	// wyślij (zamiast zuoUsername można wysłać inną nazwę):
 	// USER * <uoKey> czat-app.onet.pl :zuoUsername
-	irc_send(ga, ci, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername, "authIrc4a: ");
-
-	// w przypadku błędu zakończ
-	if(! ga.irc_ok)
-	{
-		return;
-	}
-
-	// protokół wyświetlania (nick|flags,type)
-	irc_send(ga, ci, "PROTOCTL ONETNAMESX", "authIrc4b: ");
+	// wyślij protokół wyświetlania (nick|flags,type):
+	// PROTOCTL ONETNAMESX
+	irc_send(ga, ci, "USER * " + ga.uokey + " czat-app.onet.pl :" + ga.zuousername + "\r\nPROTOCTL ONETNAMESX", "authIrc4: ");
 
 	// jeśli na którymś etapie wystąpił błąd, funkcja auth_irc_all() zakończy się z ga.irc_ok = false
 }

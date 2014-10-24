@@ -1445,7 +1445,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// Alt Left + (...)
-			else if(key_code == 0x1B || key_code == 0x21E || key_code == 0x22D)
+			else if(key_code == 0x1B || key_code == 0x21E || key_code == 0x21F || key_code == 0x22D || key_code == 0x22E)
 			{
 				// zapamiętaj obecny kod (trzeba go sprawdzić na terminalu Screen z Alt Left + Arrow Left i Alt Left + Arrow Right
 				int prev_key_code = key_code;
@@ -1588,8 +1588,9 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				// Alt Left + Arrow Left
 				// 0x21E - zwykły terminal
+				// 0x21F - terminal Konsole (po aktualizacji Kubuntu do 14.10)
 				// 0x1B 0x5B 0x31 0x3B 0x33 0x44 - terminal Screen
-				if(prev_key_code == 0x21E || (alt_arrow_seq && key_code == 0x44))
+				if(prev_key_code == 0x21E || prev_key_code == 0x21F || (alt_arrow_seq && key_code == 0x44))
 				{
 					for(int i = 0; i < CHAN_MAX; ++i)
 					{
@@ -1611,8 +1612,9 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				// Alt Left + Arrow Right
 				// 0x22D - zwykły terminal
+				// 0x22E - terminal Konsole (po aktualizacji Kubuntu do 14.10)
 				// 0x1B 0x5B 0x31 0x3B 0x33 0x43 - terminal Screen
-				else if(prev_key_code == 0x22D || (alt_arrow_seq && key_code == 0x43))
+				else if(prev_key_code == 0x22D || prev_key_code == 0x22E || (alt_arrow_seq && key_code == 0x43))
 				{
 					for(int i = 0; i < CHAN_MAX; ++i)
 					{

@@ -1303,7 +1303,7 @@ void command_part(struct global_args &ga, struct channel_irc *ci[], std::string 
 	else if(ga.current == CHAN_RAW_UNKNOWN)
 	{
 		// zamknij log
-		if(ci[CHAN_RAW_UNKNOWN]->chan_log.good())
+		if(ci[CHAN_RAW_UNKNOWN]->chan_log.is_open())
 		{
 			ci[CHAN_RAW_UNKNOWN]->chan_log.close();
 		}

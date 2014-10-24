@@ -306,7 +306,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 		close(socketfd);
 	}
 
-	// połączenie na porcie 443 uruchomi transmisję szyfrowaną (SSL)
+	// połączenie na porcie 443 uruchomi transmisję szyfrowaną
 	else if(port == 443)
 	{
 		SSL_CTX *ssl_context;
@@ -498,25 +498,27 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_send_buf, std::string dbg_irc_msg)
 {
-/*
-	DBG IRC START
-*/
-//	irc_sent_dbg_to_file(ga, irc_send_buf);
-
-	// debug w oknie
+	// debug IRC w oknie (jeśli został włączony)
 	if(ga.debug_irc)
 	{
 		std::stringstream irc_send_buf_stream(irc_send_buf);
 		std::string irc_send_buf_line;
 
+		size_t code_erase;
+
 		while(std::getline(irc_send_buf_stream, irc_send_buf_line))
 		{
+			code_erase = irc_send_buf_line.find("\r");
+
+			while(code_erase != std::string::npos)
+			{
+				irc_send_buf_line.erase(code_erase, 1);
+				code_erase = irc_send_buf_line.find("\r");
+			}
+
 			win_buf_add_str(ga, ci, "DebugIRC", xYELLOW "> " + irc_send_buf_line, 1, true, false);
 		}
 	}
-/*
-	DBG IRC END
-*/
 
 	// przekoduj UTF-8 na ISO-8859-2
 	irc_send_buf = buf_utf_to_iso(irc_send_buf);
@@ -655,12 +657,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc
 			ga.win_chat_refresh = true;
 		}
 
-/*
-	DBG IRC START
-*/
-//		irc_recv_dbg_to_file(ga, irc_recv_buf);
-
-		// debug w oknie
+		// debug IRC w oknie (jeśli został włączony)
 		if(ga.debug_irc)
 		{
 			std::stringstream irc_recv_buf_stream(irc_recv_buf);
@@ -671,8 +668,5 @@ void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc
 				win_buf_add_str(ga, ci, "DebugIRC", xWHITE + irc_recv_buf_line, 1, true, false);
 			}
 		}
-/*
-	DBG IRC END
-*/
 	}
 }
