@@ -35,7 +35,7 @@
 #include "ucc_global.hpp"
 
 
-int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string host, uint16_t port, std::string dbg_msg)
+int socket_init(std::string host, uint16_t port, std::string &msg_err)
 {
 /*
 	Utwórz gniazdo (socket) oraz połącz się z hostem.
@@ -48,8 +48,7 @@ int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string ho
 
 	if(host_info == NULL)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				xRED "# " + dbg_msg + ": Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).");
+		msg_err = "Nie udało się pobrać informacji o hoście: " + host + " (sprawdź swoje połączenie internetowe).";
 
 		return 0;
 	}
@@ -59,7 +58,7 @@ int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string ho
 
 	if(socketfd == -1)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_msg + ": Nie udało się utworzyć deskryptora gniazda.");
+		msg_err = "Nie udało się utworzyć deskryptora gniazda.";
 
 		return 0;
 	}
@@ -74,7 +73,7 @@ int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string ho
 	// połącz z hostem
 	if(connect(socketfd, (struct sockaddr *) &serv_info, sizeof(struct sockaddr)) == -1)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_msg + ": Nie udało się połączyć z hostem: " + host);
+		msg_err = "Nie udało się połączyć z hostem: " + host;
 
 		close(socketfd);
 
@@ -85,7 +84,7 @@ int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string ho
 }
 
 
-bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::string http_recv_buf_str, std::string dbg_http_msg)
+bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &cookies, std::string &msg_err)
 {
 	std::string cookie;
 
@@ -96,7 +95,8 @@ bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::str
 
 	if(pos_cookie_start == std::string::npos)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Nie znaleziono żadnego cookie.");
+//		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Nie znaleziono żadnego cookie.");
+		msg_err = "Nie znaleziono żadnego cookie.";
 
 		return false;
 	}
@@ -110,8 +110,8 @@ bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::str
 
 		if(pos_cookie_end == std::string::npos)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					xRED "# " + dbg_http_msg + ": Problem z cookie, brak wymaganego średnika na końcu.");
+//			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Problem z cookie, brak wymaganego średnika na końcu.");
+			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
 
 			return false;
 		}
@@ -124,7 +124,7 @@ bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::str
 		// dopisz cookie do bufora głównego, pomiń onet_sgn
 		if(cookie.find("onet_sgn") == std::string::npos)
 		{
-			ga.cookies.push_back(cookie);
+			cookies.push_back(cookie);
 		}
 
 		// znajdź kolejne cookie
@@ -146,11 +146,15 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 		return NULL;
 	}
 
+	std::string msg_err;
+
 	// utwórz deskryptor gniazda (socket) oraz połącz się z hostem
-	int socketfd = socket_init(ga, ci, host, port, dbg_http_msg);
+	int socketfd = socket_init(host, port, msg_err);
 
 	if(socketfd == 0)
 	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": " + msg_err);
+
 		return NULL;
 	}
 
@@ -314,7 +318,8 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		SSL_library_init();
 
-		ssl_context = SSL_CTX_new(TLSv1_client_method());
+		ssl_context = SSL_CTX_new(SSLv23_client_method());
+		SSL_CTX_set_options(ssl_context, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);	// wyklucz użycie SSLv2 i SSLv3
 
 		if(ssl_context == NULL)
 		{
@@ -484,7 +489,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 
 	// jeśli trzeba, wyciągnij cookies z bufora
-	if(get_cookies && ! http_get_cookies(ga, ci, std::string(http_recv_buf_ptr), dbg_http_msg))
+	if(get_cookies && ! http_get_cookies(std::string(http_recv_buf_ptr), ga.cookies, dbg_http_msg))
 	{
 		std::free(http_recv_buf_ptr);
 

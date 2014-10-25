@@ -23,6 +23,8 @@
 #ifndef NETWORK_HPP
 #define NETWORK_HPP
 
+#include <vector>		// std::vector
+
 // wielkość bufora tymczasowego używanego podczas pobierania danych z serwera
 #define RECV_BUF_TMP_SIZE (1500 + 1 * sizeof(char))
 
@@ -32,9 +34,9 @@
 // User Agent przeglądarki, wysyłany podczas autoryzacji HTTP(S)
 #define BROWSER_USER_AGENT "Mozilla/5.0 (X11; Linux x86_64; rv:" BROWSER_VER ") Gecko/20100101 Firefox/" BROWSER_VER
 
-int socket_init(struct global_args &ga, struct channel_irc *ci[], std::string host, uint16_t port, std::string dbg_msg);
+int socket_init(std::string host, uint16_t port, std::string &msg_err);
 
-bool http_get_cookies(struct global_args &ga, struct channel_irc *ci[], std::string http_recv_buf_str, std::string dbg_http_msg);
+bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &cookies, std::string &msg_err);
 
 char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::string method, std::string host, uint16_t port, std::string stock,
 	std::string content, bool get_cookies, int &bytes_recv_all, std::string dbg_http_msg);

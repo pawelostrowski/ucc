@@ -492,6 +492,8 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 {
+	std::string msg_err;
+
 	// nie próbuj ponownie łączyć się do IRC od zera
 	ga.irc_ready = false;
 
@@ -535,11 +537,13 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	Część 1 autoryzacji.
 */
 	// zainicjalizuj gniazdo oraz połącz z IRC
-	ga.socketfd_irc = socket_init(ga, ci, "czat-app.onet.pl", 5015, "authIrc1");
+	ga.socketfd_irc = socket_init("czat-app.onet.pl", 5015, msg_err);
 
 	// w przypadku błędu zakończ
 	if(ga.socketfd_irc == 0)
 	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "authIrc1: " + msg_err);
+
 		ga.irc_ok = false;
 
 		return;
