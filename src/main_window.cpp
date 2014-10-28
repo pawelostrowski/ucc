@@ -94,6 +94,11 @@ int main_window(bool _use_colors, bool _debug_irc)
 	bool kbd_buf_refresh = false;	// gdy była zmiana zawartości bufora klawiatury lub zmiana rozmiaru terminala, należy odświeżyć go na ekranie
 	bool paste_tab;
 
+	std::string tab_text;		// skopiowany tekst po wciśnięciu tabulatora
+	std::string tab_nick;		// znaleziony nick pasujący do wzorca po wciśnięciu Tab
+	bool tab_was_comma = false;	// gdy był przecinek po użyciu tabulatora (gdy nick pisany jest jako pierwszy), ma znaczenie przy powtarzaniu
+	unsigned int tab_pos_list = 0;	// pozycja na liście nicków przy kolejnym wciskaniu tabulatora
+
 	std::string command_tmp;	// tymczasowy bufor na odczytanie wpisanego polecenia, używany do detekcji wpisania /nick lub /vhost
 
 	unsigned int hist_buf_max_items = HIST_BUF_MAX_ITEMS;	// maksymalna liczba pozycji w buforze historii (później zmienić jako opcja do wyboru)
@@ -866,7 +871,154 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// jeśli wciśnięto Tab, wykonaj obsługę dopełniania nicków tabulatorem
 				if(key_code == ERR)
 				{
-					// tu dopisać dopełnianie nicków tabem
+					// wczytaj do tymczasowego bufora tekst od pozycji kursora do spacji lub początku bufora, o ile jest pusty
+					if(tab_text.size() == 0)
+					{
+						for(int i = kbd_buf_pos - 1; i >= 0; --i)
+						{
+							key_code_tmp = kbd_buf[i];
+
+							if(key_code_tmp == " ")
+							{
+								break;
+							}
+
+							tab_text.insert(0, key_code_tmp);
+						}
+
+						// wpisane znaki przekształć na wielkie (tak są zapisane indeksy w std::map, łatwiej będzie je porównywać)
+						tab_text = buf_lower_to_upper(tab_text);
+
+						// jeśli bufor był pusty, zacznij od pierwszej pozycji na liście nicków
+						tab_pos_list = 0;
+					}
+
+					// jeśli coś jest w buforze, nie jest to polecenie oraz na liście nicków są jakieś pozycje
+					if(tab_text.size() > 0 && tab_text[0] != '/' && ci[ga.current]->ni.size() > 0)
+					{
+						std::string nick_current;	// aktualnie przetwarzany nick z listy
+						std::string nick_found;		// tymczasowy bufor na aktualnie znaleziony nick
+
+						// po kolejnym przejściu pętli głównej odśwież na ekranie zawartość bufora klawiatury
+						kbd_buf_refresh = true;
+
+						// jeśli był już znaleziony jakiś nick, usuń go z bufora klawiatury (+ 1 na spację po nicku, + 2 gdy był
+						// też przecinek)
+						if(tab_nick.size() > 0)
+						{
+							kbd_buf_pos -= tab_nick.size() + (tab_was_comma ? 2 : 1);
+							kbd_cur_pos -= buf_chars(tab_nick) + (tab_was_comma ? 2 : 1);
+							kbd_buf.erase(kbd_buf_pos, tab_nick.size() + (tab_was_comma ? 2 : 1));
+						}
+
+						while(true)
+						{
+							// jeśli przekroczono zakres, zacznij od początku listy
+							if(tab_pos_list >= ci[ga.current]->ni.size())
+							{
+								tab_pos_list = 0;
+
+								// jeśli nie znaleziono zgodności po przeszukaniu listy, przerwij pętlę
+								if(tab_nick.size() == 0)
+								{
+									break;
+								}
+
+								// jeśli znaleziono coś, co pasuje do wzorca, po kolejnym wciśnięciu Tab zacznij od nowa
+								else
+								{
+									continue;
+								}
+							}
+
+							// iterator na pierwszą pozycję
+							auto it = ci[ga.current]->ni.begin();
+
+							// dodaj offset
+							std::advance(it, tab_pos_list);
+
+							// wczytaj nick z listy
+							nick_current = it->first;
+
+							// przesuń offset na następną pozycję na liście
+							++tab_pos_list;
+
+							// sprawdź zgodność tego, co wpisano po wciśnięciu Tab z kolejnym nickiem z listy
+							if(nick_current.size() > 0 && nick_current[0] == '~' && tab_text[0] != '~')
+							{
+								// dopełniaj nick tymczasowy z tyldą bez wpisania tyldy na początku
+								for(unsigned int i = 0; ; ++i)
+								{
+									if(i == tab_text.size() || i + 1 == nick_current.size())
+									{
+										nick_found = it->second.nick;
+										break;
+									}
+
+									if(tab_text[i] != nick_current[i + 1])
+									{
+										break;
+									}
+								}
+							}
+
+							else
+							{
+								// dopełniaj nick stały lub tymczasowy po wpisaniu tyldy na początku
+								for(unsigned int i = 0; ; ++i)
+								{
+									// jeśli była zgodność do tej pory i wpisany tekst zakończył się, przepisz go do
+									// bufora znalezionego nicka i przerwij pętlę
+									if(i == tab_text.size() || i == nick_current.size())
+									{
+										nick_found = it->second.nick;
+										break;
+									}
+
+									// przy niezgodności z wzorcem przerwij pętlę
+									if(tab_text[i] != nick_current[i])
+									{
+										break;
+									}
+								}
+							}
+
+							// jeśli znaleziono zgodność z wzorcem po wciśnięciu Tab, wpisz go do bufora klawiatury oraz
+							// przerwij pętlę
+							if(nick_found.size() > 0)
+							{
+								// jeśli już był wpisany nick przy użyciu tabulatora, nie usuwaj wzorca (bo go nie ma)
+								if(tab_nick.size() == 0)
+								{
+									kbd_buf_pos -= tab_text.size();
+									kbd_cur_pos -= buf_chars(tab_text);
+									kbd_buf.erase(kbd_buf_pos, tab_text.size());
+								}
+
+								// gdy nick był pisany jako pierwszy (wcześniej w wierszu nic nie ma), dodaj przecinek
+								if(kbd_buf.size() == 0)
+								{
+									kbd_buf.insert(kbd_buf_pos, nick_found + ", ");
+									kbd_buf_pos += nick_found.size() + 2;
+									kbd_cur_pos += buf_chars(nick_found) + 2;
+
+									tab_was_comma = true;
+								}
+
+								else
+								{
+									kbd_buf.insert(kbd_buf_pos, nick_found + " ");
+									kbd_buf_pos += nick_found.size() + 1;
+									kbd_cur_pos += buf_chars(nick_found) + 1;
+								}
+
+								break;
+							}
+						}
+
+						// zapamiętaj znaleziony nick (jeśli był)
+						tab_nick = nick_found;
+					}
 				}
 
 				// jeśli tekst wklejono ze schowka, poinformuj, żeby wkleić kod tabulatora
@@ -874,6 +1026,14 @@ int main_window(bool _use_colors, bool _debug_irc)
 				{
 					paste_tab = true;
 				}
+			}
+
+			// klawisze inne od Tab czyszczą tymczasowy bufor tekstu po wciśnięciu tabulatora oraz bufor znalezionego nicka
+			else
+			{
+				tab_text.clear();
+				tab_nick.clear();
+				tab_was_comma = false;
 			}
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego,

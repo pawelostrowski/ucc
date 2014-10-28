@@ -2628,7 +2628,7 @@ void raw_303(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string ison_list = get_rest_from_buf(raw_buf, " :");
 
 	win_buf_add_str(ga, ci, ci[ga.current]->channel, (ison_list.size() > 0
-			? xWHITE "* Użytkownicy dostępni dla zapytania ISON: " xNORMAL + ison_list
+			? xWHITE "* Użytkownicy dostępni dla zapytania ISON:" xNORMAL " " + ison_list
 			: xWHITE "* Brak dostępnych użytkowników dla zapytania ISON."));
 }
 
@@ -4378,8 +4378,7 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 					it->second.sex = "kobieta";
 				}
 
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Płeć: " + it->second.sex);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Płeć: " + it->second.sex);
 			}
 
 			if(it->second.birthdate.size() > 0)
@@ -4429,32 +4428,27 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 			if(it->second.city.size() > 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Miasto: " + it->second.city);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Miasto: " + it->second.city);
 			}
 
 			if(it->second.country.size() > 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Kraj: " + it->second.country);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Kraj: " + it->second.country);
 			}
 
 			if(it->second.short_desc.size() > 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Krótki opis: " + it->second.short_desc);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Krótki opis: " + it->second.short_desc);
 			}
 
 			if(it->second.long_desc.size() > 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Długi opis: " + it->second.long_desc);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Długi opis: " + it->second.long_desc);
 			}
 
 			if(it->second.email.size() > 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						xBOLD_ON xMAGENTA "-" xNORMAL " Adres email: " + it->second.email);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "-" xNORMAL " Adres email: " + it->second.email);
 
 				if(it->second.v_email.size() > 0)
 				{

@@ -95,7 +95,6 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 
 	if(pos_cookie_start == std::string::npos)
 	{
-//		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Nie znaleziono żadnego cookie.");
 		msg_err = "Nie znaleziono żadnego cookie.";
 
 		return false;
@@ -110,7 +109,6 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 
 		if(pos_cookie_end == std::string::npos)
 		{
-//			win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# " + dbg_http_msg + ": Problem z cookie, brak wymaganego średnika na końcu.");
 			msg_err = "Problem z cookie, brak wymaganego średnika na końcu.";
 
 			return false;

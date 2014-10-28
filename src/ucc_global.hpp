@@ -30,7 +30,7 @@
 
 // nazwa i numer wersji programu
 #define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VER "1.0 alpha4"
+#define UCC_VER "1.0 alpha5"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR ".ucc"
