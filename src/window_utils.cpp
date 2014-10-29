@@ -127,7 +127,12 @@ std::string time_utimestamp_to_local_full(std::string &time_unixtimestamp)
 
 	time_date_l = localtime(&time_date_g);	// czas lokalny
 
+// w Cygwin dodanie minusa nie działa, na razie data będzie z nieznaczącym zerem
+#ifdef __CYGWIN__
+	strftime(time_date, 45, "%A, %d %b %Y, %H:%M:%S", time_date_l);
+#else
 	strftime(time_date, 45, "%A, %-d %b %Y, %H:%M:%S", time_date_l);	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
+#endif		// __CYGWIN__
 
 	std::string time_date_str = std::string(time_date);
 
