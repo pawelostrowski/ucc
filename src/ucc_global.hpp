@@ -23,6 +23,35 @@
 #ifndef UCC_GLOBAL_HPP
 #define UCC_GLOBAL_HPP
 
+// kompilacja na Windows w Cygwin
+#ifdef __CYGWIN__
+
+#include <sstream>
+#include <cerrno>
+#include <cstdlib>
+
+namespace std
+{
+	template <typename T> std::string to_string(const T &buf)
+	{
+		std::stringstream buf_stringstream;
+		buf_stringstream << buf;
+		return buf_stringstream.str();
+	}
+
+	template <typename T> int stoi(const T &buf)
+	{
+		return atoi(buf.c_str());
+	}
+
+	template <typename T> int64_t stol(const T &buf)
+	{
+		return atol(buf.c_str());
+	}
+}
+
+#endif		// __CYGWIN__
+
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8
 #include <fstream>
 #include <map>

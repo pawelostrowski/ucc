@@ -212,8 +212,7 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *ci[], s
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
 	std::string nick_key = buf_lower_to_upper(nick);
 
-//	for(int i = 0; i < CHAN_CHAT; ++i)
-	for(int i = 0; i < CHAN_NORMAL; ++i)
+	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
 		// znajdź kanał, którego dotyczy dodanie nicka
 		if(ci[i] && ci[i]->channel == channel)
