@@ -30,6 +30,11 @@ cd ../
 
 mkdir -p bin/Release/
 
-LINKER="g++ -o bin/Release/ucc $(ls obj/Release/src/*.o | xargs) -lncursesw -lssl -s"
+if [ `uname -o` = "Cygwin" ]; then
+    LINKER="g++ -o bin/Release/ucc $(ls obj/Release/src/*.o | xargs) -lncursesw -lssl -liconv -s"
+else
+    LINKER="g++ -o bin/Release/ucc $(ls obj/Release/src/*.o | xargs) -lncursesw -lssl -s"
+fi
+
 echo -e ${LINKER}
 $(${LINKER})
