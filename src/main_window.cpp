@@ -1038,8 +1038,9 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 			// kody ASCII (oraz rozszerzone) wczytaj do bufora (te z zakresu 32...255), jednocześnie ogranicz pojemność bufora wejściowego,
 			// dopuść też kod tabulatora (pojawia się w tym miejscu, gdy do bufora coś wklejono ze schowka, a nie wciśnięto Tab);
-			// if, aby wklejenie tekstu z tabulatorem umożliwiło dalsze wczytanie schowka
-			if(((key_code >= 32 && key_code <= 255) || key_code == '\t') && buf_chars(kbd_buf) < KBD_BUF_MAX_CHARS)
+			// if, aby wklejenie tekstu z tabulatorem umożliwiło dalsze wczytanie schowka;
+			// key_code != 0x7F - Cygwin
+			if(((key_code >= 0x20 && key_code <= 0xFF && key_code != 0x7F) || key_code == '\t') && buf_chars(kbd_buf) < KBD_BUF_MAX_CHARS)
 			{
 				// po kolejnym przejściu pętli głównej odśwież na ekranie zawartość bufora klawiatury
 				kbd_buf_refresh = true;
@@ -1461,8 +1462,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 				}
 			}
 
-			// Backspace
-			else if(key_code == KEY_BACKSPACE && kbd_buf_pos > 0)
+			// Backspace (key_code == 0x7F - Cygwin)
+			else if((key_code == KEY_BACKSPACE || key_code == 0x7F ) && kbd_buf_pos > 0)
 			{
 				// po kolejnym przejściu pętli głównej odśwież na ekranie zawartość bufora klawiatury
 				kbd_buf_refresh = true;
@@ -1605,7 +1606,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// Alt Left + (...)
-			else if(key_code == 0x1B || key_code == 0x21E || key_code == 0x21F || key_code == 0x22D || key_code == 0x22E)
+			else if(key_code == 0x1B || key_code == 0x21E || key_code == 0x21F || key_code == 0x221 || key_code == 0x22D || key_code == 0x22E
+				|| key_code == 0x230)
 			{
 				// zapamiętaj obecny kod (trzeba go sprawdzić na terminalu Screen z Alt Left + Arrow Left i Alt Left + Arrow Right
 				int prev_key_code = key_code;
@@ -1749,8 +1751,9 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// Alt Left + Arrow Left
 				// 0x21E - zwykły terminal
 				// 0x21F - terminal Konsole (po aktualizacji Kubuntu do 14.10)
+				// 0x221 - Cygwin
 				// 0x1B 0x5B 0x31 0x3B 0x33 0x44 - terminal Screen
-				if(prev_key_code == 0x21E || prev_key_code == 0x21F || (alt_arrow_seq && key_code == 0x44))
+				if(prev_key_code == 0x21E || prev_key_code == 0x21F || prev_key_code == 0x221 || (alt_arrow_seq && key_code == 0x44))
 				{
 					for(int i = 0; i < CHAN_MAX; ++i)
 					{
@@ -1773,8 +1776,9 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// Alt Left + Arrow Right
 				// 0x22D - zwykły terminal
 				// 0x22E - terminal Konsole (po aktualizacji Kubuntu do 14.10)
+				// 0x230 - Cygwin
 				// 0x1B 0x5B 0x31 0x3B 0x33 0x43 - terminal Screen
-				else if(prev_key_code == 0x22D || prev_key_code == 0x22E || (alt_arrow_seq && key_code == 0x43))
+				else if(prev_key_code == 0x22D || prev_key_code == 0x22E || prev_key_code == 0x230 || (alt_arrow_seq && key_code == 0x43))
 				{
 					for(int i = 0; i < CHAN_MAX; ++i)
 					{
