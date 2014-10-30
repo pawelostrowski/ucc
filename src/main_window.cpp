@@ -22,8 +22,7 @@
 
 #include <string>		// std::string, std::setlocale()
 #include <csignal>		// sig_atomic_t, sigaction(), sigfillset()
-#include <sys/select.h>		// select()
-#include <sys/time.h>		// gettimeofday()
+#include <sys/time.h>		// select(), gettimeofday()
 #include <unistd.h>		// close() - socket
 #include <sys/stat.h>		// mkdir()
 
@@ -84,6 +83,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 	int term_y, term_x;		// wymiary terminala
 
 	bool win_first = true;		// pierwsze uruchomienie wymaga utworzenia okien "wirtualnych"
+
+	int sel_stat;			// status select()
 
 	int key_code;			// kod odczytany z bufora wejściowego (przy wciskaniu klawiszy i wklejaniu tekstu ze schowka)
 	std::string key_code_tmp;	// bufor tymczasowy do konwersji int -> std::string
@@ -711,7 +712,19 @@ int main_window(bool _use_colors, bool _debug_irc)
 */
 		readfds_tmp = readfds;
 
-		if(select(ga.socketfd_irc + 1, &readfds_tmp, NULL, NULL, &tv_sel) == -1)
+		sel_stat = select(ga.socketfd_irc + 1, &readfds_tmp, NULL, NULL, &tv_sel);
+
+// Cygwin nie dekrementuje licznika timeout, trzeba to zrobić "ręcznie"
+#ifdef __CYGWIN__
+
+		if(sel_stat == 0)
+		{
+			tv_sel.tv_usec -= 250000;
+		}
+
+#endif		// __CYGWIN__
+
+		if(sel_stat == -1)
 		{
 			// sygnał SIGWINCH (zmiana rozmiaru okna terminala) powoduje, że select() zwraca -1, trzeba to wykryć, aby nie wywalić programu
 			if(errno == EINTR)	// Interrupted system call (wywołany np. przez SIGWINCH)
@@ -1066,7 +1079,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 				while(key_code != ERR)
 				{
 					// jeśli nie koniec bufora, ale inne dopuszczone znaki (ASCII i \t), dopuść je do wczytania do bufora
-					if(((key_code >= 32 && key_code <= 255) || key_code == '\t') && kbd_buf_chars < KBD_BUF_MAX_CHARS)
+					if(((key_code >= 0x20 && key_code <= 0xFF && key_code != 0x7F) || key_code == '\t')
+						&& kbd_buf_chars < KBD_BUF_MAX_CHARS)
 					{
 						key_code_tmp = key_code;
 						kbd_buf.insert(kbd_buf_pos, key_code_tmp);
@@ -1116,7 +1130,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 					// jeśli we wklejonym z bufora tekście był kod \n lub przekroczono pojemność bufora, uruchom parser klawiatury,
 					// (wszystkie inne znaki ignoruj)
-					else if((key_code >= 32 && key_code <= 255) || key_code == '\t' || key_code == '\n')
+					else if((key_code >= 0x20 && key_code <= 0xFF && key_code != 0x7F) || key_code == '\t' || key_code == '\n')
 					{
 						// w przypadku wklejania ze schowka pomijaj puste wiersze (te, gdzie był sam kod \n, który nie jest wklejany)
 						if(kbd_buf.size() > 0)
@@ -1463,7 +1477,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// Backspace (key_code == 0x7F - Cygwin)
-			else if((key_code == KEY_BACKSPACE || key_code == 0x7F ) && kbd_buf_pos > 0)
+			else if((key_code == KEY_BACKSPACE || key_code == 0x7F) && kbd_buf_pos > 0)
 			{
 				// po kolejnym przejściu pętli głównej odśwież na ekranie zawartość bufora klawiatury
 				kbd_buf_refresh = true;
