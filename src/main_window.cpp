@@ -22,7 +22,7 @@
 
 #include <string>		// std::string, std::setlocale()
 #include <csignal>		// sig_atomic_t, sigaction(), sigfillset()
-#include <sys/time.h>		// select(), gettimeofday()
+#include <sys/time.h>		// gettimeofday()
 #include <unistd.h>		// close() - socket
 #include <sys/stat.h>		// mkdir()
 

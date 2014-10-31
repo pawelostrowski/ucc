@@ -2801,7 +2801,13 @@ void raw_317(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 		std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 		std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 
+		time_t time_g;
+		time(&time_g);
+		int64_t idle_diff = time_g - std::stol(raw_parm4);
+		std::string idle_diff_str = std::to_string(idle_diff);
+
 		ga.whois[raw_parm3].push_back(xBOLD_ON xGREEN "-" xNORMAL " Jest nieaktywny(-na) przez: " + time_sec2time(raw_parm4));
+		ga.whois[raw_parm3].push_back(xBOLD_ON xGREEN "-" xNORMAL " Jest nieaktywny(-na) od: " + time_utimestamp_to_local_full(idle_diff_str));
 		ga.whois[raw_parm3].push_back(xBOLD_ON xGREEN "-" xNORMAL " Jest zalogowany(-na) od: " + time_utimestamp_to_local_full(raw_parm5));
 	}
 }
