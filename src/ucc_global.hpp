@@ -34,8 +34,9 @@ namespace std
 {
 	template <typename T> std::string to_string(const T &buf)
 	{
-		std::stringstream buf_stringstream(buf);
-		return buf_stringstream.str();
+		std::stringstream buf_stream;
+		buf_stream << buf;
+		return buf_stream.str();
 	}
 
 	template <typename T> int stoi(const T &buf)

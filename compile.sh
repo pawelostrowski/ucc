@@ -20,7 +20,7 @@ if [ ${HOW} = "0" ]; then
 fi
 
 for FILE in ${CPP_ALL}; do
-    COMPILER="g++ -Wall -std=c++11 -O2 -c ${FILE} -o ../obj/Release/src/${FILE}.o"
+    COMPILER="g++ -std=c++11 -Wall -O2 -c ${FILE} -o ../obj/Release/src/${FILE}.o"
     echo -e ${COMPILER}
     $(${COMPILER}) || exit 3
 done
