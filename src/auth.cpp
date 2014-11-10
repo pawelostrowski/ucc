@@ -165,7 +165,7 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 
 	if(captcha_ptr == NULL)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Nie udało się pobrać obrazka z kodem do przepisania.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie udało się pobrać obrazka z kodem do przepisania.");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -256,7 +256,7 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 
 	else
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# Brak dostępu do \"" CAPTCHA_FILE "\" (sprawdź uprawnienia do zapisu).");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Brak dostępu do \"" CAPTCHA_FILE "\" (sprawdź uprawnienia do zapisu).");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -268,13 +268,14 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 	if(system_stat != 0)
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				xRED "# Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: " + std::to_string(system_stat) + "\n"
-				xRED "# Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
+				uINFOn xRED "Proces uruchamiający obrazek z kodem do przepisania zakończył się błędem numer: "
+				+ std::to_string(system_stat) + "\n"
+				uINFOn xRED "Plik możesz otworzyć ręcznie, znajduje się w: " CAPTCHA_FILE);
 	}
 
 	// po pomyślnym pobraniu obrazka pokaż komunikat o przepisaniu
 	win_buf_add_str(ga, ci, ci[ga.current]->channel,
-			xGREEN "# Przepisz kod z obrazka, w tym celu wpisz " xCYAN "/captcha kod_z_obrazka " xGREEN "lub " xCYAN "/cap kod_z_obrazka");
+			uINFOn xGREEN "Przepisz kod z obrazka, w tym celu wpisz " xCYAN "/captcha kod_z_obrazka" xGREEN " lub " xCYAN "/cap kod_z_obrazka");
 
 	// można przepisać kod i wysłać na serwer
 	ga.captcha_ready = true;
@@ -308,7 +309,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# authHttpCheckCode: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpCheckCode: Serwer nie zwrócił err_code.");
 
 		return false;
 	}
@@ -317,7 +318,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	if(err_code == "FALSE")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				xRED "# Wpisany kod jest błędny, aby zacząć od nowa, wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
+				uINFOn xRED "Wpisany kod jest błędny, aby spróbować ponownie, wpisz " xCYAN "/connect" xRED " lub " xCYAN "/c");
 
 		return false;
 	}
@@ -326,7 +327,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	if(err_code != "TRUE")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				xRED "# authHttpCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
+				uINFOn xRED "authHttpCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
 
 		return false;
 	}
@@ -437,7 +438,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# authHttpGetUoKey: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił err_code.");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -449,7 +450,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 		std::string err_text = get_value_from_buf(http_recv_buf_str, "err_text=\"", "\"");
 
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				xRED "# authHttpGetUoKey: Błąd serwera (" + err_code + "): "
+				uINFOn xRED "authHttpGetUoKey: Błąd serwera (" + err_code + "): "
 				// wyświetl zwrócony błąd lub komunikat o błędzie (nie powinno się zdarzyć, ale lepiej się zabezpieczyć)
 				+ (err_text.size() > 0 ? buf_iso_to_utf(err_text) : "<serwer nie zwrócił komunikatu błędu>"));
 
@@ -462,7 +463,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(ga.uokey.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# authHttpGetUoKey: Serwer nie zwrócił uoKey.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił uoKey.");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -475,7 +476,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(ga.zuousername.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "# authHttpGetUoKey: Serwer nie zwrócił zuoUsername.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił zuoUsername.");
 
 		return false;
 	}
@@ -542,7 +543,7 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	// w przypadku błędu zakończ
 	if(ga.socketfd_irc == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, xRED "authIrc1: " + msg_err);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authIrc1: " + msg_err);
 
 		ga.irc_ok = false;
 

@@ -25,9 +25,9 @@
 
 bool onet_font_check(std::string &onet_font);
 
-bool onet_color_conv(std::string &onet_color, std::string &x_color);
+bool onet_color_conv(std::string &onet_color, std::string &x_color, bool was_bold, bool &was_gray);
 
-std::string form_from_chat(std::string &irc_recv_buf);
+std::string form_from_chat(std::string in_buf);
 
 std::string form_to_chat(std::string &kbd_buf);
 

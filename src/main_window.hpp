@@ -23,26 +23,34 @@
 #ifndef MAIN_WINDOW_HPP
 #define MAIN_WINDOW_HPP
 
+// czas głównej pętli (co ile jest odświeżana na sekundę, gdy program jest w stanie spoczynku, tzn. brak aktywności klawiatury i gniazda IRC),
+// nie zaleca się ustawiania mniej niż 10ms, doświadczalnie ustalona wartość 250ms jest optymalna (LOOP_SEC 0, LOOP_USEC 250000)
+#define LOOP_SEC		0		// sekundy
+#define LOOP_USEC		250000		// mikrosekundy (max 999999)
+
+// wyznaczenie ilości obiegów pętli głównej w ciągu sekundy na podstawie powyższych wartości
+#define LOOP_TIME		(1000000 / ((1000000 * LOOP_SEC) + LOOP_USEC))
+
 // maksymalna liczba znaków w buforze klawiatury (za duża liczba przy pełnym wykorzystaniu może powodować rozłączenie z czatem podczas wysyłania wiadomości)
-#define KBD_BUF_MAX_CHARS 390
+#define KBD_BUF_MAX_CHARS	390
 
 // maksymalna ilość pozycji (wpisów) w buforze historii
-#define HIST_BUF_MAX_ITEMS 100
+#define HIST_BUF_MAX_ITEMS	100
 
 // nick na pasku dolnym, gdy nie jesteśmy zalogowani do czata
-#define NICK_NOT_LOGGED "Niezalogowany"
+#define NICK_NOT_LOGGED		"Niezalogowany"
 
 // szerokość listy nicków
-#define NICKLIST_WIDTH 36
+#define NICKLIST_WIDTH		36
 
 // co ile sekund wysyłać PING do serwera
-#define PING_TIME 10
+#define PING_TIME		10
 
-// po jakim czasie braku odpowiedzi zerwać połączenie (w sekundach)
-#define PING_TIMEOUT 90
+// po jakim czasie braku odpowiedzi zerwać połączenie (w sekundach), musi być większy od PING_TIME
+#define PING_TIMEOUT		90
 
-// plik debugowania HTTP
-#define DEBUG_HTTP_FILE	"ucc_debug_http.txt"
+// plik debugowania HTTP (sama nazwa, nie jego położenie)
+#define DEBUG_HTTP_FILE		"ucc_debug_http.txt"
 
 int main_window(bool _use_colors, bool _debug_irc);
 

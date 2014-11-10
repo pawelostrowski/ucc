@@ -36,9 +36,12 @@ void new_chan_status(struct global_args &ga, struct channel_irc *ci[])
 		ci[CHAN_STATUS]->channel = "Status";
 		ci[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
 		ci[CHAN_STATUS]->chan_act = 0;			// zacznij od braku aktywności kanału
+		ci[CHAN_STATUS]->lock_act = 0;
 		ci[CHAN_STATUS]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
-		ci[CHAN_STATUS]->win_scroll_first = 0;
-		ci[CHAN_STATUS]->win_scroll_last = 0;
+		ci[CHAN_STATUS]->win_pos_first = 0;
+		ci[CHAN_STATUS]->win_skip_lead_first = 0;
+		ci[CHAN_STATUS]->win_pos_last = 0;
+		ci[CHAN_STATUS]->win_skip_lead_last = 0;
 
 		// ustaw nowoutworzony kanał jako aktywny
 		ga.current = CHAN_STATUS;
@@ -55,9 +58,12 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *ci[])
 		ci[CHAN_DEBUG_IRC]->channel = "DebugIRC";
 		ci[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
 		ci[CHAN_DEBUG_IRC]->chan_act = 0;		// zacznij od braku aktywności kanału
+		ci[CHAN_DEBUG_IRC]->lock_act = 0;
 		ci[CHAN_DEBUG_IRC]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
-		ci[CHAN_DEBUG_IRC]->win_scroll_first = 0;
-		ci[CHAN_DEBUG_IRC]->win_scroll_last = 0;
+		ci[CHAN_DEBUG_IRC]->win_pos_first = 0;
+		ci[CHAN_DEBUG_IRC]->win_skip_lead_first = 0;
+		ci[CHAN_DEBUG_IRC]->win_pos_last = 0;
+		ci[CHAN_DEBUG_IRC]->win_skip_lead_last = 0;
 	}
 }
 
@@ -71,9 +77,12 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *ci[])
 		ci[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
 		ci[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
 		ci[CHAN_RAW_UNKNOWN]->chan_act = 0;		// zacznij od braku aktywności kanału
+		ci[CHAN_RAW_UNKNOWN]->lock_act = 0;
 		ci[CHAN_RAW_UNKNOWN]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
-		ci[CHAN_RAW_UNKNOWN]->win_scroll_first = 0;
-		ci[CHAN_RAW_UNKNOWN]->win_scroll_last = 0;
+		ci[CHAN_RAW_UNKNOWN]->win_pos_first = 0;
+		ci[CHAN_RAW_UNKNOWN]->win_skip_lead_first = 0;
+		ci[CHAN_RAW_UNKNOWN]->win_pos_last = 0;
+		ci[CHAN_RAW_UNKNOWN]->win_skip_lead_last = 0;
 
 		ci[CHAN_RAW_UNKNOWN]->chan_log.open(ga.user_dir + "/" + ci[CHAN_RAW_UNKNOWN]->channel + ".txt", std::ios::out | std::ios::app);
 
@@ -112,9 +121,12 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string
 
 			ci[i]->channel = chan_name;		// nazwa kanału czata
 			ci[i]->chan_act = 0;			// zacznij od braku aktywności kanału
+			ci[i]->lock_act = 0;
 			ci[i]->win_scroll_lock = false;		// ciągłe przesuwanie aktualnego tekstu
-			ci[i]->win_scroll_first = 0;
-			ci[i]->win_scroll_last = 0;
+			ci[i]->win_pos_first = 0;
+			ci[i]->win_skip_lead_first = 0;
+			ci[i]->win_pos_last = 0;
+			ci[i]->win_skip_lead_last = 0;
 
 			ci[i]->chan_log.open(ga.user_dir + "/" + ci[i]->channel + ".txt", std::ios::out | std::ios::app);
 

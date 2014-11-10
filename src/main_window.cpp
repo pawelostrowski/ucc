@@ -38,10 +38,10 @@
 #include "ucc_global.hpp"
 
 
-volatile sig_atomic_t sig_quit;
+static volatile sig_atomic_t sig_quit;
 
 
-void catch_signals(int signum)
+static void catch_signals(int signum)
 {
 	sig_quit = 1;
 }
@@ -152,7 +152,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 	ga.is_irc_recv_buf_incomplete = false;
 
+	ga.cf = {};
+
 	ga.ucc_home_dir = std::string(getenv("HOME")) + "/" UCC_DIR;
+
+	// rozmiar zajmowany przez czas
+	std::string time_tmp = get_time();
+	ga.time_len = buf_chars(time_tmp);
 /*
 	Koniec ustalania globalnych zmiennych.
 */
@@ -213,34 +219,41 @@ int main_window(bool _use_colors, bool _debug_irc)
 	// wpisz do bufora "Status" komunikat startowy w kolorze zielonym oraz cyjan (kolor będzie wtedy, gdy terminal obsługuje kolory) i go wyświetl
 	// (ze względu na przyjętą budowę bufora na końcu tekstu nie ma kodu "\n")
 	win_buf_add_str(ga, ci, "Status",
-			xGREEN "# Aby zalogować się na nick tymczasowy, wpisz:\n"
+			uINFOn xGREEN "Aby zalogować się na nick tymczasowy, wpisz:\n"
 			xCYAN  "/nick nazwa_nicka\n"
-			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
-			xGREEN "# Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
-			xCYAN  "/captcha kod_z_obrazka " xGREEN "lub " xCYAN "/cap kod_z_obrazka\n"
-			xGREEN "# Aby zalogować się na nick stały (zarejestrowany), wpisz:\n"
+			xCYAN  "/connect" xGREEN " lub " xCYAN "/c\n"
+			uINFOn xGREEN "Następnie przepisz kod z obrazka, w tym celu wpisz:\n"
+			xCYAN  "/captcha kod_z_obrazka" xGREEN " lub " xCYAN "/cap kod_z_obrazka\n"
+			uINFOn xGREEN "Aby zalogować się na nick stały (zarejestrowany), wpisz:\n"
 			xCYAN  "/nick nazwa_nicka hasło_do_nicka\n"
-			xCYAN  "/connect " xGREEN "lub " xCYAN "/c\n"
-			xGREEN "# Aby zobaczyć dostępne polecenia, wpisz:\n"
-			xCYAN  "/help " xGREEN "lub " xCYAN "/h\n"
-			xGREEN "# Aby zakończyć działanie programu, wpisz:\n"
-			xCYAN  "/quit " xGREEN "lub " xCYAN "/q");
+			xCYAN  "/connect" xGREEN " lub " xCYAN "/c\n"
+			uINFOn xGREEN "Aby zobaczyć dostępne polecenia, wpisz:\n"
+			xCYAN  "/help" xGREEN " lub " xCYAN "/h\n"
+			uINFOn xGREEN "Aby zakończyć działanie programu, wpisz:\n"
+			xCYAN  "/quit" xGREEN " lub " xCYAN "/q");
 
 	// licznik dla select(), aby pokazać aktualny czas oraz obsłużyć PING
-	tv_sel.tv_sec = 0;
-	tv_sel.tv_usec = 250000;
+	tv_sel.tv_sec = LOOP_SEC;
+	tv_sel.tv_usec = LOOP_USEC;
+
+
+
+
+// TEST
+//	int tmp1 = 0, tmp2 = 0, tmp3 = 0, tmp4 = 0, tmp5 = 0;
+
 
 /*
 	Pętla główna programu.
 */
 	while(! ga.ucc_quit)
 	{
-		// w przypadku wykrycia zamknięcia programu przy połączeniu do IRC ustaw 0.5s zwłoki, zanim serwer nie da odpowiedzi, jeśli serwer nie
+		// w przypadku wykrycia zamknięcia programu przy połączeniu do IRC ustaw 4s zwłoki, zanim serwer nie da odpowiedzi, jeśli serwer nie
 		// odpowie po tym czasie, zakończ (lub zakończ wcześniej, gdy serwer odpowie)
 		if(ga.ucc_quit_time && ! was_ucc_quit_time)
 		{
-			tv_sel.tv_sec = 0;
-			tv_sel.tv_usec = 500000;
+			tv_sel.tv_sec = 4;
+			tv_sel.tv_usec = 0;
 
 			// nie aktualizuj ponownie licznika
 			was_ucc_quit_time = true;
@@ -249,10 +262,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 		// wykrycie któregoś sygnału zamykającego program
 		if(sig_quit)
 		{
-			// jeśli było połączenie z IRC, wyślij do serwera komunikat o rozłączeniu (tylko raz) i poczekaj maksymalnie 0.5s na odpowiedź
+			// jeśli było połączenie z IRC, wyślij do serwera komunikat o rozłączeniu (tylko raz) i poczekaj maksymalnie 4s na odpowiedź
 			if(ga.irc_ok && ! ga.ucc_quit_time)
 			{
 				irc_send(ga, ci, "QUIT");
+
+				tv_sel.tv_sec = 4;
+				tv_sel.tv_usec = 0;
 
 				ga.ucc_quit_time = true;
 			}
@@ -551,17 +567,70 @@ int main_window(bool _use_colors, bool _debug_irc)
 				addstr("s]");
 			}
 
-/*
-	TEST START - usunąć po testach
-*/
-//			printw(" [%d, %d, %d]", ci[ga.current]->win_scroll_lock, ci[ga.current]->win_scroll_first, ci[ga.current]->win_scroll_last);
+			// powiadomienie o włączonym scrollu okna
+			if(ci[ga.current]->win_scroll_lock)
+			{
+				addch(' ');
 
-//			printw(" sock: %d", ga.socketfd_irc);
+				// kolor napisu zależny od aktywności pokoju (domyślnie czarny, czyli brak aktywności)
+				act_color = pBLACK_BLUE;
 
-//			printw(" win_info -> on: %d, active: %d", ga.win_info_state, win_info_active);
-/*
-	TEST END
-*/
+				// wykryj aktywność typu 3
+				if(ci[ga.current]->lock_act == 3)
+				{
+					attron(A_BOLD);		// włącz bold dla tej aktywności
+					act_color = pMAGENTA_BLUE;
+
+					// przy braku kolorów wykrycie tej aktywności spowoduje miganie napisu oraz jego podkreślenie
+					if(! ga.use_colors)
+					{
+						attron(A_BLINK | A_UNDERLINE);
+					}
+				}
+
+				// wykryj aktywność typu 2
+				else if(ci[ga.current]->lock_act == 2)
+				{
+					attron(A_BOLD);		// włącz bold dla tej aktywności
+					act_color = pWHITE_BLUE;
+
+					// przy braku kolorów wykrycie tej aktywności spowoduje podkreślenie napisu
+					if(! ga.use_colors)
+					{
+						attron(A_UNDERLINE);
+					}
+				}
+
+				// wykryj aktywność typu 1
+				else if(ci[ga.current]->lock_act == 1)
+				{
+					act_color = pCYAN_BLUE;
+
+					// przy braku kolorów wykrycie tej aktywności spowoduje podkreślenie napisu
+					if(! ga.use_colors)
+					{
+						attron(A_UNDERLINE);
+					}
+				}
+
+				// ustaw kolor (jeśli kolory są obsługiwane)
+				if(ga.use_colors)
+				{
+					attron(COLOR_PAIR(act_color));
+				}
+
+				// wyświetl napis
+				addstr("--Więcej--");
+
+				// przywróć domyślne atrybuty paska
+				ga.use_colors ? attrset(COLOR_PAIR(pWHITE_BLUE)) : attrset(A_REVERSE);
+			}
+
+			// przy braku scrolla skasuj aktywność
+			else
+			{
+                                ci[ga.current]->lock_act = 0;
+			}
 
 			// jeśli pasek dolny "wszedł" na pasek pisania, odśwież zawartość bufora klawiatury
 			if(getcury(stdscr) == term_y - 1 && getcurx(stdscr) > 0)
@@ -574,6 +643,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			{
 				addch(' ');
 			}
+
 /*
 	Koniec informacji na pasku dolnym.
 */
@@ -699,6 +769,28 @@ int main_window(bool _use_colors, bool _debug_irc)
 				ga.win_info_refresh = false;
 			}
 
+/*
+	TEST START - usunąć po testach
+*/
+//			move(term_y - 2, term_x
+//				- std::to_string(ci[ga.current]->win_pos_first).size() - std::to_string(ci[ga.current]->win_skip_lead_first).size()
+//				- std::to_string(ci[ga.current]->win_pos_last).size() - std::to_string(ci[ga.current]->win_skip_lead_last).size() - 30);
+//
+//			attron(A_BOLD | COLOR_PAIR(pCYAN_BLUE));
+//
+//			printw("%d [%d-%d/%d-%d] %d %d %d %d %d",
+//				ga.wterm_y,
+//				ci[ga.current]->win_pos_first, ci[ga.current]->win_skip_lead_first,
+//				ci[ga.current]->win_pos_last, ci[ga.current]->win_skip_lead_last,
+//				tmp1, tmp2, tmp3, tmp4, tmp5);
+
+//			printw(" sock: %d", ga.socketfd_irc);
+
+//			printw(" win_info -> on: %d, active: %d", ga.win_info_state, win_info_active);
+/*
+	TEST END
+*/
+
 			// obecna pozycja kursora
 			move(term_y - 1, kbd_cur_pos - kbd_cur_pos_offset);
 
@@ -714,12 +806,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 		sel_stat = select(ga.socketfd_irc + 1, &readfds_tmp, NULL, NULL, &tv_sel);
 
-// Cygwin nie dekrementuje licznika timeout, trzeba to zrobić "ręcznie"
+// Cygwin nie dekrementuje licznika timeout, trzeba to zrobić "ręcznie" (zerowanie, bo normalnie timeout to właśnie wyzerowanie licznika tv_sel)
 #ifdef __CYGWIN__
 
 		if(sel_stat == 0)
 		{
-			tv_sel.tv_usec -= 250000;
+			tv_sel.tv_sec = 0;
+			tv_sel.tv_usec = 0;
 		}
 
 #endif		// __CYGWIN__
@@ -733,32 +826,10 @@ int main_window(bool _use_colors, bool _debug_irc)
 				continue;	// wróć do początku pętli głównej while()
 			}
 
-			// inny błąd select() powoduje zakończenie działania programu
+			// inny błąd select() powoduje zakończenie działania programu (przerwanie pętli głównej i bezpieczne zamknięcie)
 			else
 			{
-				if(ga.socketfd_irc > 0)
-				{
-					close(ga.socketfd_irc);
-				}
-
-				del_all_chan(ci);
-
-				if(ga.debug_http_f.is_open())
-				{
-					ga.debug_http_f.close();
-				}
-
-				if(win_info_active)
-				{
-					delwin(ga.win_info);
-				}
-
-				delwin(ga.win_chat);
-				endwin();	// zakończ tryb ncurses
-
-				fclose(stdin);
-
-				return 3;
+				break;
 			}
 		}
 /*
@@ -768,11 +839,12 @@ int main_window(bool _use_colors, bool _debug_irc)
 /*
 	Obsługa timeout.
 */
-		// co 0.25s aktualizuj licznik (trzeba pamiętać, że timeout to nie jedyny sposób wyjścia z select(), tak samo klawiatura i gniazdo przerywają)
+		// co ustalony czas aktualizuj licznik (trzeba pamiętać, że timeout to nie jedyny sposób wyjścia z select(), tak samo klawiatura i gniazdo
+		// przerywają)
 		if(tv_sel.tv_sec == 0 && tv_sel.tv_usec == 0)
 		{
-			tv_sel.tv_sec = 0;
-			tv_sel.tv_usec = 250000;
+			tv_sel.tv_sec = LOOP_SEC;
+			tv_sel.tv_usec = LOOP_USEC;
 
 			// jeśli wpisano /quit przy połączeniu z IRC i nie otrzymano odpowiedzi serwera przez określony czas, zakończ program
 			// (wtedy powyższa aktualizacja licznika nie będzie miała znaczenia, bo nastąpi przerwanie pętli głównej programu)
@@ -799,8 +871,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 					{
 						ga.lag = ga.pong - ga.ping;
 
-						// w przypadku narastania laga, ustaw chwilę oczekiwania, aby po ustabilizowaniu się dać czas na odczytanie
-						ping_counter = PING_TIME * 2;
+						// w przypadku narastania laga, ustaw 5s oczekiwania, aby po ustabilizowaniu się dać czas na odczytanie
+						ping_counter = (10 * LOOP_TIME) / 2;
 					}
 
 					// jeśli serwer nie odpowie przez wystarczająco długi czas, wyzeruj socket (czyli brak połączenia z IRC)
@@ -822,7 +894,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 								ci[i]->ni.clear();
 
 								win_buf_add_str(ga, ci, ci[i]->channel,
-										xBOLD_ON xRED "# Serwer nie odpowiadał przez ponad "
+										uINFOb xRED "Serwer nie odpowiadał przez ponad "
 										+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
 
 								// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz
@@ -838,11 +910,12 @@ int main_window(bool _use_colors, bool _debug_irc)
 					}
 				}
 
-				if(ping_counter == PING_TIME * 4)
+				// PING co PING_TIME sekund
+				if(ping_counter == PING_TIME * LOOP_TIME)
 				{
 					ping_counter = 0;
 
-					// wyślij PING, o ile nie doszło to PING timeout, czyli rozłączenia z IRC oraz serwer odpowiedział PONG
+					// wyślij PING, o ile nie doszło do PING timeout, czyli rozłączenia z IRC oraz serwer odpowiedział PONG
 					if(ga.irc_ok && ! ga.lag_timeout)
 					{
 						gettimeofday(&tv_ping_pong, NULL);
@@ -1591,17 +1664,106 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// Page Up
-			else if(key_code == KEY_PPAGE)
+			else if(key_code == KEY_PPAGE && (ci[ga.current]->win_pos_first > 0 || ci[ga.current]->win_skip_lead_first > 0))
 			{
-				ci[ga.current]->win_scroll_lock = true;
+
+// DO POPRAWY SCROLL W GÓRĘ
+
+
+				int line_count = 0; //-(ci[ga.current]->win_skip_lead_last);	// pomiń ewentualne poprzednie wiersze nadmiarowe z końca
+				int win_buf_current = ci[ga.current]->win_pos_first;
+//				int win_buf_len = ci[ga.current]->win_buf.size();
+
+				// po kolejnym przejściu pętli głównej odśwież okno "wirtualne"
 				ga.win_chat_refresh = true;
+
+				// rozpocznij scroll okna
+				ci[ga.current]->win_scroll_lock = true;
+
+				// wyzeruj wskaźnik aktywności dla napisu "--Więcej--"
+				ci[ga.current]->lock_act = 0;
+
+
+
+
+				while(win_buf_current > 0 && line_count < ga.wterm_y)
+				{
+					line_count += how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len);
+					--win_buf_current;
+				}
+
+				ci[ga.current]->win_pos_first = win_buf_current;
+				ci[ga.current]->win_skip_lead_first = 0;
 			}
 
 			// Page Down
-			else if(key_code == KEY_NPAGE)
+			else if(key_code == KEY_NPAGE && ci[ga.current]->win_scroll_lock)
 			{
-				ci[ga.current]->win_scroll_lock = false;
+				int line_count = -(ci[ga.current]->win_skip_lead_last);	// pomiń ewentualne poprzednie wiersze nadmiarowe z końca
+				int win_buf_current = ci[ga.current]->win_pos_last;
+				int win_buf_len = ci[ga.current]->win_buf.size();
+
+				// po kolejnym przejściu pętli głównej odśwież okno "wirtualne"
 				ga.win_chat_refresh = true;
+
+				// wyzeruj wskaźnik aktywności dla napisu "--Więcej--"
+				ci[ga.current]->lock_act = 0;
+
+				// wyznacz, ile wierszy zostało do wyświetlenia
+				while(win_buf_current < win_buf_len && line_count < ga.wterm_y)
+				{
+					line_count += how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len);
+					++win_buf_current;
+				}
+
+				// jeśli za buforem jest mniej wierszy do wyświetlenia, niż wynosi wysokość ekranu, zakończ scroll okna
+				if(line_count < ga.wterm_y || (win_buf_current == win_buf_len && line_count <= ga.wterm_y))
+				{
+					ci[ga.current]->win_scroll_lock = false;
+				}
+
+				// w przeciwnym razie wykonaj scroll okna
+				else
+				{
+					// jeśli wysokość okna "wirtualnego" ma jeden wiersz (co oznacza, że wyświetlany koniec równy jest jednocześnie
+					// początkowi), dodaj "ręcznie" pozycję, bo inaczej scroll nie ruszy dalej
+					if(ga.wterm_y == 1)
+					{
+						win_buf_current = ci[ga.current]->win_pos_last;
+
+						// wyznacz, ile wierszy nadmiarowych (dlatego - 1) zajmuje obecna pozycja w buforze
+						line_count = how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len) - 1;
+
+						if(line_count - ci[ga.current]->win_skip_lead_last)
+						{
+							++ci[ga.current]->win_skip_lead_first;
+						}
+
+						else
+						{
+							++ci[ga.current]->win_pos_first;
+							ci[ga.current]->win_skip_lead_first = 0;
+
+							// nowa wartość do wyznaczenia poniższego warunku
+							++win_buf_current;
+						}
+
+						// jeśli to ostatni możliwy wiersz do wyświetlenia, zakończ scroll okna
+						if(ci[ga.current]->win_pos_first == win_buf_len - 1
+							&& ci[ga.current]->win_skip_lead_first
+							== how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len) - 1)
+						{
+							ci[ga.current]->win_scroll_lock = false;
+						}
+					}
+
+					// w przeciwnym razie koniec okna będzie jego początkiem
+					else
+					{
+						ci[ga.current]->win_pos_first = ci[ga.current]->win_pos_last;
+						ci[ga.current]->win_skip_lead_first = ci[ga.current]->win_skip_lead_last;
+					}
+				}
 			}
 
 			// F2
@@ -1843,7 +2005,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 					{
 						ci[i]->ni.clear();
 
-						win_buf_add_str(ga, ci, ci[i]->channel, xBOLD_ON xRED "# Rozłączono.");
+						win_buf_add_str(ga, ci, ci[i]->channel, uINFOb xRED "Rozłączono.");
 
 						// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz zmiana dotyczyła
 						// nicka, który też jest w tym pokoju)
@@ -1860,7 +2022,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 	Koniec obsługi gniazda sieciowego dla IRC (socket).
 */
 
-	}
+	}	// while(! ga.ucc_quit)
 /*
 	Koniec pętli głównej programu.
 */
@@ -1890,6 +2052,12 @@ int main_window(bool _use_colors, bool _debug_irc)
 	endwin();	// zakończ tryb ncurses
 
 	fclose(stdin);
+
+	// błąd w select() zwraca kod błędu
+	if(sel_stat == -1)
+	{
+		return 3;
+	}
 
 	return 0;
 }

@@ -60,6 +60,7 @@ bool check_colors()
 	init_pair(pMAGENTA, COLOR_MAGENTA, background_color);
 	init_pair(pCYAN, COLOR_CYAN, background_color);
 	init_pair(pWHITE, COLOR_WHITE, background_color);
+	init_pair(pDARK, COLOR_BLACK, background_color);
 	init_pair(pTERMC, font_color, background_color);
 
 	// kolory z różnym tłem
@@ -127,11 +128,16 @@ std::string time_utimestamp_to_local_full(std::string &time_unixtimestamp)
 
 	time_date_l = localtime(&time_date_g);	// czas lokalny
 
-// w Cygwin dodanie minusa nie działa, na razie data będzie z nieznaczącym zerem
 #ifdef __CYGWIN__
+
+	// w Cygwin dodanie minusa wewnątrz %d nie działa, na razie data będzie z nieznaczącym zerem
 	strftime(time_date, 45, "%A, %d %b %Y, %H:%M:%S", time_date_l);
+
 #else
-	strftime(time_date, 45, "%A, %-d %b %Y, %H:%M:%S", time_date_l);	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
+
+	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
+	strftime(time_date, 45, "%A, %-d %b %Y, %H:%M:%S", time_date_l);
+
 #endif		// __CYGWIN__
 
 	std::string time_date_str = std::string(time_date);
@@ -283,21 +289,21 @@ std::string buf_lower_to_upper(std::string buf)
 }
 
 
-int buf_chars(std::string &buf_in)
+int buf_chars(std::string &in_buf)
 {
 /*
 	Policz liczbę znaków, uwzględniając formatowanie tekstu oraz kodowanie UTF-8.
 	Uwaga! Nie jest sprawdzana poprawność zapisu w UTF-8 (procedura zakłada, że znaki zapisane są poprawnie).
 */
 
-	int buf_in_len = buf_in.size();
+	int in_buf_len = in_buf.size();
 
 	char c;
 	int count_char = 0;
 
-	for(int l = 0; l < buf_in_len; ++l)
+	for(int l = 0; l < in_buf_len; ++l)
 	{
-		c = buf_in[l];
+		c = in_buf[l];
 
 		if(c == dCOLOR)
 		{
@@ -342,9 +348,9 @@ int buf_chars(std::string &buf_in)
 }
 
 
-int how_lines(std::string &buf_in, int wterm_x, int time_len)
+int how_lines(std::string &in_buf, int wterm_x, int time_len)
 {
-	int buf_in_len = buf_in.size();
+	int in_buf_len = in_buf.size();
 
 	char c;
 	int virt_cur = 0;
@@ -354,9 +360,9 @@ int how_lines(std::string &buf_in, int wterm_x, int time_len)
 	int line = 1;
 	int x;
 
-	for(int l = 0; l < buf_in_len; ++l)
+	for(int l = 0; l < in_buf_len; ++l)
 	{
-		c = buf_in[l];
+		c = in_buf[l];
 
 		if(c == dCOLOR)
 		{
@@ -385,7 +391,7 @@ int how_lines(std::string &buf_in, int wterm_x, int time_len)
 
 				while(true)
 				{
-					if(l + x == buf_in_len || buf_in[l + x] == ' ')
+					if(l + x == in_buf_len || in_buf[l + x] == ' ')
 					{
 						if(virt_cur - wterm_x + buf_chars(word) > 0)
 						{
@@ -396,7 +402,7 @@ int how_lines(std::string &buf_in, int wterm_x, int time_len)
 						break;
 					}
 
-					word += buf_in[l + x];
+					word += in_buf[l + x];
 					++x;
 				}
 			}
@@ -606,8 +612,6 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 	bool first_char;
 	bool last_char = false;
 	bool skip_space = false;
-	std::string time_tmp = get_time();
-	int time_len = buf_chars(time_tmp);	// pobierz liczbę znaków zajmowaną przez pokazanie czasu
 
 	int utf_i;
 
@@ -615,9 +619,11 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 	werase(ga.win_chat);
 	wmove(ga.win_chat, 0, 0);
 
-	// sprawdź, czy włączony jest scroll okna
+	// jeśli włączony jest scroll, wczytaj początek wyświetlania
 	if(ci[ga.current]->win_scroll_lock)
 	{
+		win_buf_start = ci[ga.current]->win_pos_first;
+		line_skip_leading = ci[ga.current]->win_skip_lead_first;
 	}
 
 	// jeśli nie jest włączony scroll okna, wyznacz początek wyświetlania
@@ -629,24 +635,43 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 		while(win_buf_start > 0 && skip_count < ga.wterm_y)
 		{
 			// policz, ile fizycznie wierszy okna "wirtualnego" zajmuje jedna pozycja w std::vector
-			skip_count += how_lines(ci[ga.current]->win_buf[win_buf_start - 1], ga.wterm_x, time_len);
+			skip_count += how_lines(ci[ga.current]->win_buf[win_buf_start - 1], ga.wterm_x, ga.time_len);
 
 			// pozycja wstecz w std::vector
 			--win_buf_start;
 		}
 
 		// sprawdź, czy pierwszy wyświetlany wiersz fizycznie zajmuje więcej niż szerokość okna "wirtualnego", jeśli tak, to o ile, aby przy
-		// wyświetlaniu wiersza pominąć te "nadmiarowe" wiersze, ale tylko wtedy, gdy liczba wierszy przekracza wysokość okna "wirtualnego"
-		if(win_buf_len > 0 && skip_count > ga.wterm_y && how_lines(ci[ga.current]->win_buf[win_buf_start], ga.wterm_x, time_len) > 1)
+		// wyświetlaniu wiersza pominąć te "nadmiarowe" wiersze, ale tylko wtedy, gdy naliczona liczba wierszy przekracza wysokość okna "wirtualnego"
+		if(win_buf_len > 0 && skip_count > ga.wterm_y && how_lines(ci[ga.current]->win_buf[win_buf_start], ga.wterm_x, ga.time_len) > 1)
 		{
 			line_skip_leading = skip_count - ga.wterm_y;
 		}
+
+		// zapamiętaj pierwszy przetwarzany element w std::vector oraz liczbę ewentualnie pominiętych wierszy początkowych tego elementu
+		ci[ga.current]->win_pos_first = win_buf_start;
+		ci[ga.current]->win_skip_lead_first = line_skip_leading;
 	}
 
 	// wypisywanie w pętli
 	// (getcury(ga.win_chat) != wterm_y - 1 || getcurx(ga.win_chat) == 0) - wyświetlaj, dopóki nie osiągnięto częściowo zapisanego ostatniego wiersza
 	for(int w = win_buf_start; w < win_buf_len && (getcury(ga.win_chat) != ga.wterm_y - 1 || getcurx(ga.win_chat) == 0); ++w)
 	{
+		// zapamiętaj ostatnio przetwarzany element w std::vector
+		ci[ga.current]->win_pos_last = w;
+
+		// jeśli wyświetlany element jest jedyny (początek i koniec są sobie równe) oraz są nadmiarowe wiersze do pominięcia, dodaj je do początku
+		// (różnica niewyświetlonych do wyświetlonych)
+		if(win_buf_start == w && line_skip_leading > 0)
+		{
+			ci[ga.current]->win_skip_lead_last = line_skip_leading - 1;
+		}
+
+		else
+		{
+			ci[ga.current]->win_skip_lead_last = 0;
+		}
+
 		// nowy wiersz, ale tylko wtedy, gdy kursor nie jest na początku wiersza, aby nie tworzyć pustej linii
 		if(getcurx(ga.win_chat) != 0)
 		{
@@ -663,14 +688,16 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 		// ! last_char_yx - wyświetlaj, dopóki nie osiągnięto ostatniego znaku ostatniego wiersza
 		for(int l = 0; l < line_len && ! last_char; ++l)
 		{
-			// jeśli osiągnięto ostatni znak ostatniego wiersza, zakończ kolejne przejście pętli
-			if(getcury(ga.win_chat) == ga.wterm_y - 1 && getcurx(ga.win_chat) == ga.wterm_x - 1)
+			// aktualnie przetwarzany znak (lub kod formatowania)
+			c = ci[ga.current]->win_buf[w][l];
+
+			// jeśli osiągnięto ostatni znak ostatniego wiersza, zakończ kolejne przejście pętli (o ile to nie kod formatujący lub \r)
+			if(getcury(ga.win_chat) == ga.wterm_y - 1 && getcurx(ga.win_chat) == ga.wterm_x - 1 && c != dCOLOR && c != dBOLD_ON
+				&& c != dBOLD_OFF && c != dREVERSE_ON && c != dREVERSE_OFF && c != dUNDERLINE_ON && c != dUNDERLINE_OFF && c != dNORMAL
+				&& c != '\r')
 			{
 				last_char = true;
 			}
-
-			// aktualnie przetwarzany znak (lub kod formatowania)
-			c = ci[ga.current]->win_buf[w][l];
 
 			// wykryj formatowanie kolorów w buforze (kod dCOLOR informuje, że mamy kolor, następny bajt to kod koloru)
 			if(c == dCOLOR)
@@ -762,7 +789,7 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 					// wykryj przejście do nowego wiersza, nie licz pierwszej spacji
 					if(! first_char && virt_cur % ga.wterm_x == 0 && c != ' ')
 					{
-						virt_cur = time_len;
+						virt_cur = ga.time_len;
 						--line_skip_leading;
 					}
 
@@ -779,7 +806,7 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 							{
 								if(virt_cur - ga.wterm_x + buf_chars(word) > 0)
 								{
-									virt_cur = time_len;
+									virt_cur = ga.time_len;
 									--line_skip_leading;
 								}
 
@@ -831,10 +858,13 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[])
 					// pokazanie czasu, ale tylko wtedy, gdy było już coś wyświetlone
 					if(! first_char && getcurx(ga.win_chat) == 0)
 					{
-						for(int i = time_len; i > 0; --i)
+						for(int i = ga.time_len; i > 0; --i)
 						{
 							waddch(ga.win_chat, ' ');
 						}
+
+						// dodaj nowy wiersz w danej pozycji
+						++ci[ga.current]->win_skip_lead_last;
 					}
 
 					// jeśli po przeniesieniu wyrazu osiągnięto ostatni wiersz, nic dalej nie wyświetlaj
@@ -927,12 +957,23 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		ci[which_chan]->chan_act = act_type;
 	}
 
+	// przy włączonym scrollu ustaw aktywność dla napisu "--Więcej--" na dolnym pasku
+	if(ci[which_chan]->win_scroll_lock && act_type > ci[which_chan]->lock_act)	// nie zmieniaj aktywności na "niższą"
+	{
+		ci[which_chan]->lock_act = act_type;
+	}
+
 	std::stringstream in_buf_stream(in_buf);
 	std::string in_buf_line;
 
 	// obsłuż bufor wejściowy
 	while(std::getline(in_buf_stream, in_buf_line))
 	{
+// TEST
+//			in_buf_line.insert(0, xNORMAL xBOLD_ON xRED + std::to_string(ci[which_chan]->xx) + xNORMAL " ");
+//			++ci[which_chan]->xx;
+
+
 		// zamień tabulatory na spacje
 		size_t code_tab = in_buf_line.find("\t");
 
@@ -949,7 +990,6 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		if(ci[which_chan]->chan_log.good())
 		{
 			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line) << std::endl;
-
 			ci[which_chan]->chan_log.flush();
 		}
 	}

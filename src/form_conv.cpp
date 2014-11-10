@@ -61,12 +61,14 @@ bool onet_font_check(std::string &onet_font)
 }
 
 
-bool onet_color_conv(std::string &onet_color, std::string &x_color)
+bool onet_color_conv(std::string &onet_color, std::string &x_color, bool was_bold, bool &was_gray)
 {
 /*
 	Ze względu na to, że terminal w podstawowej wersji kolorów nie obsługuje kolorów, jakie są na czacie, trzeba było niektóre "oszukać" i wybrać
 	inne, które są podobne (mało eleganckie, ale w tej sytuacji inaczej nie można, zanim nie zostanie dodana obsługa xterm-256).
 */
+
+	was_gray = false;
 
 	if(onet_color == "623c00")		// brązowy
 	{
@@ -135,7 +137,19 @@ bool onet_color_conv(std::string &onet_color, std::string &x_color)
 
 	else if(onet_color == "959595")		// szary
 	{
-		x_color = xWHITE;
+		was_gray = true;
+
+		// jeśli bold wyłączony
+		if(! was_bold)
+		{
+			x_color = xWHITE;
+		}
+
+		// jeśli bold włączony
+		else
+		{
+			x_color = xDARK;
+		}
 	}
 
 	else if(onet_color == "000000")		// czarny
@@ -152,153 +166,186 @@ bool onet_color_conv(std::string &onet_color, std::string &x_color)
 }
 
 
-std::string form_from_chat(std::string &irc_recv_buf)
+std::string form_from_chat(std::string in_buf)
 {
 /*
 	Konwersja danych z serwera, gdzie jest formatowanie fontów, kolorów i emotikon (%...%).
 */
 
 	bool was_form;		// czy było formatowanie
+	bool was_bold = false;
+	bool was_gray = false;
 	int j;
-	int irc_recv_buf_len = irc_recv_buf.size();
+	int in_buf_len = in_buf.size();
 	std::string converted_buf, onet_font, onet_color, x_color, onet_emoticon;
 
-	for(int i = 0; i < irc_recv_buf_len; ++i)
+	for(int i = 0; i < in_buf_len; ++i)
 	{
 		was_form = false;	// domyślnie załóż, że nie było formatowania
 		j = i;			// nie zmieniaj aktualnej pozycji podczas sprawdzania (zmieniona zostanie, gdy było poprawne formatowanie)
 
+		// nowy wiersz kasuje ewentualnie ustawioną flagę bolda
+		if(in_buf[j] == '\n')
+		{
+			was_bold = false;
+			was_gray = false;
+		}
+
 		// znak "%" rozpoczyna formatowanie
-		if(irc_recv_buf[j] == '%')
+		if(in_buf[j] == '%')
 		{
 			++j;		// kolejny znak
 
 			// wykryj formatowanie fontów
-			if(j < irc_recv_buf_len && irc_recv_buf[j] == 'F')
+			if(j < in_buf_len && in_buf[j] == 'F')
 			{
 				++j;
 
 				// wykryj "Fi" (kursywa)
-				if(j < irc_recv_buf_len && irc_recv_buf[j] == 'i')
+				if(j < in_buf_len && in_buf[j] == 'i')
 				{
 					++j;	// pomiń "i"
 				}
 
 				// wykryj bold
-				if(j < irc_recv_buf_len && irc_recv_buf[j] == 'b')
+				if(j < in_buf_len && in_buf[j] == 'b')
 				{
 					++j;
 
 					// wykryj "Fbi" (bold z kursywą)
-					if(j < irc_recv_buf_len && irc_recv_buf[j] == 'i')
+					if(j < in_buf_len && in_buf[j] == 'i')
 					{
 						++j;	// pomiń "i"
 					}
 
 					// jeśli za znakiem "b" lub "i" jest "%", kończy to formatowanie, trzeba teraz wstawić kod włączający bold
-					if(j < irc_recv_buf_len && irc_recv_buf[j] == '%')
+					if(j < in_buf_len && in_buf[j] == '%')
 					{
 						was_form = true;	// było formatowanie (czyli nie wyświetlaj obecnego "%")
 						i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
 						converted_buf += xBOLD_ON;
+						was_bold = true;
+
+						if(was_gray)
+						{
+							converted_buf += xDARK;
+						}
 					}
 
 					// jeśli za "b" nie było "%" to powinien być ":"
-					else if(j < irc_recv_buf_len && irc_recv_buf[j] == ':')
+					else if(j < in_buf_len && in_buf[j] == ':')
 					{
 						onet_font.clear();
 
 						// dalej powinna być nazwa czcionki
-						for(++j; j < irc_recv_buf_len; ++j)
+						for(++j; j < in_buf_len; ++j)
 						{
 							// spacja wewnątrz formatowania przerywa (nie jest to wtedy poprawne formatowanie)
-							if(irc_recv_buf[j] == ' ')
+							if(in_buf[j] == ' ')
 							{
 								break;
 							}
 
 							// znak "%" za nazwą czcionki kończy formatowanie, trzeba teraz wstawić kod włączający bold,
 							// o ile czcionka jest poprawna
-							else if(irc_recv_buf[j] == '%')
+							else if(in_buf[j] == '%')
 							{
 								if(onet_font_check(onet_font))
 								{
 									was_form = true;// było poprawne formatowanie (czyli nie wyświetlaj obecnego "%")
 									i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
 									converted_buf += xBOLD_ON;
+									was_bold = true;
+
+									if(was_gray)
+									{
+										converted_buf += xDARK;
+									}
 								}
 
 								break;
 							}
 
 							// pobierz kolejne litery nazwy czcionki
-							onet_font += irc_recv_buf[j];
+							onet_font += in_buf[j];
 						}
 					}
 				}
 
 				// brak bold
 				// jeśli za znakiem "F" lub "i" jest '%", kończy to formatowanie, trzeba teraz wstawić kod wyłączający bold
-				else if(j < irc_recv_buf_len && irc_recv_buf[j] == '%')
+				else if(j < in_buf_len && in_buf[j] == '%')
 				{
 					was_form = true;	// było formatowanie (czyli nie wyświetlaj obecnego "%")
 					i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
 					converted_buf += xBOLD_OFF;
+					was_bold = false;
+
+					if(was_gray)
+					{
+						converted_buf += xWHITE;
+					}
 				}
 
 				// jeśli za "F" nie było "%" to powinien być ":"
-				else if(j < irc_recv_buf_len && irc_recv_buf[j] == ':')
+				else if(j < in_buf_len && in_buf[j] == ':')
 				{
 					onet_font.clear();
 
 					// dalej powinna być nazwa czcionki
-					for(++j; j < irc_recv_buf_len; ++j)
+					for(++j; j < in_buf_len; ++j)
 					{
 						// spacja wewnątrz formatowania przerywa (nie jest to wtedy poprawne formatowanie)
-						if(irc_recv_buf[j] == ' ')
+						if(in_buf[j] == ' ')
 						{
 							break;
 						}
 
 						// znak "%" za nazwą czcionki kończy formatowanie, trzeba teraz wstawić kod wyłączający bold,
 						// o ile czcionka jest poprawna
-						else if(irc_recv_buf[j] == '%')
+						else if(in_buf[j] == '%')
 						{
 							if(onet_font_check(onet_font))
 							{
 								was_form = true;	// było poprawne formatowanie (czyli nie wyświetlaj obecnego "%")
 								i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
 								converted_buf += xBOLD_OFF;
+								was_bold = false;
+
+								if(was_gray)
+								{
+									converted_buf += xWHITE;
+								}
 							}
 
 							break;
 						}
 
 						// pobierz kolejne litery nazwy czcionki
-						onet_font += irc_recv_buf[j];
+						onet_font += in_buf[j];
 					}
 				}
 
 			}	// "F"
 
 			// wykryj formatowanie kolorów
-			else if(j < irc_recv_buf_len && irc_recv_buf[j] == 'C')
+			else if(j < in_buf_len && in_buf[j] == 'C')
 			{
 				onet_color.clear();
 
 				// wczytaj kolor
-				for(++j; j < irc_recv_buf_len; ++j)
+				for(++j; j < in_buf_len; ++j)
 				{
 					// spacja wewnątrz formatowania przerywa (nie jest to wtedy poprawne formatowanie)
-					if(irc_recv_buf[j] == ' ')
+					if(in_buf[j] == ' ')
 					{
 						break;
 					}
 
 					// znak "%" za kolorem kończy formatowanie, trzeba teraz wstawić formatowanie koloru (o ile kolor ma 6 znaków)
-					else if(irc_recv_buf[j] == '%')
+					else if(in_buf[j] == '%')
 					{
-						if(onet_color.size() == 6 && onet_color_conv(onet_color, x_color))
+						if(onet_color.size() == 6 && onet_color_conv(onet_color, x_color, was_bold, was_gray))
 						{
 							was_form = true;	// było poprawne formatowanie (czyli nie wyświetlaj obecnego "%")
 							i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
@@ -309,27 +356,27 @@ std::string form_from_chat(std::string &irc_recv_buf)
 					}
 
 					// pobierz kolejne znaki koloru
-					onet_color += irc_recv_buf[j];
+					onet_color += in_buf[j];
 				}
 
 			}	// "C"
 
 			// wykryj formatowanie emotikon
-			else if(j < irc_recv_buf_len && irc_recv_buf[j] == 'I')
+			else if(j < in_buf_len && in_buf[j] == 'I')
 			{
 				onet_emoticon.clear();
 
 				// wczytaj nazwę emotikony
-				for(++j; j < irc_recv_buf_len; ++j)
+				for(++j; j < in_buf_len; ++j)
 				{
 					// spacja wewnątrz formatowania przerywa (nie jest to wtedy poprawne formatowanie)
-					if(irc_recv_buf[j] == ' ')
+					if(in_buf[j] == ' ')
 					{
 						break;
 					}
 
 					// znak "%" za emotikoną kończy formatowanie, trzeba teraz wstawić nazwę emotikony z dwoma "//" na początku
-					else if(irc_recv_buf[j] == '%')
+					else if(in_buf[j] == '%')
 					{
 						was_form = true;	// było poprawne formatowanie (czyli nie wyświetlaj obecnego "%")
 						i = j;		// kolejny obieg pętli zacznie czytać za tym "%"
@@ -339,7 +386,7 @@ std::string form_from_chat(std::string &irc_recv_buf)
 					}
 
 					// pobierz kolejne znaki emotikony
-					onet_emoticon += irc_recv_buf[j];
+					onet_emoticon += in_buf[j];
 				}
 
 			}	// "I"
@@ -349,7 +396,7 @@ std::string form_from_chat(std::string &irc_recv_buf)
 		// wpisuj znaki, które nie należą do formatowania
 		if(! was_form)
 		{
-			converted_buf += irc_recv_buf[i];
+			converted_buf += in_buf[i];
 		}
 	}
 
@@ -670,19 +717,21 @@ std::string remove_form(std::string &in_buf)
 {
 	int in_buf_len = in_buf.size();
 	std::string out_buf;
+	char c;
 
 	// usuń formatowanie fontu i kolorów
 	for(int i = 0; i < in_buf_len; ++i)
 	{
-		if(in_buf[i] == dCOLOR)
+		c = in_buf[i];
+
+		if(c == dCOLOR)
 		{
 			++i;
 		}
 
-		else if(in_buf[i] != dBOLD_ON && in_buf[i] != dBOLD_OFF && in_buf[i] != dREVERSE_ON && in_buf[i] != dREVERSE_OFF
-			&& in_buf[i] != dUNDERLINE_ON && in_buf[i] != dUNDERLINE_OFF && in_buf[i] != dNORMAL)
+		else if(c != dBOLD_ON && c != dBOLD_OFF && c != dREVERSE_ON && c != dREVERSE_OFF && c != dUNDERLINE_ON && c != dUNDERLINE_OFF && c != dNORMAL)
 		{
-			out_buf += in_buf[i];
+			out_buf += c;
 		}
 	}
 

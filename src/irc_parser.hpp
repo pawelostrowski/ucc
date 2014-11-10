@@ -49,7 +49,7 @@ void raw_join(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
-void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf, std::string &raw_parm0, bool normal_user = false);
+void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf, std::string &raw_parm0);
 
 void raw_modermsg(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
@@ -195,6 +195,8 @@ void raw_482(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 void raw_484(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
+void raw_492(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
+
 void raw_530(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
 void raw_531(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
@@ -300,6 +302,8 @@ void raw_notice_259(struct global_args &ga, struct channel_irc *ci[], std::strin
 void raw_notice_260();
 
 void raw_notice_261();
+
+void raw_notice_400(struct global_args &ga, struct channel_irc *ci[]);
 
 void raw_notice_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 

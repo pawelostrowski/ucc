@@ -34,8 +34,7 @@ namespace std
 {
 	template <typename T> std::string to_string(const T &buf)
 	{
-		std::stringstream buf_stringstream;
-		buf_stringstream << buf;
+		std::stringstream buf_stringstream(buf);
 		return buf_stringstream.str();
 	}
 
@@ -58,11 +57,11 @@ namespace std
 #include <vector>
 
 // nazwa i numer wersji programu
-#define UCC_NAME "Ucieszony Chat Client"
-#define UCC_VER "1.0 alpha5"
+#define UCC_NAME	"Ucieszony Chat Client"
+#define UCC_VER		"1.0 alpha6"
 
 // katalog ucc (sama nazwa, nie jego położenie)
-#define UCC_DIR ".ucc"
+#define UCC_DIR		".ucc"
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 // (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)
@@ -73,12 +72,13 @@ namespace std
 #define pMAGENTA	0x05
 #define pCYAN		0x06
 #define pWHITE		0x07
-#define pTERMC		0x08	// kolor zależny od ustawień terminala
-#define pYELLOW_BLACK	0x0B	// żółty font, czarne tło
-#define pBLACK_BLUE	0x0C	// czarny font, niebieskie tło
-#define pMAGENTA_BLUE	0x0D	// magenta font, niebieskie tło
-#define pCYAN_BLUE	0x0E	// cyjan font, niebieskie tło
-#define pWHITE_BLUE	0x0F	// biały font, niebieskie tło
+#define pDARK		0x08
+#define pTERMC		0x0B	// kolor zależny od ustawień terminala
+#define pYELLOW_BLACK	0x0C	// żółty font, czarne tło
+#define pBLACK_BLUE	0x0D	// czarny font, niebieskie tło
+#define pMAGENTA_BLUE	0x0E	// magenta font, niebieskie tło
+#define pCYAN_BLUE	0x0F	// cyjan font, niebieskie tło
+#define pWHITE_BLUE	0x10	// biały font, niebieskie tło
 
 // definicje kodów kolorów używanych w string (same numery kolorów muszą być te same, co powyżej, aby kolor się zgadzał, natomiast \x03 to umowny kod koloru)
 #define xCOLOR		"\x03"
@@ -89,12 +89,13 @@ namespace std
 #define xMAGENTA	xCOLOR "\x05"
 #define xCYAN		xCOLOR "\x06"
 #define xWHITE		xCOLOR "\x07"
-#define xTERMC		xCOLOR "\x08"
-#define xYELLOW_BLACK	xCOLOR "\x0B"
-#define xBLACK_BLUE	xCOLOR "\x0C"
-#define xMAGENTA_BLUE	xCOLOR "\x0D"
-#define xCYAN_BLUE	xCOLOR "\x0E"
-#define xWHITE_BLUE	xCOLOR "\x0F"
+#define xDARK		xCOLOR "\x08"
+#define xTERMC		xCOLOR "\x0B"
+#define xYELLOW_BLACK	xCOLOR "\x0C"
+#define xBLACK_BLUE	xCOLOR "\x0D"
+#define xMAGENTA_BLUE	xCOLOR "\x0E"
+#define xCYAN_BLUE	xCOLOR "\x0F"
+#define xWHITE_BLUE	xCOLOR "\x10"
 
 // definicje formatowania testu (kody umowne)
 #define xBOLD_ON	"\x04"
@@ -114,6 +115,14 @@ namespace std
 #define dUNDERLINE_ON	0x13
 #define dUNDERLINE_OFF	0x14
 #define dNORMAL		0x17
+
+// często używane symbole informacyjne w odpowiednich kolorach z boldem
+#define uINFOn	xBOLD_ON "-" xBLUE "#" xTERMC "-" xBOLD_OFF " "
+#define uINFOb	xBOLD_ON "-" xBLUE "#" xTERMC "- "
+#define oINFOn	xBOLD_ON "-" xBLUE "!" xTERMC "-" xBOLD_OFF " "
+#define oINFOb	xBOLD_ON "-" xBLUE "!" xTERMC "- "
+#define oINn	xBOLD_ON "-" xBLUE "!" xTERMC ">" xBOLD_OFF " "
+#define oOUTn	xBOLD_ON "<" xBLUE "!" xTERMC "-" xBOLD_OFF " "
 
 // liczba pokoi czata (liczona od zera, czyli najwyższy numer w tablicy pokoi będzie o 1 mniejszy)
 #define CHAN_CHAT		20
@@ -137,6 +146,7 @@ namespace std
 struct command_flags
 {
 	bool card;
+	bool invite;
 	bool join_priv;
 	bool lusers;
 	bool names;
@@ -180,6 +190,8 @@ struct global_args
 
 	int wterm_y;
 	int wterm_x;
+
+	int time_len;
 
 	bool use_colors;
 	bool debug_irc;
@@ -278,14 +290,22 @@ struct channel_irc
 	std::string topic;
 
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
+	int lock_act;
 
 	bool win_scroll_lock;	// scroll okna, false oznacza ciągłe przesuwanie aktualnego tekstu
-	int win_scroll_first;
-	int win_scroll_last;
+
+	int win_pos_first;
+	int win_skip_lead_first;
+
+	int win_pos_last;
+	int win_skip_lead_last;
 
         std::map<std::string, struct nick_irc> ni;
 
         std::ofstream chan_log;
+
+
+//	int xx;		// TEST
 };
 
 #endif		// UCC_GLOBAL_HPP

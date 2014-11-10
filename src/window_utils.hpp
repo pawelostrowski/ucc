@@ -37,9 +37,9 @@ std::string time_sec2time(std::string &sec_str);
 
 std::string buf_lower_to_upper(std::string buf);
 
-int buf_chars(std::string &buf_in);
+int buf_chars(std::string &in_buf);
 
-int how_lines(std::string &buf_in, int wterm_x, int time_len);
+int how_lines(std::string &in_buf, int wterm_x, int time_len);
 
 void kbd_buf_show(std::string &kbd_buf, int term_y, int term_x, int kbd_cur_pos, int &kbd_cur_pos_offset);
 
