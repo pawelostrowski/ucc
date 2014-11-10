@@ -84,7 +84,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 	bool win_first = true;		// pierwsze uruchomienie wymaga utworzenia okien "wirtualnych"
 
-	int sel_stat;			// status select()
+	int sel_stat = 0;		// status select()
 
 	int key_code;			// kod odczytany z bufora wejściowego (przy wciskaniu klawiszy i wklejaniu tekstu ze schowka)
 	std::string key_code_tmp;	// bufor tymczasowy do konwersji int -> std::string
