@@ -34,25 +34,25 @@
 
 void msg_err_first_login(struct global_args &ga, struct channel_irc *ci[])
 {
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Najpierw zaloguj się.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Najpierw zaloguj się.", false);
 }
 
 
 void msg_err_already_logged_in(struct global_args &ga, struct channel_irc *ci[])
 {
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Już zalogowano się.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Już zalogowano się.", false);
 }
 
 
 void msg_err_not_specified_nick(struct global_args &ga, struct channel_irc *ci[])
 {
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka.", false);
 }
 
 
 void msg_err_not_active_chan(struct global_args &ga, struct channel_irc *ci[])
 {
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie jesteś w aktywnym pokoju czata.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie jesteś w aktywnym pokoju czata.", false);
 }
 
 
@@ -183,7 +183,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		// odebrane z serwera)
 		else if(ga.current < CHAN_CHAT)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON "<" + ga.zuousername + ">" xNORMAL " " + form_from_chat(kbd_buf));
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON "<" + ga.zuousername + ">" xNORMAL " " + form_from_chat(kbd_buf), true, 2);
 
 			// wyślij też komunikat do serwera IRC
 			irc_send(ga, ci, "PRIVMSG " + ci[ga.current]->channel + " :" + form_to_chat(kbd_buf));
@@ -205,13 +205,13 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		// sprawdź, czy za poleceniem są jakieś znaki (sam znak / nie jest poleceniem)
 		if(kbd_buf.size() <= 1)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Polecenie błędne, sam znak / nie jest poleceniem.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Polecenie błędne, sam znak / nie jest poleceniem.", false);
 		}
 
 		// sprawdź, czy za / jest spacja (polecenie nie może zawierać spacji po / )
 		else if(kbd_buf[1] == ' ')
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Polecenie błędne, po znaku / nie może być spacji.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Polecenie błędne, po znaku / nie może być spacji.", false);
 		}
 
 		// pobierz wpisane polecenie i je zinterpretuj
@@ -422,7 +422,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nieznane polecenie: /" + command_org);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nieznane polecenie: /" + command_org, false);
 			}
 		}
 	}
@@ -474,7 +474,7 @@ void command_ban_common(struct global_args &ga, struct channel_irc *ci[], std::s
 		{
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, (ban_type == "BAN" || ban_type == "BANIP"
 					? uINFOn xRED "Nie podano nicka do zbanowania."
-					: uINFOn xRED "Nie podano nicka do odbanowania."));
+					: uINFOn xRED "Nie podano nicka do odbanowania."), false);
 		}
 
 		else
@@ -502,7 +502,7 @@ void command_ban_common(struct global_args &ga, struct channel_irc *ci[], std::s
 								? uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Banować w takim pokoju możesz wtedy, "
 								"gdy po nicku podasz pokój, w którym chcesz zbanować osobę."
 								: uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Odbanować w takim pokoju możesz wtedy, "
-								"gdy po nicku podasz pokój, w którym chcesz odbanować osobę."));
+								"gdy po nicku podasz pokój, w którym chcesz odbanować osobę."), false);
 				}
 			}
 
@@ -564,12 +564,12 @@ void command_captcha(struct global_args &ga, struct channel_irc *ci[], std::stri
 
 		if(captcha.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano kodu, spróbuj jeszcze raz.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano kodu, spróbuj jeszcze raz.", false);
 		}
 
 		else if(captcha.size() != 6)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Kod musi mieć 6 znaków, spróbuj jeszcze raz.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Kod musi mieć 6 znaków, spróbuj jeszcze raz.", false);
 		}
 
 		// gdy CAPTCHA ma 6 znaków, wykonaj sprawdzenie
@@ -597,7 +597,7 @@ void command_captcha(struct global_args &ga, struct channel_irc *ci[], std::stri
 	// gdy brak gotowości do przepisania CAPTCHA
 	else
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Najpierw wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Najpierw wpisz " xCYAN "/connect " xRED "lub " xCYAN "/c", false);
 	}
 }
 
@@ -722,7 +722,7 @@ void command_disconnect(struct global_args &ga, struct channel_irc *ci[], std::s
 	// jeśli nie połączono z IRC, rozłączenie nie ma sensu, więc pokaż ostrzeżenie
 	else
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie zalogowano się.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie zalogowano się.", false);
 	}
 }
 
@@ -766,7 +766,7 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/vhost\n"
 			xCYAN  "/vip\n"
 			xCYAN  "/whois\n"
-			xCYAN  "/whowas");
+			xCYAN  "/whowas", false);
 			// dopisać resztę poleceń
 }
 
@@ -782,7 +782,7 @@ void command_invite(struct global_args &ga, struct channel_irc *ci[], std::strin
 		// jeśli nie wpisano nicka, pokaż ostrzeżenie
 		if(invite_nick.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do zaproszenia.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do zaproszenia.", false);
 		}
 
 		else
@@ -805,7 +805,7 @@ void command_invite(struct global_args &ga, struct channel_irc *ci[], std::strin
 				{
 					win_buf_add_str(ga, ci, ci[ga.current]->channel,
 							uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Zapraszać z takiego pokoju możesz wtedy, gdy po "
-							"nicku podasz pokój, do którego chcesz zaprosić osobę.");
+							"nicku podasz pokój, do którego chcesz zaprosić osobę.", false);
 				}
 			}
 
@@ -842,7 +842,7 @@ void command_join(struct global_args &ga, struct channel_irc *ci[], std::string 
 
 		if(join_chan.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano pokoju.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano pokoju.", false);
 		}
 
 		else
@@ -905,7 +905,7 @@ void command_kban_common(struct global_args &ga, struct channel_irc *ci[], std::
 			// jeśli nie wpisano nicka, pokaż ostrzeżenie
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do zbanowania i wyrzucenia.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do zbanowania i wyrzucenia.", false);
 			}
 		}
 
@@ -939,7 +939,7 @@ void command_kick(struct global_args &ga, struct channel_irc *ci[], std::string 
 			// jeśli wpisano nick do wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju), opcjonalnie można podać powód wyrzucenia
 			? irc_send(ga, ci, "KICK " + ci[ga.current]->channel + " " + kick_nick + " :" + get_rest_args(kbd_buf, pos_arg_start))
 			// jeśli nie wpisano nicka, pokaż ostrzeżenie
-			: win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do wyrzucenia.");
+			: win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do wyrzucenia.", false);
 		}
 
 		// jeśli nie przebywamy w aktywnym pokoju czata, nie można wyrzucić użytkownika, więc pokaż ostrzeżenie
@@ -961,7 +961,7 @@ void command_list(struct global_args &ga, struct channel_irc *ci[])
 {
 	std::string chan_nr;
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xGREEN "Aktualnie otwarte pokoje:");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xGREEN "Aktualnie otwarte pokoje:", false);
 
 	for(int i = 0; i < CHAN_MAX; ++i)
 	{
@@ -988,7 +988,7 @@ void command_list(struct global_args &ga, struct channel_irc *ci[])
 			}
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOb + chan_nr + (i >= 9 && i < CHAN_CHAT ? xNORMAL " " : xNORMAL "  ") + ci[i]->channel);
+					uINFOb + chan_nr + (i >= 9 && i < CHAN_CHAT ? xNORMAL " " : xNORMAL "  ") + ci[i]->channel, false);
 		}
 	}
 }
@@ -1025,7 +1025,8 @@ void command_me(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			std::string me_reason = get_rest_args(kbd_buf, pos_arg_start);
 
 			// przygotuj komunikat do wyświetlenia w oknie terminala
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON xMAGENTA "* " + ga.zuousername + xNORMAL " " + form_from_chat(me_reason));
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xBOLD_ON xMAGENTA "* " + ga.zuousername + xNORMAL " " + form_from_chat(me_reason), true, 2);
 
 			// wyślij też komunikat do serwera IRC
 			irc_send(ga, ci, "PRIVMSG " + ci[ga.current]->channel + " :\x01" "ACTION " + me_reason + "\x01");
@@ -1100,7 +1101,7 @@ void command_nick(struct global_args &ga, struct channel_irc *ci[], std::string 
 	// po połączeniu z IRC nie można zmienić nicka
 	if(ga.irc_ok)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Po zalogowaniu się nie można zmienić nicka.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Po zalogowaniu się nie można zmienić nicka.", false);
 	}
 
 	// nick można zmienić tylko, gdy nie jest się połączonym z IRC
@@ -1122,18 +1123,18 @@ void command_nick(struct global_args &ga, struct channel_irc *ci[], std::string 
 				win_buf_add_str(ga, ci, ci[ga.current]->channel, (ga.my_password.size() == 0
 						? uINFOn xGREEN "Aktualny nick tymczasowy: "
 						: uINFOn xGREEN "Aktualny nick stały: ")
-						+ ga.my_nick);
+						+ ga.my_nick, false);
 			}
 		}
 
 		else if(buf_chars(nick) < 3)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za krótki (minimalnie 3 znaki).");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za krótki (minimalnie 3 znaki).", false);
 		}
 
 		else if(buf_chars(nick) > 32)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za długi (maksymalnie 32 znaki).");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za długi (maksymalnie 32 znaki).", false);
 		}
 
 		// gdy wpisano nick mieszczący się w zakresie 3...32 znaków
@@ -1149,7 +1150,7 @@ void command_nick(struct global_args &ga, struct channel_irc *ci[], std::string 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, (ga.my_password.size() == 0
 					? uINFOn xGREEN "Wpisany nick tymczasowy: "
 					: uINFOn xGREEN "Wpisany nick stały: ")
-					+ ga.my_nick);
+					+ ga.my_nick, false);
 		}
 	}
 }
@@ -1174,22 +1175,23 @@ void command_op_common(struct global_args &ga, struct channel_irc *ci[], std::st
 		{
 			if(op_type == "OP")
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do nadania uprawnień operatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do nadania uprawnień operatora.", false);
 			}
 
 			else if(op_type == "SOP")
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do nadania uprawnień superoperatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do nadania uprawnień superoperatora.", false);
 			}
 
 			else if(op_type == "DOP")
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do odebrania uprawnień operatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do odebrania uprawnień operatora.", false);
 			}
 
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do odebrania uprawnień superoperatora.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Nie podano nicka do odebrania uprawnień superoperatora.", false);
 			}
 		}
 
@@ -1232,28 +1234,28 @@ void command_op_common(struct global_args &ga, struct channel_irc *ci[], std::st
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
 								uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia operatora w takim "
-								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.", false);
 					}
 
 					else if(op_type == "SOP")
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
 								uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia superoperatora w takim "
-								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.");
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz nadać uprawnienia.", false);
 					}
 
 					else if(op_type == "DOP")
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
 								uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia operatora w takim "
-								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.", false);
 					}
 
 					else
 					{
 						win_buf_add_str(ga, ci, ci[ga.current]->channel,
 								uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia superoperatora w takim "
-								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.");
+								"pokoju możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zabrać uprawnienia.", false);
 					}
 				}
 			}
@@ -1312,6 +1314,8 @@ void command_part(struct global_args &ga, struct channel_irc *ci[], std::string 
 		// zamknij log
 		if(ci[CHAN_RAW_UNKNOWN]->chan_log.is_open())
 		{
+			ci[CHAN_RAW_UNKNOWN]->chan_log << LOG_STOPPED;
+
 			ci[CHAN_RAW_UNKNOWN]->chan_log.close();
 		}
 
@@ -1356,7 +1360,7 @@ void command_priv(struct global_args &ga, struct channel_irc *ci[], std::string 
 		// jeśli nie wpisano nicka, pokaż ostrzeżenie
 		if(priv_nick.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka zapraszanego do rozmowy prywatnej.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka zapraszanego do rozmowy prywatnej.", false);
 		}
 
 		else
@@ -1415,7 +1419,7 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 		// polecenie do IRC
 		? irc_send(ga, ci, raw_args)
 		// jeśli nie podano parametrów, pokaż ostrzeżenie
-		: win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano argumentu lub argumentów.");
+		: win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano argumentu lub argumentów.", false);
 
 		// wykryj wysłanie wybranych poleceń przez /raw i na tej podstawie ustaw stosowne flagi
 		pos_arg_start = 0;	// początek pobranej reszty z bufora
@@ -1498,6 +1502,7 @@ void command_topic(struct global_args &ga, struct channel_irc *ci[], std::string
 			// ustaw temat, jeśli za /topic wpisano jakiś tekst
 			if(topic.size() > 0)
 			{
+				// serwer obecnie ogranicza tekst do 200 znaków (można z czasem dodać info o przekroczeniu)
 				irc_send(ga, ci, "CS SET " + ci[ga.current]->channel + " TOPIC " + topic);
 			}
 
@@ -1538,7 +1543,7 @@ void command_vhost(struct global_args &ga, struct channel_irc *ci[], std::string
 		// jeśli nie podano parametrów, pokaż ostrzeżenie
 		if(vhost_nick.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka i hasła dla VHost.");
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka i hasła dla VHost.", false);
 		}
 
 		// jeśli podano nick, sprawdź, czy podano hasło
@@ -1549,7 +1554,7 @@ void command_vhost(struct global_args &ga, struct channel_irc *ci[], std::string
 			// jeśli nie podano hasła, pokaż ostrzeżenie
 			if(vhost_password.size() == 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano hasła dla VHost.");
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano hasła dla VHost.", false);
 			}
 
 			// jeśli podano hasło (i wcześniej nick), wyślij je na serwer
@@ -1590,7 +1595,7 @@ void command_vip_common(struct global_args &ga, struct channel_irc *ci[], std::s
 		{
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, (vip_type == "VIP"
 					? uINFOn xRED "Nie podano nicka do nadania uprawnień vipa."
-					: uINFOn xRED "Nie podano nicka do odebrania uprawnień vipa."));
+					: uINFOn xRED "Nie podano nicka do odebrania uprawnień vipa."), false);
 		}
 
 		else
@@ -1615,7 +1620,7 @@ void command_vip_common(struct global_args &ga, struct channel_irc *ci[], std::s
 								? uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Nadać uprawnienia vipa w takim pokoju "
 								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz zbanować osobę."
 								: uINFOn xRED "Nie jesteś w aktywnym pokoju czata. Odebrać uprawnienia vipa w takim pokoju "
-								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz odbanować osobę."));
+								"możesz wtedy, gdy po nicku podasz pokój, w którym chcesz odbanować osobę."), false);
 				}
 			}
 

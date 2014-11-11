@@ -35,9 +35,10 @@ void new_chan_status(struct global_args &ga, struct channel_irc *ci[])
 
 		ci[CHAN_STATUS]->channel = "Status";
 		ci[CHAN_STATUS]->topic = UCC_NAME " " UCC_VER;	// napis wyświetlany na górnym pasku
+
 		ci[CHAN_STATUS]->chan_act = 0;			// zacznij od braku aktywności kanału
-		ci[CHAN_STATUS]->lock_act = 0;
 		ci[CHAN_STATUS]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_STATUS]->lock_act = 0;
 		ci[CHAN_STATUS]->win_pos_first = 0;
 		ci[CHAN_STATUS]->win_skip_lead_first = 0;
 		ci[CHAN_STATUS]->win_pos_last = 0;
@@ -57,9 +58,10 @@ void new_chan_debug_irc(struct global_args &ga, struct channel_irc *ci[])
 
 		ci[CHAN_DEBUG_IRC]->channel = "DebugIRC";
 		ci[CHAN_DEBUG_IRC]->topic = "Surowe dane przesyłane między programem a serwerem (tylko IRC).";
+
 		ci[CHAN_DEBUG_IRC]->chan_act = 0;		// zacznij od braku aktywności kanału
-		ci[CHAN_DEBUG_IRC]->lock_act = 0;
 		ci[CHAN_DEBUG_IRC]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_DEBUG_IRC]->lock_act = 0;
 		ci[CHAN_DEBUG_IRC]->win_pos_first = 0;
 		ci[CHAN_DEBUG_IRC]->win_skip_lead_first = 0;
 		ci[CHAN_DEBUG_IRC]->win_pos_last = 0;
@@ -76,9 +78,10 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *ci[])
 
 		ci[CHAN_RAW_UNKNOWN]->channel = "RawUnknown";
 		ci[CHAN_RAW_UNKNOWN]->topic = "Nieznane lub niezaimplementowane komunikaty pobrane z serwera.";
+
 		ci[CHAN_RAW_UNKNOWN]->chan_act = 0;		// zacznij od braku aktywności kanału
-		ci[CHAN_RAW_UNKNOWN]->lock_act = 0;
 		ci[CHAN_RAW_UNKNOWN]->win_scroll_lock = false;	// ciągłe przesuwanie aktualnego tekstu
+		ci[CHAN_RAW_UNKNOWN]->lock_act = 0;
 		ci[CHAN_RAW_UNKNOWN]->win_pos_first = 0;
 		ci[CHAN_RAW_UNKNOWN]->win_skip_lead_first = 0;
 		ci[CHAN_RAW_UNKNOWN]->win_pos_last = 0;
@@ -88,7 +91,7 @@ void new_chan_raw_unknown(struct global_args &ga, struct channel_irc *ci[])
 
 		if(ci[CHAN_RAW_UNKNOWN]->chan_log.good())
 		{
-			ci[CHAN_RAW_UNKNOWN]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+			ci[CHAN_RAW_UNKNOWN]->chan_log << LOG_STARTED;
 			ci[CHAN_RAW_UNKNOWN]->chan_log.flush();
 		}
 	}
@@ -119,10 +122,11 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string
 		{
 			ci[i] = new channel_irc;
 
-			ci[i]->channel = chan_name;		// nazwa kanału czata
+			ci[i]->channel = chan_name;		// nazwa pokoju czata
+
 			ci[i]->chan_act = 0;			// zacznij od braku aktywności kanału
-			ci[i]->lock_act = 0;
 			ci[i]->win_scroll_lock = false;		// ciągłe przesuwanie aktualnego tekstu
+			ci[i]->lock_act = 0;
 			ci[i]->win_pos_first = 0;
 			ci[i]->win_skip_lead_first = 0;
 			ci[i]->win_pos_last = 0;
@@ -132,11 +136,11 @@ bool new_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string
 
 			if(ci[i]->chan_log.good())
 			{
-				ci[i]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+				ci[i]->chan_log << LOG_STARTED;
 				ci[i]->chan_log.flush();
 			}
 
-			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join
+			// jeśli trzeba, kanał oznacz jako aktywny (przełącz na to okno), czyli tylko po wpisaniu /join lub /priv
 			if(active)
 			{
 				ga.current = i;
@@ -172,7 +176,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string
 			// zamknij log
 			if(ci[i]->chan_log.is_open())
 			{
-				ci[i]->chan_log << "--- Zakończenie logu: " + get_time_full() + " ---" << std::endl << std::endl;
+				ci[i]->chan_log << LOG_STOPPED;
 
 				ci[i]->chan_log.close();
 			}
@@ -207,7 +211,7 @@ void del_all_chan(struct channel_irc *ci[])
 			// zamknij log
 			if(ci[i]->chan_log.is_open())
 			{
-				ci[i]->chan_log << "--- Zakończenie logu: " + get_time_full() + " ---" << std::endl << std::endl;
+				ci[i]->chan_log << LOG_STOPPED;
 
 				ci[i]->chan_log.close();
 			}

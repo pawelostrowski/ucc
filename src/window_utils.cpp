@@ -908,8 +908,8 @@ void win_buf_refresh(struct global_args &ga, struct channel_irc *ci[])
 }
 
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string in_buf, int act_type, bool add_time,
-	bool only_chan_normal)
+void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string in_buf, bool save_log, int act_type,
+	bool add_time, bool only_chan_normal)
 {
 /*
 	Dodaj string do bufora danego kanału oraz wyświetl jego zawartość (jeśli to aktywny pokój) wraz z dodaniem przed wyrażeniem aktualnego czasu
@@ -969,11 +969,6 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 	// obsłuż bufor wejściowy
 	while(std::getline(in_buf_stream, in_buf_line))
 	{
-// TEST
-//			in_buf_line.insert(0, xNORMAL xBOLD_ON xRED + std::to_string(ci[which_chan]->xx) + xNORMAL " ");
-//			++ci[which_chan]->xx;
-
-
 		// zamień tabulatory na spacje
 		size_t code_tab = in_buf_line.find("\t");
 
@@ -987,7 +982,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		ci[which_chan]->win_buf.push_back((add_time ? xNORMAL + get_time() : xNORMAL) + in_buf_line);
 
 		// zapisz log
-		if(ci[which_chan]->chan_log.good())
+		if(save_log && ci[which_chan]->chan_log.good())
 		{
 			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line) << std::endl;
 			ci[which_chan]->chan_log.flush();
@@ -1003,7 +998,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 }
 
 
-void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std::string msg)
+void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std::string msg, bool save_log)
 {
 /*
 	Wyświetl komunikat we wszystkich otwartych pokojach, z wyjątkiem "DebugIRC" i "RawUnknown".
@@ -1013,7 +1008,7 @@ void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std:
 	{
 		if(ci[i])
 		{
-			win_buf_add_str(ga, ci, ci[i]->channel, msg);
+			win_buf_add_str(ga, ci, ci[i]->channel, msg, save_log);
 		}
 	}
 }

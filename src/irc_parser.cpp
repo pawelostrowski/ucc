@@ -876,6 +876,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_notice_463(ga, ci, raw_buf);
 				break;
 
+			case 464:
+				raw_notice_464(ga, ci, raw_buf);
+				break;
+
 			case 465:
 				raw_notice_465(ga, ci, raw_buf);
 				break;
@@ -914,7 +918,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 		if(raw_unknown)
 		{
 			new_chan_raw_unknown(ga, ci);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
-			win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
+			win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, true, 2, true, false);		// aby zwrócić uwagę, pokaż aktywność typu 2
 		}
 
 	}	// while(std::getline(irc_recv_buf_stream, raw_buf))
@@ -1130,7 +1134,7 @@ void raw_join(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 		ga.win_chat_refresh = true;
 
 		// wyświetl ostrzeżenie
-		win_buf_add_str(ga, ci, "Status", uINFOn xRED "Nie udało się dołączyć do pokoju " + raw_parm2 + " (brak pamięci w tablicy pokoi).");
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED "Nie udało się wejść do pokoju " + raw_parm2 + " (brak pamięci w tablicy pokoi).");
 
 		return;
 	}
@@ -1147,7 +1151,7 @@ void raw_join(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	// w przeciwnym razie wyświetl komunikat dla wejścia do pokoju
 	else
 	{
-		win_buf_add_str(ga, ci, raw_parm2, oINn xGREEN + nick_who + " [" + nick_zuo_ip + "] dołącza do pokoju " + raw_parm2);
+		win_buf_add_str(ga, ci, raw_parm2, oINn xGREEN + nick_who + " [" + nick_zuo_ip + "] wchodzi do pokoju " + raw_parm2);
 	}
 
 	// pobierz wybrane flagi nicka
@@ -1245,7 +1249,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 			}
 		}
 
-		// wyświetl powód wyrzucenia w kanale, w którym wyrzucono nick
+		// wyświetl powód wyrzucenia w pokoju, w którym wyrzucono nick
 		win_buf_add_str(ga, ci, raw_parm2,
 				// początek komunikatu (nick)
 				oOUTn xRED + raw_parm3 + (nick_zuo_ip.size() > 0
@@ -2066,7 +2070,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 		else
 		{
 			new_chan_raw_unknown(ga, ci);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
-			win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, 2, true, false);		// aby zwrócić uwagę, pokaż aktywność typu 2
+			win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, true, 2, true, false);		// aby zwrócić uwagę, pokaż aktywność typu 2
 		}
 	}
 
@@ -2137,7 +2141,7 @@ void raw_modermsg(struct global_args &ga, struct channel_irc *ci[], std::string 
 			// tekst normalny
 			: xCYAN + form_start + "<" + raw_parm2 + ">" + xNORMAL " " + user_msg)
 			// reszta komunikatu
-			+ " " xNORMAL xUNDERLINE_ON xRED "[Moderowany przez " + nick_who + "]", act_type);
+			+ " " xNORMAL xUNDERLINE_ON xRED "[Moderowany przez " + nick_who + "]", true, act_type);
 }
 
 
@@ -2184,7 +2188,7 @@ void raw_part(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	// w przeciwnym razie wyświetl komunikat dla wyjścia z pokoju
 	else
 	{
-		win_buf_add_str(ga, ci, raw_parm2, oOUTn xCYAN + nick_who + " [" + nick_zuo_ip + "] opuszcza pokój " + raw_parm2 + reason);
+		win_buf_add_str(ga, ci, raw_parm2, oOUTn xCYAN + nick_who + " [" + nick_zuo_ip + "] wychodzi z pokoju " + raw_parm2 + reason);
 	}
 
 	// jeśli to ja wychodzę, usuń kanał z programu
@@ -2274,7 +2278,7 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *ci[], std::string &
 			// tekst pisany z użyciem /me
 			? xBOLD_ON xMAGENTA "* " + form_start + nick_who + xNORMAL + user_msg_action
 			// tekst normalny
-			: form_start + "<" + nick_who + ">" + xNORMAL " " + user_msg), act_type);
+			: form_start + "<" + nick_who + ">" + xNORMAL " " + user_msg), true, act_type);
 }
 
 
@@ -3143,7 +3147,7 @@ void raw_366(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	// jeśli to było /names bez podania pokoju, pokaż komunikat o aktualizacji listy pokoi
 	if(ga.cf.names && ga.cf.names_empty)
 	{
-		win_buf_add_str(ga, ci, raw_parm3, uINFOn xWHITE "Zaktualizowano listę użytkowników w pokoju " + raw_parm3);
+		win_buf_add_str(ga, ci, raw_parm3, uINFOn xWHITE "Zaktualizowano listę użytkowników w pokoju " + raw_parm3, false);
 	}
 
 	// jeśli wpisano /names wraz z podaniem pokoju, wyświetl w oknie rozmowy nicki (w formie zwracanej przez serwer) w kolejności statusów, alfabetycznie
@@ -3538,7 +3542,7 @@ void raw_405(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
 	win_buf_add_str(ga, ci, ci[ga.current]->channel,
-			oINFOn xRED "Nie możesz dołączyć do pokoju " + raw_parm3 + " (przekroczono dopuszczalny limit jednocześnie otwartych pokoi).");
+			oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (przekroczono dopuszczalny limit jednocześnie otwartych pokoi).");
 }
 
 
@@ -3720,7 +3724,7 @@ void raw_473(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz dołączyć do pokoju " + raw_parm3 + " (nie posiadasz zaproszenia).");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (nie posiadasz zaproszenia).");
 }
 
 
@@ -3732,7 +3736,7 @@ void raw_474(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz dołączyć do pokoju " + raw_parm3 + " (jesteś zbanowany).");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (jesteś zbanowany(-na)).");
 }
 
 
@@ -3863,14 +3867,14 @@ void raw_530(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
-	531 (PRIVMSG user :text (?), NOTICE user :text)
+	531 (PRIVMSG user :text, NOTICE user :text)
 	:cf1f1.onet 531 Kernel_Panic AT89S8253 :You are not permitted to send private messages to this user
 */
 void raw_531(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie można wysłać wiadomości prywatnej do użytkownika " + raw_parm3);
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie posiadasz uprawnień do wysłania wiadomości prywatnej do " + raw_parm3);
 }
 
 
@@ -4148,7 +4152,7 @@ void raw_817(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 			// tekst pisany z użyciem /me
 			? xMAGENTA "* " + raw_parm5 + xNORMAL + user_msg_action
 			// tekst normalny
-			: xWHITE "<" + raw_parm5 + ">" xNORMAL " " + user_msg), 2, false);
+			: xWHITE "<" + raw_parm5 + ">" xNORMAL " " + user_msg), true, 2, false);
 }
 
 
@@ -4425,7 +4429,7 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *ci[], std::strin
 	else
 	{
 		new_chan_raw_unknown(ga, ci);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
-		win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
+		win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, true, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
 	}
 }
 
@@ -5450,6 +5454,20 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED + nick_who + ": " + raw_parm5 + " - nie posiadasz uprawnień do zmiany tego ustawienia.");
 	}
+}
+
+
+/*
+	NOTICE 464 (np. CS SET #pokój TOPIC za długi temat)
+	:ChanServ!service@service.onet NOTICE ucc_test :464 TOPIC :invalid argument
+*/
+void raw_notice_464(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
+
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + nick_who + ": nieprawidłowy argument dla " + raw_parm4);
 }
 
 

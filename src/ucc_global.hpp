@@ -32,11 +32,11 @@
 
 namespace std
 {
-	template <typename T> std::string to_string(const T &buf)
+	template <typename T> std::string to_string(const T &buf_number)
 	{
-		std::stringstream buf_stream;
-		buf_stream << buf;
-		return buf_stream.str();
+		std::stringstream buf_number_stream;
+		buf_number_stream << buf_number;
+		return buf_number_stream.str();
 	}
 
 	template <typename T> int stoi(const T &buf)
@@ -63,6 +63,10 @@ namespace std
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
+
+// początek i koniec logu
+#define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
+#define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---" << std::endl << std::endl
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 // (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)
@@ -98,7 +102,7 @@ namespace std
 #define xCYAN_BLUE	xCOLOR "\x0F"
 #define xWHITE_BLUE	xCOLOR "\x10"
 
-// definicje formatowania testu (kody umowne)
+// definicje formatowania tekstu (kody umowne)
 #define xBOLD_ON	"\x04"
 #define xBOLD_OFF	"\x05"
 #define xREVERSE_ON	"\x11"
@@ -290,23 +294,20 @@ struct channel_irc
 	std::string channel;
 	std::string topic;
 
+        std::map<std::string, struct nick_irc> ni;
+
+        std::ofstream chan_log;
+
 	int chan_act;           // 0 - brak aktywności, 1 - wejścia/wyjścia itp., 2 - ktoś pisze, 3 - ktoś pisze mój nick
-	int lock_act;
 
 	bool win_scroll_lock;	// scroll okna, false oznacza ciągłe przesuwanie aktualnego tekstu
+	int lock_act;		// analogicznie jak chan_act, ale dla napisu "--Więcej--" na dolnym pasku przy włączonym scrollu okna
 
 	int win_pos_first;
 	int win_skip_lead_first;
 
 	int win_pos_last;
 	int win_skip_lead_last;
-
-        std::map<std::string, struct nick_irc> ni;
-
-        std::ofstream chan_log;
-
-
-//	int xx;		// TEST
 };
 
 #endif		// UCC_GLOBAL_HPP

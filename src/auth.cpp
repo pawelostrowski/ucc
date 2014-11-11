@@ -520,7 +520,7 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 
 		if(ci[CHAN_STATUS]->chan_log.good())
 		{
-			ci[CHAN_STATUS]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+			ci[CHAN_STATUS]->chan_log << LOG_STARTED;
 		}
 	}
 
@@ -530,7 +530,7 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 
 		if(ci[CHAN_DEBUG_IRC]->chan_log.good())
 		{
-			ci[CHAN_DEBUG_IRC]->chan_log << "--- Rozpoczęcie logu: " + get_time_full() + " ---" << std::endl;
+			ci[CHAN_DEBUG_IRC]->chan_log << LOG_STARTED;
 		}
 	}
 

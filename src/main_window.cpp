@@ -38,7 +38,7 @@
 #include "ucc_global.hpp"
 
 
-static volatile sig_atomic_t sig_quit;
+static volatile sig_atomic_t sig_quit = 0;
 
 
 static void catch_signals(int signum)
@@ -50,8 +50,6 @@ static void catch_signals(int signum)
 int main_window(bool _use_colors, bool _debug_irc)
 {
 	// przechwycenie sygnałów zamykających program
-	sig_quit = 0;
-
 	struct sigaction sa;
 
 	sa.sa_handler = catch_signals;
@@ -230,18 +228,11 @@ int main_window(bool _use_colors, bool _debug_irc)
 			uINFOn xGREEN "Aby zobaczyć dostępne polecenia, wpisz:\n"
 			xCYAN  "/help" xGREEN " lub " xCYAN "/h\n"
 			uINFOn xGREEN "Aby zakończyć działanie programu, wpisz:\n"
-			xCYAN  "/quit" xGREEN " lub " xCYAN "/q");
+			xCYAN  "/quit" xGREEN " lub " xCYAN "/q", false);
 
 	// licznik dla select(), aby pokazać aktualny czas oraz obsłużyć PING
 	tv_sel.tv_sec = LOOP_SEC;
 	tv_sel.tv_usec = LOOP_USEC;
-
-
-
-
-// TEST
-//	int tmp1 = 0, tmp2 = 0, tmp3 = 0, tmp4 = 0, tmp5 = 0;
-
 
 /*
 	Pętla główna programu.
@@ -319,6 +310,28 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				// brak zaktualizowania okna głównego powoduje, że po zmianie rozmiaru terminala znika zawartość okna "wirtualnego"
 				wnoutrefresh(stdscr);
+
+				// jeśli scroll jest włączony, sprawdź, czy po zmianie rozmiaru okna nadal scroll będzie możliwy, jeśli nie, zakończ scroll
+				if(ci[ga.current]->win_scroll_lock)
+				{
+					int win_buf_current = ci[ga.current]->win_pos_first;
+					int win_buf_len = ci[ga.current]->win_buf.size();
+					int line_count = 0;
+
+					// zmiana rozmiaru okna powoduje przejście do początku danego wiersza
+					ci[ga.current]->win_skip_lead_first = 0;
+
+					while(win_buf_current < win_buf_len && line_count < ga.wterm_y)
+					{
+						line_count += how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len);
+						++win_buf_current;
+					}
+
+					if(line_count < ga.wterm_y || (win_buf_current == win_buf_len && line_count <= ga.wterm_y))
+					{
+						ci[ga.current]->win_scroll_lock = false;
+					}
+				}
 			}
 
 			// jeśli terminal obsługuje kolory (lub nie zostały wyłączone), paski będą w niebieskie z białym fontem, jeśli nie, paski będą w
@@ -768,28 +781,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// nie odświeżaj okna informacyjnego przy ponownym obiegu pętli
 				ga.win_info_refresh = false;
 			}
-
-/*
-	TEST START - usunąć po testach
-*/
-//			move(term_y - 2, term_x
-//				- std::to_string(ci[ga.current]->win_pos_first).size() - std::to_string(ci[ga.current]->win_skip_lead_first).size()
-//				- std::to_string(ci[ga.current]->win_pos_last).size() - std::to_string(ci[ga.current]->win_skip_lead_last).size() - 30);
-//
-//			attron(A_BOLD | COLOR_PAIR(pCYAN_BLUE));
-//
-//			printw("%d [%d-%d/%d-%d] %d %d %d %d %d",
-//				ga.wterm_y,
-//				ci[ga.current]->win_pos_first, ci[ga.current]->win_skip_lead_first,
-//				ci[ga.current]->win_pos_last, ci[ga.current]->win_skip_lead_last,
-//				tmp1, tmp2, tmp3, tmp4, tmp5);
-
-//			printw(" sock: %d", ga.socketfd_irc);
-
-//			printw(" win_info -> on: %d, active: %d", ga.win_info_state, win_info_active);
-/*
-	TEST END
-*/
 
 			// obecna pozycja kursora
 			move(term_y - 1, kbd_cur_pos - kbd_cur_pos_offset);
@@ -1666,42 +1657,47 @@ int main_window(bool _use_colors, bool _debug_irc)
 			// Page Up
 			else if(key_code == KEY_PPAGE && (ci[ga.current]->win_pos_first > 0 || ci[ga.current]->win_skip_lead_first > 0))
 			{
-
-// DO POPRAWY SCROLL W GÓRĘ
-
-
-				int line_count = 0; //-(ci[ga.current]->win_skip_lead_last);	// pomiń ewentualne poprzednie wiersze nadmiarowe z końca
-				int win_buf_current = ci[ga.current]->win_pos_first;
-//				int win_buf_len = ci[ga.current]->win_buf.size();
-
 				// po kolejnym przejściu pętli głównej odśwież okno "wirtualne"
 				ga.win_chat_refresh = true;
-
-				// rozpocznij scroll okna
-				ci[ga.current]->win_scroll_lock = true;
 
 				// wyzeruj wskaźnik aktywności dla napisu "--Więcej--"
 				ci[ga.current]->lock_act = 0;
 
+				// rozpocznij scroll okna (jeśli nie jest jeszcze włączony)
+				ci[ga.current]->win_scroll_lock = true;
 
-
-
-				while(win_buf_current > 0 && line_count < ga.wterm_y)
+				// (ga.wterm_y == 1 ? i > 0 : i > 1) - dla wysokości okna "wirtualnego" równej 1 trzeba przesuwać wiersze pojedynczo
+				for(int i = ga.wterm_y; (ga.wterm_y == 1 ? i > 0 : i > 1)
+					&& (ci[ga.current]->win_pos_first > 0 || ci[ga.current]->win_skip_lead_first > 0); --i)
 				{
-					line_count += how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len);
-					--win_buf_current;
-				}
+					if(ci[ga.current]->win_skip_lead_first > 0)
+					{
+						--ci[ga.current]->win_skip_lead_first;
+					}
 
-				ci[ga.current]->win_pos_first = win_buf_current;
-				ci[ga.current]->win_skip_lead_first = 0;
+					else if(ci[ga.current]->win_pos_first > 0)
+					{
+						--ci[ga.current]->win_pos_first;
+
+						// wyznacz koniec danego wiersza
+						ci[ga.current]->win_skip_lead_first =
+							how_lines(ci[ga.current]->win_buf[ci[ga.current]->win_pos_first], ga.wterm_x, ga.time_len) - 1;
+
+						// na wszelki wypadek sprawdź, czy wartość nie jest ujemna (gdyby pozycja była "pusta")
+						if(ci[ga.current]->win_skip_lead_first < 0)
+						{
+							ci[ga.current]->win_skip_lead_first = 0;	// aby nie wysypać programu
+						}
+					}
+				}
 			}
 
 			// Page Down
 			else if(key_code == KEY_NPAGE && ci[ga.current]->win_scroll_lock)
 			{
-				int line_count = -(ci[ga.current]->win_skip_lead_last);	// pomiń ewentualne poprzednie wiersze nadmiarowe z końca
 				int win_buf_current = ci[ga.current]->win_pos_last;
 				int win_buf_len = ci[ga.current]->win_buf.size();
+				int line_count = -(ci[ga.current]->win_skip_lead_last);	// pomiń ewentualne poprzednie wiersze nadmiarowe z końca
 
 				// po kolejnym przejściu pętli głównej odśwież okno "wirtualne"
 				ga.win_chat_refresh = true;
@@ -1734,7 +1730,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 						// wyznacz, ile wierszy nadmiarowych (dlatego - 1) zajmuje obecna pozycja w buforze
 						line_count = how_lines(ci[ga.current]->win_buf[win_buf_current], ga.wterm_x, ga.time_len) - 1;
 
-						if(line_count - ci[ga.current]->win_skip_lead_last)
+						if(line_count - ci[ga.current]->win_skip_lead_last > 0)
 						{
 							++ci[ga.current]->win_skip_lead_first;
 						}

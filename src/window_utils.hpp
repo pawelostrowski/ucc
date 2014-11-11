@@ -47,10 +47,10 @@ void win_buf_show(struct global_args &ga, struct channel_irc *ci[]);
 
 void win_buf_refresh(struct global_args &ga, struct channel_irc *ci[]);
 
-void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string in_buf, int act_type = 1, bool add_time = true,
-	bool only_chan_normal = true);
+void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string in_buf, bool save_log = true, int act_type = 1,
+	bool add_time = true, bool only_chan_normal = true);
 
-void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std::string msg);
+void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std::string msg, bool save_log = true);
 
 std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick_key);
 
