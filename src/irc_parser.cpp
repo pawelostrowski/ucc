@@ -4836,7 +4836,8 @@ void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 				nicklist_show += (nicklist_show.size() == 0 ? "" : xNORMAL ", ") + it->second;
 			}
 
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Osoby dodane do listy przyjaciół: " + nicklist_show);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					oINFOn "Osoby dodane do listy przyjaciół (" + std::to_string(nicklist.size()) + "): " + nicklist_show);
 		}
 
 		else
@@ -4896,7 +4897,8 @@ void raw_notice_132(struct global_args &ga, struct channel_irc *ci[])
 				nicklist_show += (nicklist_show.size() == 0 ? xYELLOW "" : xTERMC ", " xYELLOW) + it->second;
 			}
 
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Osoby dodane do listy ignorowanych: " + nicklist_show);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					oINFOn "Osoby dodane do listy ignorowanych (" + std::to_string(nicklist.size()) + "): " + nicklist_show);
 		}
 
 		else
@@ -4961,7 +4963,7 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *ci[])
 		}
 
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, (chanlist_show.size() > 0
-				? oINFOn "Pokoje dodane do listy ulubionych: " + chanlist_show
+				? oINFOn "Pokoje dodane do listy ulubionych (" + std::to_string(chanlist.size()) + "): " + chanlist_show
 				: oINFOn xWHITE "Nie posiadasz pokoi dodanych do listy ulubionych."));
 	}
 
@@ -5087,7 +5089,8 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *ci[], std::strin
 				chanlist_show += (chanlist_show.size() == 0 ? "" : xTERMC ", ") + it->second;
 			}
 
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Pokoje, w których posiadasz uprawnienia: " + chanlist_show);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					oINFOn "Pokoje, w których posiadasz uprawnienia (" + std::to_string(chanlist.size()) + "): " + chanlist_show);
 		}
 
 		else

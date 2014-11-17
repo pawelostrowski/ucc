@@ -772,7 +772,7 @@ void command_favourites_common(struct global_args &ga, struct channel_irc *ci[],
 		{
 			if(add_del)
 			{
-				irc_send(ga, ci, "NS FAVOURITES");
+				irc_send(ga, ci, "NS FAVOURITES LIST");
 
 				ga.cf.favourites_empty = true;
 			}
@@ -818,7 +818,7 @@ void command_friends_common(struct global_args &ga, struct channel_irc *ci[], st
 		{
 			if(add_del)
 			{
-				irc_send(ga, ci, "NS FRIENDS");
+				irc_send(ga, ci, "NS FRIENDS LIST");
 
 				ga.cf.friends_empty = true;
 			}
@@ -853,36 +853,36 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/ban\n"
 			xCYAN  "/banip\n"
 			xCYAN  "/busy\n"
-			xCYAN  "/captcha" xGREEN " lub " xCYAN "/cap\n"
+			xCYAN  "/captcha" xGREEN "      lub  " xCYAN "/cap\n"
 			xCYAN  "/card\n"
-			xCYAN  "/connect" xGREEN " lub " xCYAN "/c\n"
+			xCYAN  "/connect" xGREEN "      lub  " xCYAN "/c\n"
 			xCYAN  "/dban\n"
 			xCYAN  "/dbanip\n"
-			xCYAN  "/dfavourites" xGREEN " lub " xCYAN "/dfav\n"
-			xCYAN  "/dfriends" xGREEN " lub " xCYAN "/df\n"
-			xCYAN  "/dignore" xGREEN " lub " xCYAN "/dign\n"
-			xCYAN  "/disconnect" xGREEN " lub " xCYAN "/d\n"
+			xCYAN  "/dfavourites" xGREEN "  lub  " xCYAN "/dfav\n"
+			xCYAN  "/dfriends" xGREEN "     lub  " xCYAN "/df\n"
+			xCYAN  "/dignore" xGREEN "      lub  " xCYAN "/dign\n"
+			xCYAN  "/disconnect" xGREEN "   lub  " xCYAN "/d\n"
 			xCYAN  "/dop\n"
 			xCYAN  "/dsop\n"
 			xCYAN  "/dvip\n"
-			xCYAN  "/favourites" xGREEN " lub " xCYAN "/fav\n"
-			xCYAN  "/friends" xGREEN " lub " xCYAN "/f\n"
-			xCYAN  "/help" xGREEN " lub " xCYAN "/h\n"
-			xCYAN  "/ignore" xGREEN " lub " xCYAN "/ign\n"
-			xCYAN  "/invite" xGREEN " lub " xCYAN "/inv\n"
-			xCYAN  "/join" xGREEN " lub " xCYAN "/j\n"
+			xCYAN  "/favourites" xGREEN "   lub  " xCYAN "/fav\n"
+			xCYAN  "/friends" xGREEN "      lub  " xCYAN "/f\n"
+			xCYAN  "/help" xGREEN "         lub  " xCYAN "/h\n"
+			xCYAN  "/ignore" xGREEN "       lub  " xCYAN "/ign\n"
+			xCYAN  "/invite" xGREEN "       lub  " xCYAN "/inv\n"
+			xCYAN  "/join" xGREEN "         lub  " xCYAN "/j\n"
 			xCYAN  "/kban\n"
 //			xCYAN  "/kbanip\n"
 			xCYAN  "/kick\n"
-			xCYAN  "/list" xGREEN " lub " xCYAN "/l\n"
-			xCYAN  "/lusers" xGREEN " lub " xCYAN "/lu\n"
+			xCYAN  "/list" xGREEN "         lub  " xCYAN "/l\n"
+			xCYAN  "/lusers" xGREEN "       lub  " xCYAN "/lu\n"
 			xCYAN  "/me\n"
-			xCYAN  "/names" xGREEN " lub " xCYAN "/n\n"
+			xCYAN  "/names" xGREEN "        lub  " xCYAN "/n\n"
 			xCYAN  "/nick\n"
 			xCYAN  "/op\n"
-			xCYAN  "/part" xGREEN " lub " xCYAN "/p\n"
+			xCYAN  "/part" xGREEN "         lub  " xCYAN "/p\n"
 			xCYAN  "/priv\n"
-			xCYAN  "/quit" xGREEN " lub " xCYAN "/q\n"
+			xCYAN  "/quit" xGREEN "         lub  " xCYAN "/q\n"
 			xCYAN  "/raw\n"
 			xCYAN  "/sop\n"
 			xCYAN  "/time\n"
@@ -910,7 +910,7 @@ void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std
 		{
 			if(add_del)
 			{
-				irc_send(ga, ci, "NS IGNORE");
+				irc_send(ga, ci, "NS IGNORE LIST");
 
 				ga.cf.ignore_empty = true;
 			}
@@ -1056,16 +1056,26 @@ void command_kban_common(struct global_args &ga, struct channel_irc *ci[], std::
 			// jeśli wpisano nick do zbanowania i wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju), opcjonalnie można podać powód
 			if(kban_nick.size() > 0)
 			{
-				irc_send(ga, ci,
-				// KBAN wpisuje polecenie BAN; KBANIP wpisuje polecenie BANIP
-				(kban_type == "KBAN" ? "CS BAN " : "CS BANIP ") + ci[ga.current]->channel + " ADD " + kban_nick);
-
-				// zapisz nick, pokój i ewentualny powód, gdy serwer odpowie na CS BAN, to wyśle KICK
 				std::string kban_nick_key = buf_lower_to_upper(kban_nick);
 
-				ga.kb[kban_nick_key].nick = buf_lower_to_upper(kban_nick);
-				ga.kb[kban_nick_key].chan = ci[ga.current]->channel;
-				ga.kb[kban_nick_key].reason = get_rest_args(kbd_buf, pos_arg_start);
+				// polecenie wyślij, gdy nick jest w pokoju
+				if(ci[ga.current]->ni.find(kban_nick_key) != ci[ga.current]->ni.end())
+				{
+					// KBAN wpisuje polecenie BAN; KBANIP wpisuje polecenie BANIP
+					irc_send(ga, ci, (kban_type == "KBAN" ? "CS BAN " : "CS BANIP ") + ci[ga.current]->channel + " ADD " + kban_nick);
+
+					// zapisz nick, pokój i ewentualny powód, gdy serwer odpowie na CS BAN, to wyśle KICK
+					ga.kb[kban_nick_key].nick = kban_nick;
+					ga.kb[kban_nick_key].chan = ci[ga.current]->channel;
+					ga.kb[kban_nick_key].reason = get_rest_args(kbd_buf, pos_arg_start);
+				}
+
+				// jeśli nicka nie ma w pokoju, pokaż ostrzeżenie
+				else
+				{
+					win_buf_add_str(ga, ci, ci[ga.current]->channel,
+							uINFOn xRED + kban_nick + " nie przebywa w pokoju " + ci[ga.current]->channel, false);
+				}
 			}
 
 			// jeśli nie wpisano nicka, pokaż ostrzeżenie
@@ -1600,12 +1610,57 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 
 		std::string raw_command = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
 
-		if(raw_command == "NS" && buf_lower_to_upper(get_arg(raw_args, pos_arg_start)) == "INFO")
+		if(raw_command == "NS")
 		{
-			ga.cf.card = true;
+			std::string raw_arg1 = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
+			std::string raw_arg2 = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
+
+			if(raw_arg1 == "INFO")
+			{
+				// odpowiada poleceniu /card
+				ga.cf.card = true;
+			}
+
+			else if(raw_arg1 == "FAVOURITES")
+			{
+				// uproszczono założenie, że zawsze wpisano wersję bez nicka, bo w parserze IRC to i tak nie ma znaczenia
+				ga.cf.favourites_empty = true;
+			}
+
+			else if(raw_arg1 == "FRIENDS")
+			{
+				if(raw_arg2 == "ADD" || raw_arg2 == "DEL")
+				{
+					// odpowiada poleceniu /(d)friends nick
+					ga.cf.friends = true;
+				}
+
+				// założono, że inny argument oznacza wersję bez nicka
+				else
+				{
+					// odpowiada poleceniu /(d)friends (bez parametrów)
+					ga.cf.friends_empty = true;
+				}
+			}
+
+			else if(raw_arg1 == "IGNORE")
+			{
+				if(raw_arg2 == "ADD" || raw_arg2 == "DEL")
+				{
+					// odpowiada poleceniu /(d)ignore nick
+					ga.cf.ignore = true;
+				}
+
+				// założono, że inny argument oznacza wersję bez nicka
+				else
+				{
+					// odpowiada poleceniu /(d)ignore (bez parametrów)
+					ga.cf.ignore_empty = true;
+				}
+			}
 		}
 
-		else if(raw_command == "INVITE" || raw_command == "INV")
+		else if(raw_command == "INVITE")
 		{
 			ga.cf.invite = true;
 		}
@@ -1613,6 +1668,11 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 		else if(raw_command == "JOIN" || raw_command == "PRIV")
 		{
 			ga.cf.join_priv = true;
+		}
+
+		else if(raw_command == "KICK")
+		{
+			ga.cf.kick = true;
 		}
 
 		else if(raw_command == "LUSERS")
