@@ -1217,7 +1217,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 
 	// liczba osób w pokoju
 	wmove(ga.win_info, y, 1);
-	nicklist_header = xBOLD_ON "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")\n";
+	nicklist_header = "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")\n";
 	int nicklist_header_len = buf_chars(nicklist_header);
 	int how_spaces = (wterm_x - nicklist_header_len) / 2;
 
