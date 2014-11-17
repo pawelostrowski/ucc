@@ -80,8 +80,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 */
 	int term_y, term_x;		// wymiary terminala
 
-	bool win_first = true;		// pierwsze uruchomienie wymaga utworzenia okien "wirtualnych"
-
 	int sel_stat = 0;		// status select()
 
 	int key_code;			// kod odczytany z bufora wejściowego (przy wciskaniu klawiszy i wklejaniu tekstu ze schowka)
@@ -140,7 +138,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 	ga.ucc_quit_time = false;
 
 	ga.win_info_state = true;
-	ga.win_info_refresh = true;
+	ga.win_info_refresh = false;
 
 	ga.socketfd_irc = 0;		// gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
 
@@ -180,13 +178,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 	getmaxyx(stdscr, term_y, term_x);
 
 	// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, "Status" i "DebugIRC" (jeśli włączony jest tryb debugowania IRC)
-//	ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
+	ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
 
 	// nie zostawiaj kursora w oknie "wirtualnym"
-//	leaveok(ga.win_chat, TRUE);
+	leaveok(ga.win_chat, TRUE);
 
 	// zapisz wymiary okna "wirtualnego" do wykorzystania później
-//	getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
+	getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
 
 	// utwórz kanał "Status"
 	new_chan_status(ga, ci);
@@ -275,7 +273,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 		else
 		{
 			// wykryj zmianę rozmiaru okna terminala
-			if(is_term_resized(term_y, term_x) && ! win_first)
+			if(is_term_resized(term_y, term_x))
 			{
 				getmaxyx(stdscr, term_y, term_x);		// pobierz nowe wymiary terminala (okna głównego) po jego zmianie
 				wresize(stdscr, term_y, term_x);		// zmień rozmiar okna głównego po zmianie rozmiaru okna terminala
@@ -693,28 +691,14 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// jeśli włączono okno informacyjne, a było wyłączone i aktualnie otwarte okno jest oknem czata, wyświetl to okno
-			if(ga.win_info_state && ! win_info_active && ga.current < CHAN_NORMAL)
+			if(ga.win_info_state && ! win_info_active && ga.current < CHAN_CHAT)
 			{
 				win_info_active = true;
 
 				ga.win_chat_refresh = true;
+				ga.win_info_refresh = true;
 
-				if(win_first)
-				{
-					// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, "Status" i "DebugIRC" (jeśli włączony jest tryb
-					// debugowania IRC)
-					ga.win_chat = newwin(term_y - 3, term_x - NICKLIST_WIDTH, 1, 0);
-
-					// nie zostawiaj kursora w oknie "wirtualnym"
-					leaveok(ga.win_chat, TRUE);
-
-					win_first = false;
-				}
-
-				else
-				{
-					wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);
-				}
+				wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);
 
 				// zapisz wymiary okna "wirtualnego"
 				getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
@@ -727,28 +711,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// jeśli wyłączono okno informacyjne, a było włączone lub jest włączone, ale aktualnie nie jest otwarte okno czata, wyłącz to okno
-			else if((! ga.win_info_state && win_info_active) || (ga.win_info_state && win_info_active && ga.current >= CHAN_NORMAL))
+			else if((! ga.win_info_state && win_info_active) || (ga.win_info_state && win_info_active && ga.current >= CHAN_CHAT))
 			{
 				win_info_active = false;
 
 				ga.win_chat_refresh = true;
 
-				if(win_first)
-				{
-					// utwórz okno, w którym będą wyświetlane wszystkie kanały, privy, "Status" i "DebugIRC" (jeśli włączony jest tryb
-					// debugowania IRC)
-					ga.win_chat = newwin(term_y - 3, term_x, 1, 0);
-
-					// nie zostawiaj kursora w oknie "wirtualnym"
-					leaveok(ga.win_chat, TRUE);
-
-					win_first = false;
-				}
-
-				else
-				{
-					wresize(ga.win_chat, term_y - 3, term_x);
-				}
+				wresize(ga.win_chat, term_y - 3, term_x);
 
 				// zapisz wymiary okna "wirtualnego"
 				getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
@@ -771,7 +740,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// jeśli trzeba, odśwież okno informacyjne
-			if(ga.win_info_refresh && win_info_active)
+			if(ga.win_info_refresh)
 			{
 				if(win_info_active)
 				{
@@ -887,14 +856,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 								win_buf_add_str(ga, ci, ci[i]->channel,
 										uINFOb xRED "Serwer nie odpowiadał przez ponad "
 										+ std::to_string(PING_TIMEOUT) + "s, rozłączono.");
-
-								// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz
-								// zmiana dotyczyła nicka, który też jest w tym pokoju)
-								if(ga.win_info_state && ga.current == i)
-								{
-									ga.win_info_refresh = true;
-								}
 							}
+						}
+
+						// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne i to pokój czata)
+						if(ga.win_info_state && ga.current < CHAN_CHAT)
+						{
+							ga.win_info_refresh = true;
 						}
 
 						ga.irc_ok = false;
@@ -1763,7 +1731,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			}
 
 			// F2
-			else if(key_code == KEY_F(2) && ga.current < CHAN_NORMAL)
+			else if(key_code == KEY_F(2) && ga.current < CHAN_CHAT)
 			{
 				if(ga.win_info_state)
 				{
@@ -1773,7 +1741,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 				else
 				{
 					ga.win_info_state = true;
-					ga.win_info_refresh = true;
 				}
 			}
 
@@ -1899,7 +1866,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 				{
 					ga.current = CHAN_DEBUG_IRC;
 					ga.win_chat_refresh = true;
-					ga.win_info_refresh = true;
 				}
 
 				// "RawUnknown"
@@ -1907,7 +1873,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 				{
 					ga.current = CHAN_RAW_UNKNOWN;
 					ga.win_chat_refresh = true;
-					ga.win_info_refresh = true;
 				}
 
 				// wykryj sekwencję 0x1B 0x5B 0x31 0x3B 0x33 dla Alt Left + Arrow Left i Alt Left + Arrow Right na terminalu Screen
@@ -2002,14 +1967,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 						ci[i]->ni.clear();
 
 						win_buf_add_str(ga, ci, ci[i]->channel, uINFOb xRED "Rozłączono.");
-
-						// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne oraz zmiana dotyczyła
-						// nicka, który też jest w tym pokoju)
-						if(ga.win_info_state && ga.current == i)
-						{
-							ga.win_info_refresh = true;
-						}
 					}
+				}
+
+				// odśwież listę w aktualnie otwartym pokoju (o ile włączone jest okno informacyjne i to pokój czata)
+				if(ga.win_info_state && ga.current < CHAN_CHAT)
+				{
+					ga.win_info_refresh = true;
 				}
 			}
 		}
