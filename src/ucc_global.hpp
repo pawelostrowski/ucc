@@ -248,6 +248,7 @@ struct global_args
 	bool lag_timeout;
 
 	bool nick_in_use;
+	bool authkey_failed;
 
 	std::string cs_homes;
 

@@ -1141,7 +1141,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 	int y = 0;
 	int wterm_y, wterm_x;
 	int wcur_x;
-	std::string nicklist, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
+	std::string nicklist, nicklist_header, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
 
 	// zacznij od wyczyszczenia listy
 	wattrset(ga.win_info, A_NORMAL);
@@ -1217,7 +1217,16 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 
 	// liczba osób w pokoju
 	wmove(ga.win_info, y, 1);
-	nicklist = "[Użytkownicy: " + std::to_string(ci[ga.current]->ni.size()) + "]\n";
+	nicklist_header = xBOLD_ON "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")\n";
+	int nicklist_header_len = buf_chars(nicklist_header);
+	int how_spaces = (wterm_x - nicklist_header_len) / 2;
+
+	for(int i = 0; i < how_spaces; ++i)
+	{
+		nicklist += " ";
+	}
+
+	nicklist += nicklist_header;
 
 	// połącz nicki w jedną listę
 	nicklist += nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;

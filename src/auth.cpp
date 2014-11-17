@@ -505,6 +505,9 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	// załóż, że nick nie jest w użyciu
 	ga.nick_in_use = false;
 
+	// załóż, że authKey jest poprawny
+	ga.authkey_failed = false;
+
 	// zacznij od nieaktywnego away oraz busy
 	ga.my_away = false;
 	ga.my_busy = false;
@@ -613,8 +616,8 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	// AUTHKEY authKey
 	irc_parser(ga, ci, "authIrc3b: ");
 
-	// w przypadku błędu zakończ
-	if(! ga.irc_ok)
+	// w przypadku błędu lub gdy authKey nie jest poprawny, zakończ
+	if(! ga.irc_ok || ga.authkey_failed)
 	{
 		return;
 	}

@@ -1506,6 +1506,7 @@ void command_part(struct global_args &ga, struct channel_irc *ci[], std::string 
 		// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 		ga.current = CHAN_STATUS;
 		ga.win_chat_refresh = true;
+		ga.win_info_refresh = true;
 
 		// usuń kanał "RawUnknown"
 		delete ci[CHAN_RAW_UNKNOWN];

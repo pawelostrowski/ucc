@@ -3703,14 +3703,14 @@ void raw_433(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	// ustawienie tej flagi spowoduje przerwanie dalszej autoryzacji do IRC
-	ga.nick_in_use = true;
-
 	win_buf_add_str(ga, ci, ci[ga.current]->channel,
 			oINFOn xRED "Nick " + raw_parm3 + " jest już w użyciu. Spróbuj wpisać " xCYAN "/connect o " xRED "lub " xCYAN "/c o");
 
 	// w przypadku użycia już nicka, wyślij polecenie rozłączenia się
 	irc_send(ga, ci, "QUIT");
+
+	// ustawienie tej flagi spowoduje przerwanie dalszej autoryzacji do IRC
+	ga.nick_in_use = true;
 }
 
 
@@ -4126,7 +4126,11 @@ void raw_801(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authKey nie zawiera oczekiwanych 16 znaków (możliwa zmiana autoryzacji).");
 
-		ga.irc_ok = false;
+		// wyślij polecenie rozłączenia się
+		irc_send(ga, ci, "QUIT");
+
+		// ustawienie tej flagi spowoduje przerwanie dalszej autoryzacji do IRC
+		ga.authkey_failed = true;
 	}
 
 	else
