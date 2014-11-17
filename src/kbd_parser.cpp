@@ -284,6 +284,21 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_ban_common(ga, ci, kbd_buf, pos_arg_start, command);
 			}
 
+			else if(command == "DFAVOURITES" || command == "DFAV")
+			{
+				command_favourites_common(ga, ci, kbd_buf, pos_arg_start, false);
+			}
+
+			else if(command == "DFRIENDS" || command == "DF")
+			{
+				command_friends_common(ga, ci, kbd_buf, pos_arg_start, false);
+			}
+
+			else if(command == "DIGNORE" || command == "DIGN")
+			{
+				command_ignore_common(ga, ci, kbd_buf, pos_arg_start, false);
+			}
+
 			else if(command == "DISCONNECT" || command == "D")
 			{
 				command_disconnect(ga, ci, kbd_buf, pos_arg_start);
@@ -304,9 +319,24 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_vip_common(ga, ci, kbd_buf, pos_arg_start, command);
 			}
 
+			else if(command == "FAVOURITES" || command == "FAV")
+			{
+				command_favourites_common(ga, ci, kbd_buf, pos_arg_start, true);
+			}
+
+			else if(command == "FRIENDS" || command == "F")
+			{
+				command_friends_common(ga, ci, kbd_buf, pos_arg_start, true);
+			}
+
 			else if(command == "HELP" || command == "H")
 			{
 				command_help(ga, ci);
+			}
+
+			else if(command == "IGNORE" || command == "IGN")
+			{
+				command_ignore_common(ga, ci, kbd_buf, pos_arg_start, true);
 			}
 
 			else if(command == "INVITE" || command == "INV")
@@ -727,6 +757,94 @@ void command_disconnect(struct global_args &ga, struct channel_irc *ci[], std::s
 }
 
 
+void command_favourites_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del)
+{
+	// add_del: true - dodaje pokój do listy ulubionych, false - usuwa pokój z listy ulubionych
+
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		// pobierz wpisany pokój
+		std::string favourites_chan = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli nie wpisano pokoju, parser IRC pokaże listę ulubionych pokoi (tylko, gdy to dodawanie pokoju, przy usuwaniu pokaż ostrzeżenie)
+		if(favourites_chan.size() == 0)
+		{
+			if(add_del)
+			{
+				irc_send(ga, ci, "NS FAVOURITES");
+
+				ga.cf.favourites_empty = true;
+			}
+
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano pokoju usuwanego z listy ulubionych.", false);
+			}
+		}
+
+		else
+		{
+			// jeśli nie podano # przed nazwą pokoju, dodaj #
+			if(favourites_chan[0] != '#')
+			{
+				favourites_chan.insert(0, "#");
+			}
+
+			irc_send(ga, ci, (add_del ? "NS FAVOURITES ADD " : "NS FAVOURITES DEL ") + favourites_chan);
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
+}
+
+
+void command_friends_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del)
+{
+	// add_del: true - dodaje osobę do listy przyjaciół, false - usuwa osobę z listy przyjaciół
+
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		// pobierz wpisany nick
+		std::string friends_nick = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli nie wpisano nicka, parser IRC pokaże listę przyjaciół (tylko, gdy to dodawanie nicka, przy usuwaniu pokaż ostrzeżenie)
+		if(friends_nick.size() == 0)
+		{
+			if(add_del)
+			{
+				irc_send(ga, ci, "NS FRIENDS");
+
+				ga.cf.friends_empty = true;
+			}
+
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka osoby usuwanej z listy ulubionych.", false);
+			}
+		}
+
+		else
+		{
+			irc_send(ga, ci, (add_del ? "NS FRIENDS ADD " : "NS FRIENDS DEL ") + friends_nick);
+
+			ga.cf.friends = true;
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
+}
+
+
 void command_help(struct global_args &ga, struct channel_irc *ci[])
 {
 	win_buf_add_str(ga, ci, ci[ga.current]->channel,
@@ -740,11 +858,17 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/connect" xGREEN " lub " xCYAN "/c\n"
 			xCYAN  "/dban\n"
 			xCYAN  "/dbanip\n"
+			xCYAN  "/dfavourites" xGREEN " lub " xCYAN "/dfav\n"
+			xCYAN  "/dfriends" xGREEN " lub " xCYAN "/df\n"
+			xCYAN  "/dignore" xGREEN " lub " xCYAN "/dign\n"
 			xCYAN  "/disconnect" xGREEN " lub " xCYAN "/d\n"
 			xCYAN  "/dop\n"
 			xCYAN  "/dsop\n"
 			xCYAN  "/dvip\n"
+			xCYAN  "/favourites" xGREEN " lub " xCYAN "/fav\n"
+			xCYAN  "/friends" xGREEN " lub " xCYAN "/f\n"
 			xCYAN  "/help" xGREEN " lub " xCYAN "/h\n"
+			xCYAN  "/ignore" xGREEN " lub " xCYAN "/ign\n"
 			xCYAN  "/invite" xGREEN " lub " xCYAN "/inv\n"
 			xCYAN  "/join" xGREEN " lub " xCYAN "/j\n"
 			xCYAN  "/kban\n"
@@ -768,6 +892,48 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/whois\n"
 			xCYAN  "/whowas", false);
 			// dopisać resztę poleceń
+}
+
+
+void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del)
+{
+	// add_del: true - dodaje osobę do listy ignorowanych, false - usuwa osobę z listy ignorowanych
+
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		// pobierz wpisany nick
+		std::string ignore_nick = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli nie wpisano nicka, parser IRC pokaże listę ignorowanych (tylko, gdy to dodawanie nicka, przy usuwaniu pokaż ostrzeżenie)
+		if(ignore_nick.size() == 0)
+		{
+			if(add_del)
+			{
+				irc_send(ga, ci, "NS IGNORE");
+
+				ga.cf.ignore_empty = true;
+			}
+
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka osoby usuwanej z listy ignorowanych.", false);
+			}
+		}
+
+		else
+		{
+			irc_send(ga, ci, (add_del ? "NS IGNORE ADD " : "NS IGNORE DEL ") + ignore_nick);
+
+			ga.cf.ignore = true;
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
 }
 
 

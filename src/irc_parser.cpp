@@ -665,19 +665,19 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 121:
-				raw_notice_121();
+				raw_notice_121(ga, raw_buf);
 				break;
 
 			case 122:
-				raw_notice_122();
+				raw_notice_122(ga, ci);
 				break;
 
 			case 131:
-				raw_notice_131();
+				raw_notice_131(ga, raw_buf);
 				break;
 
 			case 132:
-				raw_notice_132();
+				raw_notice_132(ga, ci);
 				break;
 
 			case 141:
@@ -3951,8 +3951,8 @@ void raw_604(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 	std::string raw_parm6 = get_raw_parm(raw_buf, 6);
 
-	// wyświetl w pokoju "Status"
-	win_buf_add_str(ga, ci, "Status",
+	// wyświetl w pokoju "Status" lub w aktywnym po użyciu /friends bez parametrów
+	win_buf_add_str(ga, ci, (ga.cf.friends ? ci[ga.current]->channel : "Status"),
 			oINFOn xMAGENTA "Twój przyjaciel " + raw_parm3 + " [" + raw_parm4 + "@" + raw_parm5 + "] jest na czacie od: "
 			+ time_utimestamp_to_local_full(raw_parm6));
 }
@@ -3966,8 +3966,9 @@ void raw_605(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	// wyświetl w pokoju "Status"
-	win_buf_add_str(ga, ci, "Status", oINFOn xWHITE "Twojego przyjaciela " + raw_parm3 + " nie ma na czacie.");
+	// wyświetl w pokoju "Status" lub w aktywnym po użyciu /friends bez parametrów
+	win_buf_add_str(ga, ci, (ga.cf.friends ? ci[ga.current]->channel : "Status"),
+			oINFOn xWHITE "Twojego przyjaciela " + raw_parm3 + " nie ma na czacie.");
 }
 
 
@@ -4164,8 +4165,7 @@ void raw_950(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 
-	// informacja w "Status"
-	win_buf_add_str(ga, ci, "Status",
+	win_buf_add_str(ga, ci, ci[ga.current]->channel,
 			oINFOn xWHITE "Usunięto " + raw_parm5 + " z listy ignorowanych, możesz teraz otrzymywać od niego zaproszenia oraz powiadomienia.");
 }
 
@@ -4178,8 +4178,8 @@ void raw_951(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 {
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 
-	// informacja w "Status"
-	win_buf_add_str(ga, ci, "Status",
+	// informacja w "Status" lub w aktywnym pokoju po użyciu /ignore bez parametrów
+	win_buf_add_str(ga, ci, (ga.cf.ignore ? ci[ga.current]->channel : "Status"),
 			oINFOn xYELLOW "Dodano " + raw_parm5 + " do listy ignorowanych, nie będziesz otrzymywać od niego zaproszeń ani powiadomień.");
 }
 
@@ -4663,9 +4663,17 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 121 (ulubione nicki - lista)
 	:NickServ!service@service.onet NOTICE ucieszony86 :121 :nick1 nick2 nick3
 */
-void raw_notice_121()
+void raw_notice_121(struct global_args &ga, std::string &raw_buf)
 {
-	// feature
+	if(ga.cf.friends_empty)
+	{
+		if(ga.my_friends.size() > 0)
+		{
+			ga.my_friends += " ";
+		}
+
+		ga.my_friends += get_rest_from_buf(raw_buf, ":121 :");
+	}
 }
 
 
@@ -4673,9 +4681,41 @@ void raw_notice_121()
 	NOTICE 122 (ulubione nicki - koniec listy)
 	:NickServ!service@service.onet NOTICE ucieszony86 :122 :end of friend list
 */
-void raw_notice_122()
+void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 {
-	// feature
+	if(ga.cf.friends_empty)
+	{
+		if(ga.my_friends.size() > 0)
+		{
+			std::map<std::string, std::string> nicklist;
+
+			std::stringstream my_friends_stream(ga.my_friends);
+			std::string nick, nick_key, nicklist_show;
+
+			while(std::getline(my_friends_stream, nick, ' '))
+			{
+				if(nick.size() > 0)
+				{
+					nick_key = buf_lower_to_upper(nick);
+					nicklist[nick_key] = nick;
+				}
+			}
+
+			for(auto it = nicklist.begin(); it != nicklist.end(); ++it)
+			{
+				nicklist_show += (nicklist_show.size() == 0 ? xCYAN "" : xWHITE ", " xCYAN) + it->second;
+			}
+
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Osoby dodane do listy przyjaciół: " + nicklist_show);
+		}
+
+		else
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Nie posiadasz osób dodanych do listy przyjaciół.");
+		}
+	}
+
+	ga.my_friends.clear();
 }
 
 
@@ -4683,9 +4723,17 @@ void raw_notice_122()
 	NOTICE 131 (ignorowane nicki - lista)
 	:NickServ!service@service.onet NOTICE ucieszony86 :131 :Bot
 */
-void raw_notice_131()
+void raw_notice_131(struct global_args &ga, std::string &raw_buf)
 {
-	// feature
+	if(ga.cf.ignore_empty)
+	{
+		if(ga.my_ignore.size() > 0)
+		{
+			ga.my_ignore += " ";
+		}
+
+		ga.my_ignore += get_rest_from_buf(raw_buf, ":131 :");
+	}
 }
 
 
@@ -4693,9 +4741,41 @@ void raw_notice_131()
 	NOTICE 132 (ignorowane nicki - koniec listy)
 	:NickServ!service@service.onet NOTICE ucieszony86 :132 :end of ignore list
 */
-void raw_notice_132()
+void raw_notice_132(struct global_args &ga, struct channel_irc *ci[])
 {
-	// feature
+	if(ga.cf.ignore_empty)
+	{
+		if(ga.my_ignore.size() > 0)
+		{
+			std::map<std::string, std::string> nicklist;
+
+			std::stringstream my_friends_stream(ga.my_ignore);
+			std::string nick, nick_key, nicklist_show;
+
+			while(std::getline(my_friends_stream, nick, ' '))
+			{
+				if(nick.size() > 0)
+				{
+					nick_key = buf_lower_to_upper(nick);
+					nicklist[nick_key] = nick;
+				}
+			}
+
+			for(auto it = nicklist.begin(); it != nicklist.end(); ++it)
+			{
+				nicklist_show += (nicklist_show.size() == 0 ? xYELLOW "" : xWHITE ", " xYELLOW) + it->second;
+			}
+
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Osoby dodane do listy ignorowanych: " + nicklist_show);
+		}
+
+		else
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Nie posiadasz osób dodanych do listy ignorowanych.");
+		}
+	}
+
+	ga.my_ignore.clear();
 }
 
 
@@ -4720,14 +4800,12 @@ void raw_notice_141(struct global_args &ga, std::string &raw_buf)
 */
 void raw_notice_142(struct global_args &ga, struct channel_irc *ci[])
 {
-	// wejdź do ulubionych pokoi w kolejności alfabetycznej (później dodać opcję wyboru)
+	// pokaż listę ulubionych pokoi lub wejdź do ulubionych pokoi w kolejności alfabetycznej (później dodać opcję wyboru)
 
 	std::map<std::string, std::string> chanlist;
 
-	bool was_chan;
-
 	std::stringstream my_favourites_stream(ga.my_favourites);
-	std::string chan, chan_key, chanlist_join;
+	std::string chan, chan_key;
 
 	// pobierz pokoje z bufora i wpisz do std::map
 	while(std::getline(my_favourites_stream, chan, ' '))
@@ -4743,31 +4821,51 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *ci[])
 		}
 	}
 
-	// pomiń te pokoje, które już były (po wylogowaniu i ponownym zalogowaniu się, nie dotyczy pierwszego logowania po uruchomieniu programu)
-	for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+	if(ga.cf.favourites_empty)
 	{
-		was_chan = false;
+		std::string chanlist_show;
 
-		for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "DebugIRC" i "RawUnknown"
+		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
 		{
-			if(ci[i] && ci[i]->channel == it->second)
+			chanlist_show += (chanlist_show.size() == 0 ? xGREEN "" : xWHITE ", " xGREEN) + it->second;
+		}
+
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, (chanlist_show.size() > 0
+				? oINFOn xWHITE "Pokoje dodane do listy ulubionych: " + chanlist_show
+				: oINFOn xWHITE "Nie posiadasz pokoi dodanych do listy ulubionych."));
+	}
+
+	else
+	{
+		std::string chanlist_join;
+		bool was_chan;
+
+		// pomiń te pokoje, które już były (po wylogowaniu i ponownym zalogowaniu się, nie dotyczy pierwszego logowania po uruchomieniu programu)
+		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+		{
+			was_chan = false;
+
+			for(int i = 0; i < CHAN_CHAT; ++i)	// szukaj jedynie pokoi czata, bez "Status", "DebugIRC" i "RawUnknown"
 			{
-				was_chan = true;
-				break;
+				if(ci[i] && ci[i]->channel == it->second)
+				{
+					was_chan = true;
+					break;
+				}
+			}
+
+			if(! was_chan)
+			{
+				// pierwszy pokój przepisz bez zmian, kolejne pokoje muszą być rozdzielone przecinkiem
+				chanlist_join += (chanlist_join.size() == 0 ? "" : ",") + it->second;
 			}
 		}
 
-		if(! was_chan)
+		// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był (jeśli jakieś zostały do wejścia)
+		if(chanlist_join.size() > 0)
 		{
-			// pierwszy pokój przepisz bez zmian, kolejne pokoje muszą być rozdzielone przecinkiem
-			chanlist_join += (chanlist_join.size() == 0 ? "" : ",") + it->second;
+			irc_send(ga, ci, "JOIN " + chanlist_join);
 		}
-	}
-
-	// wejdź do ulubionych po pominięciu ewentualnych pokoi, w których program już był (jeśli jakieś zostały do wejścia)
-	if(chanlist_join.size() > 0)
-	{
-		irc_send(ga, ci, "JOIN " + chanlist_join);
 	}
 
 	// po użyciu wyczyść listę
@@ -5460,6 +5558,7 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 /*
 	NOTICE 464 (np. CS SET #pokój TOPIC za długi temat)
 	:ChanServ!service@service.onet NOTICE ucc_test :464 TOPIC :invalid argument
+	:ChanServ!service@service.onet NOTICE ucieszony86 :464 MODERATED :invalid argument
 */
 void raw_notice_464(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {

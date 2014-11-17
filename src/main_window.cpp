@@ -2026,7 +2026,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 /*
 	Kończenie działania programu.
 */
-	// jeśli podczas zamykania programu gniazdo IRC (socket) jest nadal otwarte, zamknij je
+	// jeśli podczas zamykania programu gniazdo IRC (socket) jest otwarte, zamknij je
 	if(ga.socketfd_irc > 0)
 	{
 		close(ga.socketfd_irc);

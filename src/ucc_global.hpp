@@ -151,6 +151,11 @@ namespace std
 struct command_flags
 {
 	bool card;
+	bool favourites_empty;
+	bool friends;
+	bool friends_empty;
+	bool ignore;
+	bool ignore_empty;
 	bool invite;
 	bool join_priv;
 	bool lusers;
@@ -245,9 +250,9 @@ struct global_args
 
 	std::string cs_homes;
 
-	std::string my_friend;
-	std::string my_ignore;
 	std::string my_favourites;
+	std::string my_friends;
+	std::string my_ignore;
 
 	std::string away_msg;
 

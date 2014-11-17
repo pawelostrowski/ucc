@@ -57,7 +57,13 @@ void command_connect(struct global_args &ga, struct channel_irc *ci[], std::stri
 
 void command_disconnect(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
+void command_favourites_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del);
+
+void command_friends_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del);
+
 void command_help(struct global_args &ga, struct channel_irc *ci[]);
+
+void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del);
 
 void command_invite(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 

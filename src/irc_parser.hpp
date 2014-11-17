@@ -247,13 +247,13 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
-void raw_notice_121();
+void raw_notice_121(struct global_args &ga, std::string &raw_buf);
 
-void raw_notice_122();
+void raw_notice_122(struct global_args &ga, struct channel_irc *ci[]);
 
-void raw_notice_131();
+void raw_notice_131(struct global_args &ga, std::string &raw_buf);
 
-void raw_notice_132();
+void raw_notice_132(struct global_args &ga, struct channel_irc *ci[]);
 
 void raw_notice_141(struct global_args &ga, std::string &raw_buf);
 
