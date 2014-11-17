@@ -21,6 +21,7 @@
 
 
 #include <sstream>		// std::string, std::stringstream
+#include <algorithm>		// std::find
 #include <sys/time.h>		// gettimeofday()
 
 // -std=c++11 - std::system(), std::to_string()
@@ -550,7 +551,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 602:
-				raw_602();
+				raw_602(ga, raw_buf);
 				break;
 
 			case 604:
@@ -2675,16 +2676,33 @@ void raw_301(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
-	303 (ISON - zwraca nick, gdy jest online)
+	303 (ISON nick1 nick2 - zwraca nicki, które są online)
 	:cf1f1.onet 303 ucc_test :Kernel_Panic
 */
 void raw_303(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	std::string ison_list = get_rest_from_buf(raw_buf, " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (ison_list.size() > 0
-			? oINFOn xWHITE "Użytkownicy dostępni dla zapytania ISON:" xNORMAL " " + ison_list
-			: oINFOn xWHITE "Brak dostępnych użytkowników dla zapytania ISON."));
+	if(ison_list.size() > 0)
+	{
+		std::stringstream ison_list_stream(ison_list);
+		std::string nick, nicklist_show;
+
+		while(std::getline(ison_list_stream, nick, ' '))
+		{
+			if(nick.size() > 0)
+			{
+				nicklist_show += (nicklist_show.size() == 0 ? xCYAN "" : xTERMC ", " xCYAN) + nick;
+			}
+		}
+
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Użytkownicy dostępni dla zapytania ISON: " + nicklist_show);
+	}
+
+	else
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Brak dostępnych użytkowników dla zapytania ISON.");
+	}
 }
 
 
@@ -2913,7 +2931,82 @@ void raw_319(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	// ukryj informację o użytkowniku, jeśli użyto opcji 's' we /whois
 	if(ga.whois_short != buf_lower_to_upper(raw_parm3))
 	{
-		ga.whois[raw_parm3].push_back(oINFOn "  Przebywa w pokojach: " + get_rest_from_buf(raw_buf, " :"));
+		std::map<std::string, std::string> chanlist;
+
+		std::stringstream chanlist_stream(get_rest_from_buf(raw_buf, " :"));
+		std::string chan, chan_key, chanlist_show;
+
+		while(std::getline(chanlist_stream, chan, ' '))
+		{
+			if(chan.size() > 0)
+			{
+				chan_key = buf_lower_to_upper(chan);
+
+				// dodanie cyfry na początku klucza posortuje pokoje wg uprawnień osoby
+				if(chan[0] == '`')
+				{
+					// za symbolem uprawnienia wstaw kolor zielony
+					if(chan.size() > 1)
+					{
+						chan.insert(1, xGREEN);
+					}
+
+					chanlist["1" + chan_key] = chan;
+				}
+
+				else if(chan[0] == '@')
+				{
+					if(chan.size() > 1)
+					{
+						chan.insert(1, xGREEN);
+					}
+
+					chanlist["2" + chan_key] = chan;
+				}
+
+				else if(chan[0] == '%')
+				{
+					if(chan.size() > 1)
+					{
+						chan.insert(1, xGREEN);
+					}
+
+					chanlist["3" + chan_key] = chan;
+				}
+
+				else if(chan[0] == '!')
+				{
+					if(chan.size() > 1)
+					{
+						chan.insert(1, xGREEN);
+					}
+
+					chanlist["4" + chan_key] = chan;
+				}
+
+				else if(chan[0] == '+')
+				{
+					if(chan.size() > 1)
+					{
+						chan.insert(1, xGREEN);
+					}
+
+					chanlist["5" + chan_key] = chan;
+				}
+
+				else
+				{
+					chanlist["6" + chan_key] = xGREEN + chan;
+				}
+			}
+		}
+
+		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+		{
+			chanlist_show += (chanlist_show.size() == 0 ? "" : xTERMC ", ") + it->second;
+		}
+
+		ga.whois[raw_parm3].push_back(oINFOn "  Przebywa w pokojach (" + std::to_string(chanlist.size()) + "): " + chanlist_show);
 	}
 }
 
@@ -3423,9 +3516,15 @@ void raw_396(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	:cf1f4.onet 401 ucc_test xyz :No such nick/channel
 	:cf1f4.onet 401 ucc_test #xyz :No such nick/channel
 
-	401 (TOPIC, NAMES, INVITE itd. - przy podaniu nieistniejącego pokoju lub nieprawidłowego pokoju, gdy brakuje #)
+	401 (INVITE, KICK - podanie nicka, którego nie ma na czacie)
+	:cf1f2.onet 401 ucc abc :No such nick/channel
+
+	401 (TOPIC, NAMES - przy podaniu nieistniejącego pokoju lub nieprawidłowego pokoju, gdy brakuje #)
 	:cf1f4.onet 401 ucc_test #ucc: :No such nick/channel
 	:cf1f4.onet 401 ucc_test abc :No such nick/channel
+
+	401 (INVREJECT - błędny nick, podanie nicka, którego nie ma na czacie)
+	:cf1f1.onet 401 Kernel_Panic abc :No such nick
 
 	401 (INVREJECT - błędny pokój)
 	- odrzucenie nieistniejącej rozmowy prywatnej lub odrzucenie rozmowy prywatnej, gdy nicka nie ma na czacie
@@ -3436,9 +3535,6 @@ void raw_396(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	:cf1f2.onet 401 ucc #abc :No such channel
 	- wpisanie nieprawidłowej nazwy pokoju
 	:cf1f2.onet 401 ucc abc :No such channel
-
-	401 (INVREJECT - błędny nick, podanie nicka, którego nie ma na czacie)
-	:cf1f1.onet 401 Kernel_Panic abc :No such nick
 */
 void raw_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
@@ -3447,7 +3543,7 @@ void raw_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string srv_msg = get_rest_from_buf(raw_buf, " :");
 
 	// WHOIS, INVITE lub INVREJECT przy błędnym nicku
-	if(ga.cf.whois || ga.cf.invite || srv_msg == "No such nick")
+	if(ga.cf.whois || ga.cf.invite || ga.cf.kick || srv_msg == "No such nick")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xGREEN + raw_parm3 + xNORMAL " - nie ma takiego użytkownika na czacie.");
 	}
@@ -3901,6 +3997,9 @@ void raw_600(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	win_buf_add_str(ga, ci, "Status",
 			oINFOn xMAGENTA "Twój przyjaciel " xBOLD_ON + raw_parm3 + xBOLD_OFF " [" + raw_parm4 + "@" + raw_parm5
 			+ "] pojawia się na czacie (" + time_utimestamp_to_local_full(raw_parm6) +  ").");
+
+	// dodaj nick do listy zalogowanych przyjaciół
+	ga.my_friends_online.push_back(raw_parm3);
 }
 
 
@@ -3927,6 +4026,14 @@ void raw_601(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	win_buf_add_str(ga, ci, "Status",
 			oINFOn xWHITE "Twój przyjaciel " xBOLD_ON xTERMC + raw_parm3 + xBOLD_OFF xWHITE " [" + raw_parm4 + "@" + raw_parm5
 			+ "] wychodzi z czata (" + time_utimestamp_to_local_full(raw_parm6) + ").");
+
+	// usuń nick z listy zalogowanych przyjaciół
+	auto it = std::find(ga.my_friends_online.begin(), ga.my_friends_online.end(), raw_parm3);
+
+	if(it != ga.my_friends_online.end())
+	{
+		ga.my_friends_online.erase(it);
+	}
 }
 
 
@@ -3935,8 +4042,17 @@ void raw_601(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	:cf1f2.onet 602 ucc_test ucieszony86 50256503 87edcc.6bc2d5.4c33d7.76ada2 1401337308 :stopped watching
 	:cf1f2.onet 602 ucc_test ucieszony86 * * 0 :stopped watching
 */
-void raw_602()
+void raw_602(struct global_args &ga, std::string &raw_buf)
 {
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	// usuń nick z listy zalogowanych przyjaciół
+	auto it = std::find(ga.my_friends_online.begin(), ga.my_friends_online.end(), raw_parm3);
+
+	if(it != ga.my_friends_online.end())
+	{
+		ga.my_friends_online.erase(it);
+	}
 }
 
 
@@ -3955,6 +4071,9 @@ void raw_604(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	win_buf_add_str(ga, ci, (ga.cf.friends ? ci[ga.current]->channel : "Status"),
 			oINFOn xMAGENTA "Twój przyjaciel " + raw_parm3 + " [" + raw_parm4 + "@" + raw_parm5 + "] jest na czacie od: "
 			+ time_utimestamp_to_local_full(raw_parm6));
+
+	// dodaj nick do listy zalogowanych przyjaciół
+	ga.my_friends_online.push_back(raw_parm3);
 }
 
 
@@ -4697,16 +4816,27 @@ void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 				if(nick.size() > 0)
 				{
 					nick_key = buf_lower_to_upper(nick);
-					nicklist[nick_key] = nick;
+
+					// jeśli osoba z listy przyjaciół jest online, jej kolor będzie inny i z boldem, niż gdy jest offline,
+					// nick ten będzie też przed osobami offline na liście
+					if(std::find(ga.my_friends_online.begin(), ga.my_friends_online.end(), nick) != ga.my_friends_online.end())
+					{
+						nicklist["1" + nick_key] = xBOLD_ON xGREEN + nick;
+					}
+
+					else
+					{
+						nicklist["2" + nick_key] = xWHITE + nick;
+					}
 				}
 			}
 
 			for(auto it = nicklist.begin(); it != nicklist.end(); ++it)
 			{
-				nicklist_show += (nicklist_show.size() == 0 ? xCYAN "" : xWHITE ", " xCYAN) + it->second;
+				nicklist_show += (nicklist_show.size() == 0 ? "" : xNORMAL ", ") + it->second;
 			}
 
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Osoby dodane do listy przyjaciół: " + nicklist_show);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Osoby dodane do listy przyjaciół: " + nicklist_show);
 		}
 
 		else
@@ -4763,10 +4893,10 @@ void raw_notice_132(struct global_args &ga, struct channel_irc *ci[])
 
 			for(auto it = nicklist.begin(); it != nicklist.end(); ++it)
 			{
-				nicklist_show += (nicklist_show.size() == 0 ? xYELLOW "" : xWHITE ", " xYELLOW) + it->second;
+				nicklist_show += (nicklist_show.size() == 0 ? xYELLOW "" : xTERMC ", " xYELLOW) + it->second;
 			}
 
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Osoby dodane do listy ignorowanych: " + nicklist_show);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Osoby dodane do listy ignorowanych: " + nicklist_show);
 		}
 
 		else
@@ -4827,11 +4957,11 @@ void raw_notice_142(struct global_args &ga, struct channel_irc *ci[])
 
 		for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
 		{
-			chanlist_show += (chanlist_show.size() == 0 ? xGREEN "" : xWHITE ", " xGREEN) + it->second;
+			chanlist_show += (chanlist_show.size() == 0 ? xGREEN "" : xTERMC ", " xGREEN) + it->second;
 		}
 
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, (chanlist_show.size() > 0
-				? oINFOn xWHITE "Pokoje dodane do listy ulubionych: " + chanlist_show
+				? oINFOn "Pokoje dodane do listy ulubionych: " + chanlist_show
 				: oINFOn xWHITE "Nie posiadasz pokoi dodanych do listy ulubionych."));
 	}
 
@@ -4891,6 +5021,7 @@ void raw_notice_151(struct global_args &ga, std::string &raw_buf)
 /*
 	NOTICE 152 (CS HOMES)
 	:ChanServ!service@service.onet NOTICE ucc_test :152 :end of homes list
+
 	NOTICE 152 (po zalogowaniu)
 	:NickServ!service@service.onet NOTICE ucc_test :152 :end of offline senders list
 */
@@ -4900,9 +5031,69 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 	if(srv_msg == "end of homes list")
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, (ga.cs_homes.size() > 0
-				? oINFOn xWHITE "Pokoje, w których posiadasz uprawnienia: " xNORMAL + ga.cs_homes
-				: oINFOn xWHITE "Nie posiadasz uprawnień w żadnym pokoju."));
+		if(ga.cs_homes.size() > 0)
+		{
+			std::map<std::string, std::string> chanlist;
+
+			std::stringstream chanlist_stream(ga.cs_homes);
+			std::string chan, chan_key, chanlist_show;
+
+			while(std::getline(chanlist_stream, chan, ' '))
+			{
+				if(chan.size() > 0)
+				{
+					chan_key = buf_lower_to_upper(chan);
+
+					if(chan[0] == 'q')
+					{
+						if(chan.size() > 1)
+						{
+							chan.insert(1, xGREEN);
+						}
+
+						chanlist["1" + chan_key] = chan;
+					}
+
+					else if(chan[0] == 'o')
+					{
+						if(chan.size() > 1)
+						{
+							chan.insert(1, xGREEN);
+						}
+
+						chanlist["2" + chan_key] = chan;
+					}
+
+					else if(chan[0] == 'h')
+					{
+						if(chan.size() > 1)
+						{
+							chan.insert(1, xGREEN);
+						}
+
+						chanlist["3" + chan_key] = chan;
+					}
+
+					else
+					{
+						// jako wyjątek wrzuć na początek listy
+						chanlist["0" + chan_key] = xGREEN + chan;
+					}
+				}
+			}
+
+			for(auto it = chanlist.begin(); it != chanlist.end(); ++it)
+			{
+				chanlist_show += (chanlist_show.size() == 0 ? "" : xTERMC ", ") + it->second;
+			}
+
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Pokoje, w których posiadasz uprawnienia: " + chanlist_show);
+		}
+
+		else
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Nie posiadasz uprawnień w żadnym pokoju.");
+		}
 
 		// po użyciu wyczyść bufor, aby kolejne użycie CS HOMES wpisało wartość od nowa, a nie nadpisało
 		ga.cs_homes.clear();

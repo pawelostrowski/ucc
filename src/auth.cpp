@@ -509,6 +509,9 @@ void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 	ga.my_away = false;
 	ga.my_busy = false;
 
+	// wyczyść listę zalogowanych przyjaciół
+	ga.my_friends_online.clear();
+
 	// utwórz katalog użytkownika
 	ga.user_dir = ga.ucc_home_dir + "/" + ga.zuousername;
 	mkdir(ga.user_dir.c_str(), 0755);

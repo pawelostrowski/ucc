@@ -1101,11 +1101,19 @@ void command_kick(struct global_args &ga, struct channel_irc *ci[], std::string 
 			// pobierz wpisany nick do wyrzucenia
 			std::string kick_nick = get_arg(kbd_buf, pos_arg_start);
 
-			kick_nick.size() > 0
 			// jeśli wpisano nick do wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju), opcjonalnie można podać powód wyrzucenia
-			? irc_send(ga, ci, "KICK " + ci[ga.current]->channel + " " + kick_nick + " :" + get_rest_args(kbd_buf, pos_arg_start))
+			if(kick_nick.size() > 0)
+			{
+				irc_send(ga, ci, "KICK " + ci[ga.current]->channel + " " + kick_nick + " :" + get_rest_args(kbd_buf, pos_arg_start));
+
+				ga.cf.kick = true;
+			}
+
 			// jeśli nie wpisano nicka, pokaż ostrzeżenie
-			: win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do wyrzucenia.", false);
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka do wyrzucenia.", false);
+			}
 		}
 
 		// jeśli nie przebywamy w aktywnym pokoju czata, nie można wyrzucić użytkownika, więc pokaż ostrzeżenie

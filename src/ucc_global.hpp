@@ -158,6 +158,7 @@ struct command_flags
 	bool ignore_empty;
 	bool invite;
 	bool join_priv;
+	bool kick;
 	bool lusers;
 	bool names;
 	bool names_empty;
@@ -252,6 +253,7 @@ struct global_args
 
 	std::string my_favourites;
 	std::string my_friends;
+	std::vector<std::string> my_friends_online;
 	std::string my_ignore;
 
 	std::string away_msg;
