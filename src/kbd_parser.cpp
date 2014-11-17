@@ -779,7 +779,7 @@ void command_favourites_common(struct global_args &ga, struct channel_irc *ci[],
 
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano pokoju usuwanego z listy ulubionych.", false);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano pokoju do usunięcia z listy ulubionych.", false);
 			}
 		}
 
@@ -825,7 +825,8 @@ void command_friends_common(struct global_args &ga, struct channel_irc *ci[], st
 
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka osoby usuwanej z listy ulubionych.", false);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Nie podano nicka osoby do usunięcia z listy ulubionych.", false);
 			}
 		}
 
@@ -917,7 +918,8 @@ void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std
 
 			else
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka osoby usuwanej z listy ignorowanych.", false);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Nie podano nicka osoby do usunięcia z listy ignorowanych.", false);
 			}
 		}
 
@@ -1506,7 +1508,7 @@ void command_part(struct global_args &ga, struct channel_irc *ci[], std::string 
 		// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 		ga.current = CHAN_STATUS;
 		ga.win_chat_refresh = true;
-		ga.win_info_refresh = true;
+//		ga.win_info_refresh = true;
 
 		// usuń kanał "RawUnknown"
 		delete ci[CHAN_RAW_UNKNOWN];
@@ -1545,7 +1547,7 @@ void command_priv(struct global_args &ga, struct channel_irc *ci[], std::string 
 		// jeśli nie wpisano nicka, pokaż ostrzeżenie
 		if(priv_nick.size() == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka zapraszanego do rozmowy prywatnej.", false);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Nie podano nicka osoby zapraszanej do rozmowy prywatnej.", false);
 		}
 
 		else

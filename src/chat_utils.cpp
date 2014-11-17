@@ -184,7 +184,7 @@ void del_chan_chat(struct global_args &ga, struct channel_irc *ci[], std::string
 			// tymczasowo przełącz na "Status", potem przerobić, aby przechodziło do poprzedniego, który był otwarty
 			ga.current = CHAN_STATUS;
 			ga.win_chat_refresh = true;
-			ga.win_info_refresh = true;
+//			ga.win_info_refresh = true;
 
 			// usuń kanał, który był przed zmianą na "Status"
 			delete ci[i];
