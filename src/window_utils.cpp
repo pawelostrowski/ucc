@@ -1234,7 +1234,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 	std::string users_header = "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")";
 	int users_header_len = buf_chars(users_header);
 
-	mvwprintw(ga.win_info, 0, ((getmaxx(ga.win_info) - users_header_len) + 1) / 2, users_header.c_str());
+	mvwaddstr(ga.win_info, 0, ((getmaxx(ga.win_info) - users_header_len) + 1) / 2, users_header.c_str());
 
 	// wyświetl nicki
 	for(auto it = nicklist.begin(); it != nicklist.end() && getcury(ga.win_info) < getmaxy(ga.win_info) - 1; ++it)
