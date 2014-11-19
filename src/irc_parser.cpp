@@ -3354,8 +3354,7 @@ void raw_366(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 			}
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					oINFOn xGREEN "Użytkownicy przebywający w pokoju " + raw_parm3
-					+ " (liczba użytkowników: " + std::to_string(nick_chan.size()) + ")");
+					oINFOn xGREEN "Użytkownicy przebywający w pokoju " + raw_parm3 + " (" + std::to_string(nick_chan.size()) + "):");
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, nicklist_part);
 		}

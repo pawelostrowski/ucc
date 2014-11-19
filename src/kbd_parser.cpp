@@ -1311,30 +1311,40 @@ void command_nick(struct global_args &ga, struct channel_irc *ci[], std::string 
 			}
 		}
 
-		else if(buf_chars(nick) < 3)
-		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za krótki (minimalnie 3 znaki).", false);
-		}
-
-		else if(buf_chars(nick) > 32)
-		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Podany nick jest za długi (maksymalnie 32 znaki).", false);
-		}
-
-		// gdy wpisano nick mieszczący się w zakresie 3...32 znaków
 		else
 		{
-			// przepisz nick
-			ga.my_nick = nick;
-
-			// pobierz hasło (jeśli wpisano, jeśli nie, bufor hasła będzie pusty)
 			ga.my_password = get_arg(kbd_buf, pos_arg_start);
 
-			// wyświetl wpisany nick
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, (ga.my_password.size() == 0
-					? uINFOn xGREEN "Wpisany nick tymczasowy: "
-					: uINFOn xGREEN "Wpisany nick stały: ")
-					+ ga.my_nick, false);
+			if(buf_chars(nick) < 3)
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Wpisany nick jest za krótki (minimalnie 3 znaki).", false);
+			}
+
+			// dla nicka tymczasowego trzeba uwzględnić znak tyldy po zalogowaniu, dlatego maksymalna długość jest mniejsza niż dla stałego
+			else if(ga.my_password.size() == 0 && buf_chars(nick) > 31)
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Wpisany nick jest za długi (maksymalnie 31 znaków dla nicka tymczasowego).", false);
+			}
+
+			else if(buf_chars(nick) > 32)
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Wpisany nick jest za długi (maksymalnie 32 znaki dla nicka stałego).", false);
+			}
+
+			// gdy wpisano nick mieszczący się w zakresie odpowiedniej liczby znaków
+			else
+			{
+				// przepisz nick
+				ga.my_nick = nick;
+
+				// wyświetl wpisany nick
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, (ga.my_password.size() == 0
+						? uINFOn xGREEN "Wpisany nick tymczasowy: "
+						: uINFOn xGREEN "Wpisany nick stały: ")
+						+ ga.my_nick, false);
+			}
 		}
 	}
 }
