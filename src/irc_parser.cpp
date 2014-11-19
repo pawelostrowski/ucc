@@ -5400,6 +5400,9 @@ void raw_notice_400(struct global_args &ga, struct channel_irc *ci[])
 
 
 /*
+	NOTICE 401 (NS FRIENDS ADD ~nick - podanie nicka tymczasowego)
+	:NickServ!service@service.onet NOTICE ucc :401 ~abc :no such nick
+
 	NOTICE 401 (NS INFO nick)
 	:NickServ!service@service.onet NOTICE ucc_test :401 t :no such nick
 	:NickServ!service@service.onet NOTICE ucc_test :401  :no such nick
@@ -5408,11 +5411,20 @@ void raw_notice_401(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string nick_info = get_value_from_buf(raw_buf, ":401 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (nick_info.size() > 0
-			// opcja dla pierwszego RAW powyżej
-			? oINFOb xMAGENTA + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
-			// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
-			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
+	if(ga.cf.friends)
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				oINFOb xMAGENTA + nick_info + xNORMAL " - nie można dodać nicka tymczasowego do listy przyjaciół.");
+	}
+
+	else
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, (nick_info.size() > 0
+				// opcja dla pierwszego RAW powyżej
+				? oINFOb xMAGENTA + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
+				// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
+				: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
+	}
 }
 
 
