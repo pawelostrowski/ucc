@@ -40,9 +40,6 @@
 // nick na pasku dolnym, gdy nie jesteśmy zalogowani do czata
 #define NICK_NOT_LOGGED		"Niezalogowany"
 
-// szerokość listy nicków
-#define NICKLIST_WIDTH		36
-
 // co ile sekund wysyłać PING do serwera
 #define PING_TIME		10
 

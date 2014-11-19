@@ -1024,110 +1024,85 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], std
 	{
 		if(it->second.nf.owner)
 		{
-			if(! it->second.nf.busy)
+			if(it->second.nf.busy)
 			{
-				nick_tmp += "`";
+				nick_tmp = xBOLD_ON xDARK;
 			}
 
-			else
-			{
-				nick_tmp += xWHITE "`";
-			}
+			nick_tmp += "`";
 		}
 
 		else if(it->second.nf.op)	// jeśli był ` to nie pokazuj @
 		{
-			if(! it->second.nf.busy)
+			if(it->second.nf.busy)
 			{
-				nick_tmp += "@";
+				nick_tmp = xBOLD_ON xDARK;
 			}
 
-			else
-			{
-				nick_tmp += xWHITE "@";
-			}
+			nick_tmp += "@";
 		}
 
-		if(it->second.nf.halfop)
+		else if(it->second.nf.halfop)
 		{
-			if(! it->second.nf.busy)
+			if(it->second.nf.busy)
 			{
-				nick_tmp += "%";
+				nick_tmp = xBOLD_ON xDARK;
 			}
 
-			else
-			{
-				nick_tmp += xWHITE "%";
-			}
+			nick_tmp += "%";
 		}
 
 		if(it->second.nf.moderator)
 		{
+			nick_tmp += xNORMAL;	// gdyby było formatowanie z w/w flag, należy się go pozbyć
+
 			if(! it->second.nf.busy)
 			{
-				nick_tmp += xBOLD_ON xMAGENTA "!";
+				nick_tmp += xBOLD_ON;
 			}
 
-			else
-			{
-				nick_tmp += xMAGENTA "!";
-			}
+			nick_tmp += xMAGENTA "!";
 		}
 
 		if(it->second.nf.voice)
 		{
+			nick_tmp += xNORMAL;
+
 			if(! it->second.nf.busy)
 			{
-				nick_tmp += xBOLD_ON xBLUE "+";
+				nick_tmp += xBOLD_ON;
 			}
 
-			else
-			{
-				nick_tmp += xBLUE "+";
-			}
+			nick_tmp += xBLUE "+";
 		}
 
 		if(it->second.nf.public_webcam)
 		{
-			if(! it->second.nf.busy)
-			{
-				nick_tmp += xBOLD_ON xGREEN "*";
-			}
-
-			else
-			{
-				nick_tmp += xGREEN "*";
-			}
-		}
-
-		if(it->second.nf.private_webcam)
-		{
-			// przy braku obsługi kolorów dla odróżnienia gwiazdek prywatna kamerka będzie na odwróconym tle
-			if(! ga.use_colors)
-			{
-				nick_tmp += xREVERSE_ON;
-			}
+			nick_tmp += xNORMAL;
 
 			if(! it->second.nf.busy)
 			{
-				nick_tmp += xBOLD_ON xRED "*";
+				nick_tmp += xBOLD_ON;
 			}
 
-			else
-			{
-				nick_tmp += xRED "*";
-			}
+			nick_tmp += xGREEN "*";
 		}
 
-		if(! it->second.nf.busy)
+		else if(it->second.nf.private_webcam)
 		{
 			nick_tmp += xNORMAL;
+
+			if(! it->second.nf.busy)
+			{
+				nick_tmp += xBOLD_ON;
+			}
+
+			// czerwona gwiazdka, a przy braku obsługi kolorów dla odróżnienia prywatna kamerka będzie na odwróconym tle
+			nick_tmp += (ga.use_colors ? xRED "*" : xREVERSE_ON "*");
 		}
 
-		else
-		{
-			nick_tmp += xNORMAL xWHITE;
-		}
+		// ustaw kolor nicka
+		nick_tmp += (! it->second.nf.busy ? xNORMAL : xNORMAL xBOLD_ON xDARK);
 	}
 
 	return nick_tmp;
@@ -1136,190 +1111,295 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], std
 
 void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 {
-	// PRZEBUDOWAĆ LISTĘ NICKÓW!
+	std::map<std::string, std::string> nicklist;
+	std::string nick_key, nick_status;
 
-	int y = 0;
-	int wterm_y, wterm_x;
-	int wcur_x;
-	std::string nicklist, nicklist_header, nick_owner, nick_op, nick_halfop, nick_moderator, nick_voice, nick_pub_webcam, nick_priv_webcam, nick_normal;
+	int nick_max_show = 0;
+	int nick_len;
+	int nick_max_len = 0;
 
-	// zacznij od wyczyszczenia listy
-	wattrset(ga.win_info, A_NORMAL);
+	char c;
+
+	// zapisz nicki w kolejności zależnej od uprawnień
+	for(auto it = ci[ga.current]->ni.begin(); it != ci[ga.current]->ni.end(); ++it)
+	{
+		if(it->second.nf.owner)
+		{
+			nick_status = "1";
+		}
+
+		else if(it->second.nf.op)
+		{
+			nick_status = "2";
+		}
+
+		else if(it->second.nf.halfop)
+		{
+			nick_status = "3";
+		}
+
+		else if(it->second.nf.moderator)
+		{
+			nick_status = "4";
+		}
+
+		else if(it->second.nf.voice)
+		{
+			nick_status = "5";
+		}
+
+		else if(it->second.nf.public_webcam)
+		{
+			nick_status = "6";
+		}
+
+		else if(it->second.nf.private_webcam)
+		{
+			nick_status = "7";
+		}
+
+		else
+		{
+			nick_status = "8";
+		}
+
+		nicklist[nick_status + it->first] = get_flags_nick(ga, ci, it->first) + it->second.nick;
+	}
+
+	// pobierz najdłuższy nick, który wyświetli się w oknie
+	for(auto it = nicklist.begin(); it != nicklist.end() && nick_max_show < getmaxy(ga.win_info) - 1; ++it, ++nick_max_show)
+	{
+		nick_len = buf_chars(it->second);
+
+		// zapisz długość nicka, jeśli jest krótsza od ostatniego, nie zmieniaj wartości (trzeba wykryć najdłuższy nick wraz z jego statusami)
+		if(nick_len > nick_max_len)
+		{
+			nick_max_len = nick_len;
+		}
+	}
+
+	// jeśli trzeba, zmień rozmiary okien
+	if(nick_max_len >= NICKLIST_WIDTH_MIN && ga.win_info_current_width == NICKLIST_WIDTH_MIN)
+	{
+		delwin(ga.win_info);
+
+		wresize(ga.win_chat, getmaxy(stdscr) - 3, getmaxx(stdscr) - NICKLIST_WIDTH_MAX);
+
+		getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
+
+		ga.win_info = newwin(getmaxy(stdscr) - 3, NICKLIST_WIDTH_MAX, 1, getmaxx(stdscr) - NICKLIST_WIDTH_MAX);
+
+		leaveok(ga.win_info, TRUE);
+
+		ga.win_info_current_width = NICKLIST_WIDTH_MAX;
+
+		ga.win_chat_refresh = true;
+	}
+
+	else if(nick_max_len < NICKLIST_WIDTH_MIN && ga.win_info_current_width == NICKLIST_WIDTH_MAX)
+	{
+		delwin(ga.win_info);
+
+		wresize(ga.win_chat, getmaxy(stdscr) - 3, getmaxx(stdscr) - NICKLIST_WIDTH_MIN);
+
+		getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
+
+		ga.win_info = newwin(getmaxy(stdscr) - 3, NICKLIST_WIDTH_MIN, 1, getmaxx(stdscr) - NICKLIST_WIDTH_MIN);
+
+		leaveok(ga.win_info, TRUE);
+
+		ga.win_info_current_width = NICKLIST_WIDTH_MIN;
+
+		ga.win_chat_refresh = true;
+	}
+
+	// wyczyść listę
 	werase(ga.win_info);
 
 	// narysuj linię z lewej strony od góry do dołu (jeśli jest obsługa kolorów, to na niebiesko)
-	if(ga.use_colors)
-	{
-		wattron(ga.win_info, COLOR_PAIR(pBLUE));
-	}
+	ga.use_colors ? wattrset(ga.win_info, COLOR_PAIR(pBLUE)) : wattrset(ga.win_info, A_REVERSE);
 
 	wborder(ga.win_info, ACS_VLINE, ' ', ' ', ' ', ACS_VLINE, ' ', ACS_VLINE, ' ');
 
-	// pasek na szaro dla napisu "Użytkownicy:"
-	wmove(ga.win_info, y, 1);
-
+	// atrybuty paska z napisem "Użytkownicy"
 	if(ga.use_colors)
 	{
 		wattron(ga.win_info, COLOR_PAIR(pWHITE));
 	}
 
 	wattron(ga.win_info, A_REVERSE);
-	getmaxyx(ga.win_info, wterm_y, wterm_x);
+	wmove(ga.win_info, 0, 1);
 
-	for(int i = 1; i < wterm_x; ++i)
+	for(int i = 1; i < getmaxx(ga.win_info); ++i)
 	{
-		wprintw(ga.win_info, " ");
+		waddch(ga.win_info, ' ');
 	}
 
-	// pobierz nicki w kolejności zależnej od uprawnień
-	for(auto it = ci[ga.current]->ni.begin(); it != ci[ga.current]->ni.end(); ++it)
+	std::string users_header = "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")";
+	int users_header_len = buf_chars(users_header);
+
+	mvwprintw(ga.win_info, 0, ((getmaxx(ga.win_info) - users_header_len) + 1) / 2, users_header.c_str());
+
+	// wyświetl nicki
+	for(auto it = nicklist.begin(); it != nicklist.end() && getcury(ga.win_info) < getmaxy(ga.win_info) - 1; ++it)
 	{
-		if(it->second.nf.owner)
+		// nowy wiersz (o ile poprzedni napis nie spowodował przejścia do nowego wiersza, jeśli tak, dodaj odstęp, aby nie pisać na lewym pasku)
+		wmove(ga.win_info, getcury(ga.win_info) + (getcurx(ga.win_info) > 0 ? 1 : 0), 1);
+
+		// nowy wiersz przywraca domyślne atrybuty
+		wattrset(ga.win_info, A_NORMAL);
+
+		nick_len = it->second.size();
+
+		for(int i = 0; i < nick_len; ++i)
 		{
-			nick_owner += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
+			c = it->second[i];
 
-		else if(it->second.nf.op)
-		{
-			nick_op += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else if(it->second.nf.halfop)
-		{
-			nick_halfop += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else if(it->second.nf.moderator)
-		{
-			nick_moderator += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else if(it->second.nf.voice)
-		{
-			nick_voice += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else if(it->second.nf.public_webcam)
-		{
-			nick_pub_webcam += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else if(it->second.nf.private_webcam)
-		{
-			nick_priv_webcam += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-
-		else
-		{
-			nick_normal += get_flags_nick(ga, ci, it->first) + it->second.nick + "\n";
-		}
-	}
-
-	// liczba osób w pokoju
-	wmove(ga.win_info, y, 1);
-	nicklist_header = "Użytkownicy (" + std::to_string(ci[ga.current]->ni.size()) + ")\n";
-	int nicklist_header_len = buf_chars(nicklist_header);
-	int how_spaces = (wterm_x - nicklist_header_len) / 2;
-
-	for(int i = 0; i < how_spaces; ++i)
-	{
-		nicklist += " ";
-	}
-
-	nicklist += nicklist_header;
-
-	// połącz nicki w jedną listę
-	nicklist += nick_owner + nick_op + nick_halfop + nick_moderator + nick_voice + nick_pub_webcam + nick_priv_webcam + nick_normal;
-
-	++y;
-
-	// wyświetl listę
-	for(unsigned int i = 0; i >= 0 && i < nicklist.size() - 1 && y <= wterm_y; ++i)	// - 1, bo bez ostatniego kodu \n z listy
-	{
-		if(nicklist[i] == '\n')
-		{
-			// nowy wiersz
-			wmove(ga.win_info, y, 1);
-			wattrset(ga.win_info, A_NORMAL);	// nowy wiersz przywraca domyślne ustawienia
-			++y;
-		}
-
-		else
-		{
-			// wykryj formatowanie kolorów i bolda
-			if(nicklist[i] == dCOLOR && i + 1 < nicklist.size())
+			// wykryj formatowanie kolorów
+			if(c == dCOLOR)
 			{
 				++i;	// przejdź na kod koloru
 
-				if(ga.use_colors)
+				// ustaw kolor (jeśli kolory są obsługiwane)
+				if(ga.use_colors && i < nick_len)
 				{
-					wattron(ga.win_info, COLOR_PAIR(nicklist[i]));
+					wattron(ga.win_info, COLOR_PAIR(it->second[i]));
 				}
 			}
 
-			else if(nicklist[i] == dBOLD_ON)
+			else if(c == dBOLD_ON)
 			{
 				wattron(ga.win_info, A_BOLD);
 			}
 
-			else if(nicklist[i] == dBOLD_OFF)
+			else if(c == dBOLD_OFF)
 			{
 				wattroff(ga.win_info, A_BOLD);
 			}
 
-			else if(nicklist[i] == dREVERSE_ON)
+			else if(c == dREVERSE_ON)
 			{
 				wattron(ga.win_info, A_REVERSE);
 			}
 
-			else if(nicklist[i] == dREVERSE_OFF)
+			else if(c == dREVERSE_OFF)
 			{
 				wattroff(ga.win_info, A_REVERSE);
 			}
 
-			else if(nicklist[i] == dUNDERLINE_ON)
+			else if(c == dUNDERLINE_ON)
 			{
 				wattron(ga.win_info, A_UNDERLINE);
 			}
 
-			else if(nicklist[i] == dUNDERLINE_OFF)
+			else if(c == dUNDERLINE_OFF)
 			{
 				wattroff(ga.win_info, A_UNDERLINE);
 			}
 
-			else if(nicklist[i] == dNORMAL)
+			else if(c == dNORMAL)
 			{
 				wattrset(ga.win_info, A_NORMAL);
 			}
 
 			else
 			{
-				wcur_x = getcurx(ga.win_info);
-
-				if(wcur_x < wterm_x - 1)
-				{
-					wprintw(ga.win_info, "%c", nicklist[i]);
-				}
-
-				else
-				{
-					wprintw(ga.win_info, "→");
-
-					wmove(ga.win_info, y, 1);
-					wattrset(ga.win_info, A_NORMAL);
-					++y;
-
-					for(++i; i < nicklist.size() - 1; ++i)
-					{
-						if(nicklist[i] == '\n')
-						{
-							break;
-						}
-					}
-				}
+				wprintw(ga.win_info, "%c", c);
 			}
+
 		}
 	}
+
+
+
+
+//	// wyświetl listę
+//	for(unsigned int i = 0; i >= 0 && i < nicklist.size() - 1 && y <= wterm_y; ++i)	// - 1, bo bez ostatniego kodu \n z listy
+//	{
+//		if(nicklist[i] == '\n')
+//		{
+//			// nowy wiersz
+//			wmove(ga.win_info, y, 1);
+//			wattrset(ga.win_info, A_NORMAL);	// nowy wiersz przywraca domyślne ustawienia
+//			++y;
+//		}
+//
+//		else
+//		{
+//			// wykryj formatowanie kolorów i bolda
+//			if(nicklist[i] == dCOLOR && i + 1 < nicklist.size())
+//			{
+//				++i;	// przejdź na kod koloru
+//
+//				if(ga.use_colors)
+//				{
+//					wattron(ga.win_info, COLOR_PAIR(nicklist[i]));
+//				}
+//			}
+//
+//			else if(nicklist[i] == dBOLD_ON)
+//			{
+//				wattron(ga.win_info, A_BOLD);
+//			}
+//
+//			else if(nicklist[i] == dBOLD_OFF)
+//			{
+//				wattroff(ga.win_info, A_BOLD);
+//			}
+//
+//			else if(nicklist[i] == dREVERSE_ON)
+//			{
+//				wattron(ga.win_info, A_REVERSE);
+//			}
+//
+//			else if(nicklist[i] == dREVERSE_OFF)
+//			{
+//				wattroff(ga.win_info, A_REVERSE);
+//			}
+//
+//			else if(nicklist[i] == dUNDERLINE_ON)
+//			{
+//				wattron(ga.win_info, A_UNDERLINE);
+//			}
+//
+//			else if(nicklist[i] == dUNDERLINE_OFF)
+//			{
+//				wattroff(ga.win_info, A_UNDERLINE);
+//			}
+//
+//			else if(nicklist[i] == dNORMAL)
+//			{
+//				wattrset(ga.win_info, A_NORMAL);
+//			}
+//
+//			else
+//			{
+//				wcur_x = getcurx(ga.win_info);
+//
+//				if(wcur_x < wterm_x - 1)
+//				{
+//					wprintw(ga.win_info, "%c", nicklist[i]);
+//				}
+//
+//				else
+//				{
+//					wprintw(ga.win_info, "→");
+//
+//					wmove(ga.win_info, y, 1);
+//					wattrset(ga.win_info, A_NORMAL);
+//					++y;
+//
+//					for(++i; i < nicklist.size() - 1; ++i)
+//					{
+//						if(nicklist[i] == '\n')
+//						{
+//							break;
+//						}
+//					}
+//				}
+//			}
+//		}
+//	}
 
 	wnoutrefresh(ga.win_info);
 }

@@ -140,6 +140,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 	ga.win_info_state = true;
 	ga.win_info_refresh = false;
 
+	ga.win_info_current_width = NICKLIST_WIDTH_MIN;
+
 	ga.socketfd_irc = 0;		// gniazdo (socket), ale używane tylko w IRC (w HTTP nie będzie sprawdzany jego stan w select() ), 0, gdy nieaktywne
 
 	ga.captcha_ready = false;	// stan wczytania CAPTCHA (jego pobranie z serwera)
@@ -281,11 +283,11 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// ustaw nowe wymiary okien "wirtualnych" zależnie od stanu włączenia okna informacyjnego
 				if(win_info_active)
 				{
-					wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);
-
 					delwin(ga.win_info);
 
-					ga.win_info = newwin(term_y - 3, NICKLIST_WIDTH, 1, term_x - NICKLIST_WIDTH);
+					wresize(ga.win_chat, term_y - 3, term_x - ga.win_info_current_width);
+
+					ga.win_info = newwin(term_y - 3, ga.win_info_current_width, 1, term_x - ga.win_info_current_width);
 
 					leaveok(ga.win_info, TRUE);
 
@@ -698,13 +700,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 				ga.win_chat_refresh = true;
 				ga.win_info_refresh = true;
 
-				wresize(ga.win_chat, term_y - 3, term_x - NICKLIST_WIDTH);
+				wresize(ga.win_chat, term_y - 3, term_x - ga.win_info_current_width);
 
 				// zapisz wymiary okna "wirtualnego"
 				getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
 
 				// utwórz okno informacyjne
-				ga.win_info = newwin(term_y - 3, NICKLIST_WIDTH, 1, term_x - NICKLIST_WIDTH);
+				ga.win_info = newwin(term_y - 3, ga.win_info_current_width, 1, term_x - ga.win_info_current_width);
 
 				// nie zostawiaj kursora w oknie informacyjnym
 				leaveok(ga.win_info, TRUE);
@@ -717,13 +719,13 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				ga.win_chat_refresh = true;
 
+				// usuń okno informacyjne
+				delwin(ga.win_info);
+
 				wresize(ga.win_chat, term_y - 3, term_x);
 
 				// zapisz wymiary okna "wirtualnego"
 				getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
-
-				// usuń okno informacyjne
-				delwin(ga.win_info);
 			}
 
 			// jeśli trzeba, odśwież na ekranie zawartość bufora klawiatury
@@ -731,12 +733,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 			{
 				kbd_buf_show(kbd_buf, term_y, term_x, kbd_cur_pos, kbd_cur_pos_offset);
 				kbd_buf_refresh = false;
-			}
-
-			// jeśli trzeba, odśwież na ekranie zawartość okna "wirtualnego"
-			if(ga.win_chat_refresh)
-			{
-				win_buf_show(ga, ci);
 			}
 
 			// jeśli trzeba, odśwież okno informacyjne
@@ -749,6 +745,12 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 				// nie odświeżaj okna informacyjnego przy ponownym obiegu pętli
 				ga.win_info_refresh = false;
+			}
+
+			// jeśli trzeba, odśwież na ekranie zawartość okna "wirtualnego"
+			if(ga.win_chat_refresh)
+			{
+				win_buf_show(ga, ci);
 			}
 
 			// obecna pozycja kursora

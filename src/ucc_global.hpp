@@ -64,6 +64,10 @@ namespace std
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
 
+// szerokość listy nicków
+#define NICKLIST_WIDTH_MIN	24
+#define NICKLIST_WIDTH_MAX	37
+
 // początek i koniec logu
 #define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
 #define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---" << std::endl << std::endl
@@ -213,6 +217,8 @@ struct global_args
 
 	bool win_info_state;
 	bool win_info_refresh;
+
+	int win_info_current_width;
 
 	std::string ucc_home_dir;
 	int ucc_home_dir_stat;

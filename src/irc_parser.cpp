@@ -4276,7 +4276,7 @@ void raw_817(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 			// tekst pisany z użyciem /me
 			? xMAGENTA "* " + raw_parm5 + xNORMAL + user_msg_action
 			// tekst normalny
-			: xWHITE "<" + raw_parm5 + ">" xNORMAL " " + user_msg), true, 2, false);
+			: xBOLD_ON xDARK "<" + raw_parm5 + ">" xNORMAL " " + user_msg), true, 2, false);
 }
 
 
