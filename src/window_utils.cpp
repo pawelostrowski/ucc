@@ -1073,7 +1073,7 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], std
 				nick_tmp += xBOLD_ON;
 			}
 
-			nick_tmp += xMAGENTA "+";
+			nick_tmp += xCYAN "+";
 		}
 
 		if(it->second.nf.public_webcam)
