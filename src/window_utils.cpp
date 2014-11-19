@@ -1217,17 +1217,13 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 	werase(ga.win_info);
 
 	// narysuj linię z lewej strony od góry do dołu (jeśli jest obsługa kolorów, to na niebiesko)
-	ga.use_colors ? wattrset(ga.win_info, COLOR_PAIR(pBLUE)) : wattrset(ga.win_info, A_REVERSE);
+	ga.use_colors ? wattrset(ga.win_info, COLOR_PAIR(pBLUE)) : wattrset(ga.win_info, A_NORMAL);
 
 	wborder(ga.win_info, ACS_VLINE, ' ', ' ', ' ', ACS_VLINE, ' ', ACS_VLINE, ' ');
 
 	// atrybuty paska z napisem "Użytkownicy"
-	if(ga.use_colors)
-	{
-		wattron(ga.win_info, COLOR_PAIR(pWHITE));
-	}
+	ga.use_colors ? wattrset(ga.win_info, A_REVERSE | COLOR_PAIR(pWHITE)) : wattrset(ga.win_info, A_REVERSE);
 
-	wattron(ga.win_info, A_REVERSE);
 	wmove(ga.win_info, 0, 1);
 
 	for(int i = 1; i < getmaxx(ga.win_info); ++i)

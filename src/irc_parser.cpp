@@ -4825,7 +4825,8 @@ void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 					// nick ten będzie też przed osobami offline na liście
 					if(std::find(ga.my_friends_online.begin(), ga.my_friends_online.end(), nick) != ga.my_friends_online.end())
 					{
-						nicklist["1" + nick_key] = xBOLD_ON xGREEN + nick;
+						// przy braku obsługi kolorów podkreśl nick dla odróżnienia, że jest online
+						nicklist["1" + nick_key] = (ga.use_colors ? xBOLD_ON xGREEN : xBOLD_ON xUNDERLINE_ON) + nick;
 					}
 
 					else
