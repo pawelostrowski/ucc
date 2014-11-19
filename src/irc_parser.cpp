@@ -4821,7 +4821,7 @@ void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 				{
 					nick_key = buf_lower_to_upper(nick);
 
-					// jeśli osoba z listy przyjaciół jest online, jej kolor będzie inny i z boldem, niż gdy jest offline,
+					// jeśli osoba z listy przyjaciół jest online, jej kolor będzie inny, niż gdy jest offline,
 					// nick ten będzie też przed osobami offline na liście
 					if(std::find(ga.my_friends_online.begin(), ga.my_friends_online.end(), nick) != ga.my_friends_online.end())
 					{
@@ -4830,7 +4830,7 @@ void raw_notice_122(struct global_args &ga, struct channel_irc *ci[])
 
 					else
 					{
-						nicklist["2" + nick_key] = xWHITE + nick;
+						nicklist["2" + nick_key] = xBOLD_ON xDARK + nick;
 					}
 				}
 			}

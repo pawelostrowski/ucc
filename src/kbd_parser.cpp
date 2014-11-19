@@ -1733,10 +1733,15 @@ void command_topic(struct global_args &ga, struct channel_irc *ci[], std::string
 		{
 			std::string topic = get_rest_args(kbd_buf, pos_arg_start);
 
-			// ustaw temat, jeśli za /topic wpisano jakiś tekst
-			if(topic.size() > 0)
+			// serwer ogranicza tekst do 200 znaków
+			if(topic.size() > 200)
 			{
-				// serwer obecnie ogranicza tekst do 200 znaków (można z czasem dodać info o przekroczeniu)
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Temat za długi, maksymalnie może zawierać 200 znaków.", false);
+			}
+
+			// ustaw temat, jeśli za /topic wpisano jakiś tekst
+			else if(topic.size() > 0)
+			{
 				irc_send(ga, ci, "CS SET " + ci[ga.current]->channel + " TOPIC " + topic);
 			}
 
