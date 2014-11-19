@@ -3519,7 +3519,7 @@ void raw_396(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	401 (INVITE, KICK - podanie nicka, którego nie ma na czacie)
 	:cf1f2.onet 401 ucc abc :No such nick/channel
 
-	401 (TOPIC, NAMES - przy podaniu nieistniejącego pokoju lub nieprawidłowego pokoju, gdy brakuje #)
+	401 (TOPIC, NAMES, INVITE - przy podaniu nieistniejącego pokoju lub nieprawidłowego pokoju, gdy brakuje #)
 	:cf1f4.onet 401 ucc_test #ucc: :No such nick/channel
 	:cf1f4.onet 401 ucc_test abc :No such nick/channel
 
@@ -3543,7 +3543,7 @@ void raw_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string srv_msg = get_rest_from_buf(raw_buf, " :");
 
 	// WHOIS, INVITE lub INVREJECT przy błędnym nicku
-	if(ga.cf.whois || ga.cf.invite || ga.cf.kick || srv_msg == "No such nick")
+	if(ga.cf.whois || (ga.cf.invite && raw_parm3.size() > 0 && raw_parm3[0] != '#') || ga.cf.kick || srv_msg == "No such nick")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xGREEN + raw_parm3 + xNORMAL " - nie ma takiego użytkownika na czacie.");
 	}
