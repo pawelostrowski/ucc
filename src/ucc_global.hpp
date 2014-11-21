@@ -64,9 +64,8 @@ namespace std
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
 
-// szerokość listy nicków
+// minimalna szerokość listy nicków
 #define NICKLIST_WIDTH_MIN	24
-#define NICKLIST_WIDTH_MAX	37
 
 // początek i koniec logu
 #define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
@@ -200,6 +199,8 @@ struct kban
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
+	int tmp1, tmp2;
+
 	WINDOW *win_chat;
 	WINDOW *win_info;
 

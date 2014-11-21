@@ -639,12 +639,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 				ga.use_colors ? attrset(COLOR_PAIR(pWHITE_BLUE)) : attrset(A_REVERSE);
 			}
 
-			// przy braku scrolla skasuj aktywność
-			else
-			{
-                                ci[ga.current]->lock_act = 0;
-			}
-
 			// jeśli pasek dolny "wszedł" na pasek pisania, odśwież zawartość bufora klawiatury
 			if(getcury(stdscr) == term_y - 1 && getcurx(stdscr) > 0)
 			{

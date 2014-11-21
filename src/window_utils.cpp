@@ -1179,24 +1179,24 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 	}
 
 	// jeśli trzeba, zmień rozmiary okien
-	if(nick_max_len >= NICKLIST_WIDTH_MIN && ga.win_info_current_width == NICKLIST_WIDTH_MIN)
+	if(nick_max_len >= NICKLIST_WIDTH_MIN && nick_max_len != ga.win_info_current_width - 1)
 	{
 		delwin(ga.win_info);
 
-		wresize(ga.win_chat, getmaxy(stdscr) - 3, getmaxx(stdscr) - NICKLIST_WIDTH_MAX);
+		wresize(ga.win_chat, getmaxy(stdscr) - 3, getmaxx(stdscr) - nick_max_len - 1);
 
 		getmaxyx(ga.win_chat, ga.wterm_y, ga.wterm_x);
 
-		ga.win_info = newwin(getmaxy(stdscr) - 3, NICKLIST_WIDTH_MAX, 1, getmaxx(stdscr) - NICKLIST_WIDTH_MAX);
+		ga.win_info = newwin(getmaxy(stdscr) - 3, nick_max_len + 1, 1, getmaxx(stdscr) - nick_max_len - 1);
 
 		leaveok(ga.win_info, TRUE);
 
-		ga.win_info_current_width = NICKLIST_WIDTH_MAX;
+		ga.win_info_current_width = nick_max_len + 1;
 
 		ga.win_chat_refresh = true;
 	}
 
-	else if(nick_max_len < NICKLIST_WIDTH_MIN && ga.win_info_current_width == NICKLIST_WIDTH_MAX)
+	else if(nick_max_len < NICKLIST_WIDTH_MIN && ga.win_info_current_width > NICKLIST_WIDTH_MIN)
 	{
 		delwin(ga.win_info);
 

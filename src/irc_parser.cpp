@@ -4551,7 +4551,7 @@ void raw_notice_111(struct global_args &ga, struct channel_irc *ci[], std::strin
 	else
 	{
 		new_chan_raw_unknown(ga, ci);	// jeśli istnieje, funkcja nie utworzy ponownie pokoju
-		win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, true, 2, true, false);	// aby zwrócić uwagę, pokaż aktywność typu 2
+		win_buf_add_str(ga, ci, "RawUnknown", xWHITE + raw_buf, true, 2, true, false);		// aby zwrócić uwagę, pokaż aktywność typu 2
 	}
 }
 
@@ -5409,34 +5409,41 @@ void raw_notice_400(struct global_args &ga, struct channel_irc *ci[])
 */
 void raw_notice_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string nick_info = get_value_from_buf(raw_buf, ":401 ", " :");
+	std::string raw_arg = get_value_from_buf(raw_buf, ":401 ", " :");
 
-	if(ga.cf.friends)
+	if(ga.cf.friends && raw_arg.size() > 0 && raw_arg[0] == '~')
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				oINFOb xMAGENTA + nick_info + xNORMAL " - nie można dodać nicka tymczasowego do listy przyjaciół.");
+				oINFOb xMAGENTA + raw_arg + xNORMAL " - nie można dodać nicka tymczasowego do listy przyjaciół.");
 	}
 
+	else if(raw_arg.size() > 0)
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xMAGENTA + raw_arg + xNORMAL " - nie ma takiego użytkownika na czacie.");
+	}
+
+	// jeśli po ADD lub INFO wpisano 4 lub więcej spacji
 	else
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, (nick_info.size() > 0
-				// opcja dla pierwszego RAW powyżej
-				? oINFOb xMAGENTA + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
-				// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
-				: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka.");
 	}
 }
 
 
 /*
+	NOTICE 402 (NS IGNORE ADD - 4 lub więcej spacji po ADD)
+	:NickServ!service@service.onet NOTICE ucc :402  :invalid mask
+
 	NOTICE 402 (CS BAN #pokój ADD anonymous@IP - nieprawidłowa maska)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :402 anonymous@IP!*@* :invalid mask
 */
 void raw_notice_402(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":402 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + raw_parm4 + " - nieprawidłowa maska.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (! ga.cf.ignore
+			? oINFOn xRED + raw_arg + " - nieprawidłowa maska."
+			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
 }
 
 
@@ -5447,12 +5454,12 @@ void raw_notice_402(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_403(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string nick_info = get_value_from_buf(raw_buf, ":403 ", " :");
+	std::string raw_arg = get_value_from_buf(raw_buf, ":403 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (nick_info.size() > 0
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 0
 			// opcja dla pierwszego RAW powyżej
-			? oINFOb xYELLOW_BLACK + nick_info + xNORMAL " - nie ma takiego użytkownika na czacie."
-			// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej nicka
+			? oINFOb xYELLOW_BLACK + raw_arg + xNORMAL " - nie ma takiego użytkownika na czacie."
+			// jeśli po INFO wpisano 4 lub więcej spacji
 			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
 }
 
@@ -5475,11 +5482,11 @@ void raw_notice_404(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_406(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string unknown_command = get_value_from_buf(raw_buf, ":406 ", " :");
+	std::string raw_arg = get_value_from_buf(raw_buf, ":406 ", " :");
 
 	std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + nick_who + ": " + unknown_command + " - nieznane polecenie.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + nick_who + ": " + raw_arg + " - nieznane polecenie.");
 }
 
 
@@ -5498,18 +5505,20 @@ void raw_notice_407(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
+	NOTICE 408 (NS FAVOURITES ADD/CS DROP - 4 lub więcej spacji po ADD)
+	:NickServ!service@service.onet NOTICE ucc :408 # :no such channel
+
 	NOTICE 408 (CS INFO #pokój/CS DROP #pokój)
 	:ChanServ!service@service.onet NOTICE ucc_test :408 abc :no such channel
 	:ChanServ!service@service.onet NOTICE ucc_test :408  :no such channel
 */
 void raw_notice_408(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string chan_info = get_value_from_buf(raw_buf, ":408 ", " :");
+	std::string raw_arg = get_value_from_buf(raw_buf, ":408 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (chan_info.size() > 0
-			// opcja dla pierwszego RAW powyżej
-			? oINFOn xRED + chan_info + xNORMAL " - nie ma takiego pokoju."
-			// drugi RAW powyżej pojawia się po wysłaniu po INFO przynajmniej czterech spacji bez podania dalej pokoju
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 0 && ! ga.cf.favourites_empty
+			? oINFOn xRED + raw_arg + xNORMAL " - nie ma takiego pokoju."
+			// jeśli po ADD lub INFO wpisano 4 lub więcej spacji
 			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano pokoju."));
 }
 
@@ -5529,16 +5538,22 @@ void raw_notice_409(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
+	NOTICE 411 (NS/CS/RS SET - 4 lub więcej spacji po SET)
+	:NickServ!service@service.onet NOTICE ucc :411  :no such setting
+
 	NOTICE 411 (NS SET ABC)
 	:NickServ!service@service.onet NOTICE ucieszony86 :411 ABC :no such setting
 */
 void raw_notice_411(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":411 ", " :");
 
 	std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + nick_who + ": " + raw_parm4 + " - nie ma takiego ustawienia.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel,
+			oINFOn xRED + nick_who + (raw_arg.size() > 0
+			? ": " + raw_arg + " - nie ma takiego ustawienia."
+			: ": brak wystarczającej liczby parametrów."));
 }
 
 
@@ -5588,9 +5603,12 @@ void raw_notice_420(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_421(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":421 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE + raw_parm4 + " nie był(a) dodany(-na) do listy przyjaciół.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 0
+			? oINFOn xWHITE + raw_arg + " nie był(a) dodany(-na) do listy przyjaciół."
+			// jeśli po DEL wpisano 4 lub więcej spacji
+			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
 }
 
 
@@ -5612,9 +5630,12 @@ void raw_notice_430(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_431(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":431 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE + raw_parm4 + " nie był(a) dodany(-na) do listy ignorowanych.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 0
+			? oINFOn xWHITE + raw_arg + " nie był(a) dodany(-na) do listy ignorowanych."
+			// jeśli po DEL wpisano 4 lub więcej spacji
+			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano nicka."));
 }
 
 
@@ -5636,9 +5657,12 @@ void raw_notice_440(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_441(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":441 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Pokój " + raw_parm4 + " nie był dodany do listy ulubionych.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 0
+			? oINFOn xWHITE "Pokój " + raw_arg + " nie był dodany do listy ulubionych."
+			// jeśli po DEL wpisano 4 lub więcej spacji
+			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano pokoju."));
 }
 
 
@@ -5655,14 +5679,17 @@ void raw_notice_452(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
-	NOTICE 453 (CS REGISTER #nieprawidłowa_nazwa_pokoju - np. $)
+	NOTICE 453 (CS REGISTER #nieprawidłowa_nazwa_pokoju - np. $ lub podanie przynajmniej czterech spacji)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :453 #$ :is not valid channel name
 */
 void raw_notice_453(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":453 ", " :");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nazwa pokoju " + raw_parm4 + " jest nieprawidłowa, wybierz inną.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_arg.size() > 1
+			? oINFOn xRED "Nazwa pokoju " + raw_arg + " jest nieprawidłowa, wybierz inną."
+			// jeśli po REGISTER wpisano 4 lub więcej spacji
+			: oINFOn xRED + get_value_from_buf(raw_buf, ":", "!") + ": nie podano pokoju."));
 }
 
 
@@ -5786,11 +5813,14 @@ void raw_notice_464(struct global_args &ga, struct channel_irc *ci[], std::strin
 */
 void raw_notice_465(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_arg = get_value_from_buf(raw_buf, ":465 ", " :");
 
 	std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + nick_who + ": " + raw_parm4 + " - nie ma takiego ustawienia.");
+	win_buf_add_str(ga, ci, ci[ga.current]->channel,
+			oINFOn xRED + nick_who + (raw_arg.size() > 0
+			? ": " + raw_arg + " - nie ma takiego ustawienia."
+			: ": brak wystarczającej liczby parametrów."));
 }
 
 
