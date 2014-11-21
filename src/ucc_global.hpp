@@ -67,6 +67,9 @@ namespace std
 // minimalna szerokość listy nicków
 #define NICKLIST_WIDTH_MIN	24
 
+// czy pokazywać statusy nicków w oknie rozmowy
+#define SHOW_STAT_IN_WIN_CHAT	true
+
 // początek i koniec logu
 #define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
 #define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---" << std::endl << std::endl
@@ -199,8 +202,6 @@ struct kban
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
-	int tmp1, tmp2;
-
 	WINDOW *win_chat;
 	WINDOW *win_info;
 
@@ -215,6 +216,8 @@ struct global_args
 	bool ucc_quit_time;
 
 	bool win_chat_refresh;
+
+	bool show_stat_in_win_chat;
 
 	bool win_info_state;
 	bool win_info_refresh;

@@ -2275,11 +2275,32 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *ci[], std::string &
 	// wykryj, gdy ktoś pisze przez użycie /me
 	std::string user_msg_action = get_value_from_buf(user_msg, "\x01" "ACTION", "\x01");
 
-	win_buf_add_str(ga, ci, raw_parm2, (user_msg_action.size() > 0 && user_msg_action[0] == ' '
-			// tekst pisany z użyciem /me
-			? xBOLD_ON xMAGENTA "* " + form_start + nick_who + xNORMAL + user_msg_action
-			// tekst normalny
-			: form_start + "<" + nick_who + ">" + xNORMAL " " + user_msg), true, act_type);
+	// tekst pisany z użyciem /me
+	if(user_msg_action.size() > 0 && user_msg_action[0] == ' ')
+	{
+		win_buf_add_str(ga, ci, raw_parm2, xBOLD_ON xMAGENTA "* " + form_start + nick_who + xNORMAL + user_msg_action);
+	}
+
+	// tekst normalny
+	else
+	{
+		std::string nick_stat;
+
+		// jeśli pokazywanie statusu nicka jest włączone, dodaj je do nicka (busy również ma wpływ na nick)
+		if(ga.show_stat_in_win_chat)
+		{
+			auto it = ci[ga.current]->ni.find(buf_lower_to_upper(nick_who));
+
+			if(it != ci[ga.current]->ni.end())
+			{
+				nick_stat = xNORMAL + get_flags_nick(ga, ci, it->first);
+			}
+		}
+
+		win_buf_add_str(ga, ci, raw_parm2,
+				form_start + "<" + nick_stat + form_start + nick_who
+				+ (form_start.size() > 0 ? form_start + ">" xNORMAL " " : xNORMAL "> ") + user_msg, true, act_type);
+	}
 }
 
 

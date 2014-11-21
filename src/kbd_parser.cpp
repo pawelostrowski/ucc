@@ -183,7 +183,21 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		// odebrane z serwera)
 		else if(ga.current < CHAN_CHAT)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, xBOLD_ON "<" + ga.zuousername + ">" xNORMAL " " + form_from_chat(kbd_buf), true, 2);
+			std::string nick_stat;
+
+			// jeśli pokazywanie statusu nicka jest włączone, dodaj je do nicka (busy również ma wpływ na nick)
+			if(ga.show_stat_in_win_chat)
+			{
+				auto it = ci[ga.current]->ni.find(buf_lower_to_upper(ga.zuousername));
+
+				if(it != ci[ga.current]->ni.end())
+				{
+					nick_stat = get_flags_nick(ga, ci, it->first);
+				}
+			}
+
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					xBOLD_ON "<" + nick_stat + xBOLD_ON + ga.zuousername + xTERMC ">" xNORMAL " " + form_from_chat(kbd_buf), true, 2);
 
 			// wyślij też komunikat do serwera IRC
 			irc_send(ga, ci, "PRIVMSG " + ci[ga.current]->channel + " :" + form_to_chat(kbd_buf));
