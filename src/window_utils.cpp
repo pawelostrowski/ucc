@@ -1014,13 +1014,19 @@ void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std:
 }
 
 
-std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], std::string nick_key)
+void aaaa(std::iterator<std::string, struct nick_irc> it)
+{
+
+}
+
+
+std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], int chan_index, std::string nick_key)
 {
 	std::string nick_tmp;
 
-	auto it = ci[ga.current]->ni.find(nick_key);
+	auto it = ci[chan_index]->ni.find(nick_key);
 
-	if(it != ci[ga.current]->ni.end())
+	if(it != ci[chan_index]->ni.end())
 	{
 		if(it->second.nf.owner)
 		{
@@ -1163,7 +1169,7 @@ void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[])
 			nick_status = "8";
 		}
 
-		nicklist[nick_status + it->first] = get_flags_nick(ga, ci, it->first) + it->second.nick;
+		nicklist[nick_status + it->first] = get_flags_nick(ga, ci, ga.current, it->first) + it->second.nick;
 	}
 
 	// pobierz najdłuższy nick, który wyświetli się w oknie

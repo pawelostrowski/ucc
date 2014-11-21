@@ -185,15 +185,12 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 		{
 			std::string nick_stat;
 
+			std::string nick_key = buf_lower_to_upper(ga.zuousername);
+
 			// jeśli pokazywanie statusu nicka jest włączone, dodaj je do nicka (busy również ma wpływ na nick)
 			if(ga.show_stat_in_win_chat)
 			{
-				auto it = ci[ga.current]->ni.find(buf_lower_to_upper(ga.zuousername));
-
-				if(it != ci[ga.current]->ni.end())
-				{
-					nick_stat = get_flags_nick(ga, ci, it->first);
-				}
+				nick_stat = get_flags_nick(ga, ci, ga.current, nick_key);
 			}
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel,

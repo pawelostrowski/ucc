@@ -52,7 +52,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 
 void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std::string msg, bool save_log = true);
 
-std::string get_flags_nick(struct global_args &ga, struct channel_irc *chan_parm[], std::string nick_key);
+std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], int chan_index, std::string nick_key);
 
 void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[]);
 
