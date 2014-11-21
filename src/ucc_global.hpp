@@ -68,7 +68,7 @@ namespace std
 #define NICKLIST_WIDTH_MIN	24
 
 // czy pokazywać statusy nicków w oknie rozmowy
-#define SHOW_STAT_IN_WIN_CHAT	true
+#define SHOW_STAT_IN_WIN_CHAT	false
 
 // początek i koniec logu
 #define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
