@@ -2286,8 +2286,6 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *ci[], std::string &
 	{
 		std::string nick_stat;
 
-		std::string nick_key = buf_lower_to_upper(nick_who);
-
 		// jeśli pokazywanie statusu nicka jest włączone, dodaj je do nicka (busy również ma wpływ na nick)
 		if(ga.show_stat_in_win_chat)
 		{
@@ -2295,11 +2293,11 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *ci[], std::string &
 			{
 				if(ci[i] && ci[i]->channel == raw_parm2)
 				{
-					auto it = ci[i]->ni.find(nick_key);
+					auto it = ci[i]->ni.find(buf_lower_to_upper(nick_who));
 
 					if(it != ci[i]->ni.end())
 					{
-						nick_stat = xNORMAL + get_flags_nick(ga, ci, i, nick_key);
+						nick_stat = xNORMAL + get_flags_nick(ga, ci, i, it->first);
 					}
 
 					break;
