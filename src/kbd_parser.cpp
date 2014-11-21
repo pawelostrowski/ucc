@@ -423,6 +423,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_raw(ga, ci, kbd_buf, pos_arg_start);
 			}
 
+			else if(command == "SET")
+			{
+				command_set(ga, kbd_buf, pos_arg_start);
+			}
+
 			else if(command == "SOP")
 			{
 				command_op_common(ga, ci, kbd_buf, pos_arg_start, command);
@@ -1719,6 +1724,25 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 	else
 	{
 		msg_err_first_login(ga, ci);
+	}
+}
+
+
+void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_start)
+{
+	if(buf_lower_to_upper(get_arg(kbd_buf, pos_arg_start)) == "STAT")
+	{
+		std::string set_arg = get_arg(kbd_buf, pos_arg_start);
+
+		if(set_arg == "0")
+		{
+			ga.show_stat_in_win_chat = false;
+		}
+
+		else if(set_arg == "1")
+		{
+			ga.show_stat_in_win_chat = true;
+		}
 	}
 }
 

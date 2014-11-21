@@ -93,6 +93,8 @@ void command_quit(struct global_args &ga, struct channel_irc *ci[], std::string 
 
 void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
+void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_start);
+
 void command_time(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
 void command_topic(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
