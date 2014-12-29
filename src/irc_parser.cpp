@@ -1345,7 +1345,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 /*
 	Zmiany flag pokoju (grupowe, wybrane pozycje).
 */
-	if(raw_parm0.size() > 0 && raw_parm2[0] == '#' && (raw_parm3 == "+qo" || raw_parm3 == "+oq") && raw_parm4 == raw_parm5)
+	if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && (raw_parm3 == "+qo" || raw_parm3 == "+oq") && raw_parm4 == raw_parm5)
 	{
 		std::string nick_receives_key = buf_lower_to_upper(raw_parm4);
 
@@ -1378,7 +1378,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 		}
 	}
 
-	else if(raw_parm0.size() > 0 && raw_parm2[0] == '#' && (raw_parm3 == "-qo" || raw_parm3 == "-oq") && raw_parm4 == raw_parm5)
+	else if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && (raw_parm3 == "-qo" || raw_parm3 == "-oq") && raw_parm4 == raw_parm5)
 	{
 		std::string nick_receives_key = buf_lower_to_upper(raw_parm4);
 
@@ -1411,14 +1411,14 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 		}
 	}
 
-	else if(raw_parm0.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "+ips")
+	else if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "+ips")
 	{
 		win_buf_add_str(ga, ci, raw_parm2,
 				oINFOn xMAGENTA "Pokój " + raw_parm2
 				+ " jest teraz niewidoczny, prywatny i sekretny (ustawił" + a + nick_gives + ").");
 	}
 
-	else if(raw_parm0.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "-ips")
+	else if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "-ips")
 	{
 		win_buf_add_str(ga, ci, raw_parm2,
 				oINFOn xWHITE "Pokój " + raw_parm2
