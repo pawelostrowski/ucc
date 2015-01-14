@@ -4790,9 +4790,10 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 						int age = y - y_bd;
 
-						if(m <= m_bd && d < d_bd)
+						// wykryj urodziny, jeśli ich jeszcze nie było w danym roku, trzeba odjąć rok
+						if(m < m_bd || (m <= m_bd && d < d_bd))
 						{
-							--age;		// wykryj urodziny, jeśli ich jeszcze nie było w danym roku, trzeba odjąć rok
+							--age;
 						}
 
 						win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Wiek: " + std::to_string(age));
