@@ -1,6 +1,6 @@
 /*
 	Ucieszony Chat Client
-	Copyright (C) 2013, 2014 Paweł Ostrowski
+	Copyright (C) 2013-2015 Paweł Ostrowski
 
 	This file is part of Ucieszony Chat Client.
 
@@ -232,6 +232,8 @@ void raw_815(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 void raw_816(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
 void raw_817(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
+
+void raw_942(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
 void raw_950(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 

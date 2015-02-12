@@ -1,6 +1,6 @@
 /*
 	Ucieszony Chat Client
-	Copyright (C) 2013, 2014 Paweł Ostrowski
+	Copyright (C) 2013-2015 Paweł Ostrowski
 
 	This file is part of Ucieszony Chat Client.
 
@@ -606,6 +606,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_817(ga, ci, raw_buf);
 				break;
 
+			case 942:
+				raw_942(ga, ci, raw_buf);
+				break;
+
 			case 950:
 				raw_950(ga, ci, raw_buf);
 				break;
@@ -927,7 +931,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 
 
 /*
-	Poniżej obsługa RAW ERROR i PING, które występują w odpowiedzi serwera są na pierwszej pozycji (w kolejności alfabetycznej).
+	Poniżej obsługa RAW ERROR i PING, które występują w odpowiedzi serwera na pierwszej pozycji (w kolejności alfabetycznej).
 */
 
 
@@ -4413,6 +4417,18 @@ void raw_817(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 			? xMAGENTA "* " + raw_parm5 + xNORMAL + user_msg_action
 			// tekst normalny
 			: xBOLD_ON xDARK "<" + raw_parm5 + ">" xNORMAL " " + user_msg), true, 2, false);
+}
+
+
+/*
+	942 (np. gdy przyjaciel usunie swój nick)
+	:cf1f1.onet 942 ucieszony86 nick_porzucony.123456 :Invalid nickname
+*/
+void raw_942(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + raw_parm3 + " - nieprawidłowy nick.");
 }
 
 

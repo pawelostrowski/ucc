@@ -1,6 +1,6 @@
 /*
 	Ucieszony Chat Client
-	Copyright (C) 2013, 2014 Paweł Ostrowski
+	Copyright (C) 2013-2015 Paweł Ostrowski
 
 	This file is part of Ucieszony Chat Client.
 
