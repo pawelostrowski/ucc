@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7"
+#define UCC_VER		"1.0 alpha7.2015-02-15.01"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
@@ -223,6 +223,8 @@ struct global_args
 	bool win_info_refresh;
 
 	int win_info_current_width;
+
+	bool all_auth_https;
 
 	std::string ucc_home_dir;
 	int ucc_home_dir_stat;

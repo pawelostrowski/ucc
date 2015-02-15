@@ -29,9 +29,6 @@
 // wersja apletu (informacja dla serwera), od czasu do czasu można zmodyfikować na nowszą wersję
 #define AP_VER "1.1(20140526-0005 - R)"
 
-// wymuś całą autoryzację przez HTTPS, a nie tylko samo hasło, jeśli z jakiegoś powodu ta opcja będzie sprawiać problemy, można ją wyłączyć
-#define ALL_AUTH_HTTPS true
-
 void auth_code(std::string &authkey);
 
 bool auth_http_init(struct global_args &ga, struct channel_irc *ci[]);

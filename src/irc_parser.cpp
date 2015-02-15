@@ -534,6 +534,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_492(ga, ci, raw_buf);
 				break;
 
+			case 495:
+				raw_495(ga, ci, raw_buf);
+				break;
+
 			case 530:
 				raw_530(ga, ci, raw_buf);
 				break;
@@ -4091,6 +4095,30 @@ void raw_492(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
+	495 (JOIN #pokój - gdy wyrzucono mnie i jest aktywny kickrejoin)
+	:cf1f1.onet 495 Kernel_Panic #ucc :You cannot rejoin this channel yet after being kicked (+J)
+*/
+void raw_495(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	std::string srv_msg = get_rest_from_buf(raw_buf, " :");
+
+	if(srv_msg == "You cannot rejoin this channel yet after being kicked (+J)")
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
+				oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3
+				+ " (posiada blokadę uniemożliwiającą użytkownikom automatyczny powrót przez określony czas po wyrzuceniu ich z pokoju).");
+	}
+
+	else
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + raw_parm3 + " - " + srv_msg);
+	}
+}
+
+
+/*
 	530 (JOIN #sc - nieistniejący pokój)
 	:cf1f3.onet 530 ucc_test #sc :Only IRC operators may create new channels
 */
@@ -5573,7 +5601,7 @@ void raw_notice_401(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 	else if(raw_arg.size() > 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xMAGENTA + raw_arg + xNORMAL " - nie ma takiego użytkownika na czacie.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xDARK + raw_arg + xNORMAL " - nie ma takiego użytkownika na czacie.");
 	}
 
 	// jeśli po ADD lub INFO wpisano 4 lub więcej spacji

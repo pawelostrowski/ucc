@@ -41,7 +41,7 @@ void ucc_help()
 void ucc_version()
 {
 	std::cout << UCC_NAME " " UCC_VER << std::endl;
-	std::cout << "Copyright (C) 2013, 2014 Paweł Ostrowski" << std::endl;
+	std::cout << "Copyright (C) 2013-2015 Paweł Ostrowski" << std::endl;
 	std::cout << "Licencja: GNU General Public License v2.0 lub późniejsze wersje" << std::endl;
 }
 

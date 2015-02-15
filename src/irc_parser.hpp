@@ -197,6 +197,8 @@ void raw_484(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 void raw_492(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
+void raw_495(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
+
 void raw_530(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
 void raw_531(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);

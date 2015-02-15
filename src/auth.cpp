@@ -129,7 +129,7 @@ bool auth_http_init(struct global_args &ga, struct channel_irc *ci[])
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "kropka.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "kropka.onet.pl", (ga.all_auth_https ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
 				"", true, bytes_recv_all, "authHttpInit");
 
 	if(http_recv_buf_ptr == NULL)
@@ -152,7 +152,7 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/myimg.gif",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/myimg.gif",
 				"", true, bytes_recv_all, "authHttpGetCaptcha");
 
 	if(http_recv_buf_ptr == NULL)
@@ -291,7 +291,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	// zapobiega ponownemu wysłaniu kodu na serwer
 	ga.captcha_ready = false;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}", false, bytes_recv_all, "authHttpCheckCode");
 
 	if(http_recv_buf_ptr == NULL)
@@ -345,7 +345,7 @@ bool auth_http_getsk(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/sk.gif",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/sk.gif",
 				"", true, bytes_recv_all, "authHttpGetSk");
 
 	if(http_recv_buf_ptr == NULL)
@@ -363,7 +363,7 @@ bool auth_http_mlogin(struct global_args &ga, struct channel_irc *ci[])
 {
 /*
 	W tym miejscu (logowanie nicka stałego) pobierane są kolejne dwa ciastka: onet_uoi, onet_uid, połączenie jest szyfrowane zawsze, niezależnie od
-	wartości ALL_AUTH_HTTPS.
+	wartości ga.all_auth_https
 */
 
 	int bytes_recv_all;
@@ -392,7 +392,7 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 
 	int bytes_recv_all;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(buf_chars(ga.my_nick)) + ":\""
 				+ buf_utf_to_iso(ga.my_nick) + "\";}", false, bytes_recv_all, "authHttpUserOverride");
 
@@ -421,7 +421,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 		my_nick_c.erase(0, 1);
 	}
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ALL_AUTH_HTTPS ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(buf_chars(my_nick_c)) + ":\"" + buf_utf_to_iso(my_nick_c)
 				+ "\";s:8:\"tempNick\";i:" + (ga.my_password.size() == 0 ? "1" : "0") + ";s:7:\"version\";s:"
 				+ std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}", false, bytes_recv_all, "authHttpGetUoKey");

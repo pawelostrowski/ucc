@@ -152,6 +152,10 @@ int main_window(bool _use_colors, bool _debug_irc)
 
 	ga.is_irc_recv_buf_incomplete = false;
 
+	// wymuś całą autoryzację przez HTTPS, a nie tylko samo hasło, jeśli z jakiegoś powodu ta opcja będzie sprawiać problemy, można ją wyłączyć;
+	// po dodaniu opcji zrobić możliwość wyboru
+	ga.all_auth_https = true;
+
 	ga.cf = {};
 
 	ga.ucc_home_dir = std::string(getenv("HOME")) + "/" UCC_DIR;
