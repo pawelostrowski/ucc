@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-02-21.01"
+#define UCC_VER		"1.0 alpha7.2015-02-21.02"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"

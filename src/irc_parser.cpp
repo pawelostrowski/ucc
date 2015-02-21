@@ -518,6 +518,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_474(ga, ci, raw_buf);
 				break;
 
+			case 475:
+				raw_475(ga, ci, raw_buf);
+				break;
+
 			case 480:
 				raw_480(ga, ci, raw_buf);
 				break;
@@ -1304,6 +1308,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	:GuardServ!service@service.onet MODE #ucc +V
 	:ChanServ!service@service.onet MODE #ucc -ips
 	:ChanServ!service@service.onet MODE #ucc -e+e-oq+qo *!50256503@* *!80810606@* ucieszony86 ucieszony86 ucc ucc
+	:ChanServ!service@service.onet MODE #ucc +ks abc
 
 	Zmiany flag nicka (przykładowe RAW):
 	:Darom!12265854@devel.onet MODE Darom :+O
@@ -1890,6 +1895,17 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 			{
 				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już moderowany (ustawił"
 						+ a + nick_gives + ").");
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '+')
+			{
+				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz hasło dostępu: "
+						+ get_raw_parm(raw_buf, f - x + 3));
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '-')
+			{
+				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już hasła dostępu.");
 			}
 
 			// czasem poniższe flagi (ips) pojawiają się oddzielnie, dlatego zostawiono je, mimo wcześniejszego wykrycia +/-ips)
@@ -3564,15 +3580,6 @@ void raw_371(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
-	374 (INFO - koniec)
-	:cf1f1.onet 374 ucieszony86 :End of /INFO list
-*/
-void raw_374()
-{
-}
-
-
-/*
 	372 (MOTD - wiadomość dnia, właściwa wiadomość)
 	:cf1f2.onet 372 ucc_test :- Onet Czat. Inny Wymiar Czatowania. Witamy!
 	:cf1f2.onet 372 ucc_test :- UWAGA - Nie daj się oszukać! Zanim wyślesz jakikolwiek SMS, zapoznaj się z filmem: http://www.youtube.com/watch?v=4skUNAyIN_c
@@ -3581,6 +3588,15 @@ void raw_374()
 void raw_372(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	win_buf_add_str(ga, ci, "Status", oINFOn xYELLOW + form_from_chat(get_rest_from_buf(raw_buf, " :")));
+}
+
+
+/*
+	374 (INFO - koniec)
+	:cf1f1.onet 374 ucieszony86 :End of /INFO list
+*/
+void raw_374()
+{
 }
 
 
@@ -3981,6 +3997,18 @@ void raw_474(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
 	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (jesteś zbanowany(-na)).");
+}
+
+
+/*
+	475 (JOIN do pokoju z hasłem gdy podamy złe hasło lub jego brak)
+	:cf1f2.onet 475 ucieszony86 #ucc :Cannot join channel (Incorrect channel key)
+*/
+void raw_475(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (nieprawidłowe hasło dostępu).");
 }
 
 
@@ -6011,6 +6039,13 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 	else if(raw_parm5 == "PRIVATE")
 	{
 		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do włączenia statusu prywatności w pokoju " + raw_parm4);
+	}
+
+	// CS SET #pokój PASSWORD xyz - przy braku uprawnień
+	// :ChanServ!service@service.onet NOTICE ucc_test :463 #ucc PASSWORD :permission denied, insufficient privileges
+	else if(raw_parm5 == "PASSWORD")
+	{
+		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany hasła w pokoju " + raw_parm4);
 	}
 
 	// nieznany lub niezaimplementowany powód zmiany ustawień (należy dodać jeszcze te popularne)
