@@ -510,6 +510,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_462(ga, ci);
 				break;
 
+			case 471:
+				raw_471(ga, ci, raw_buf);
+				break;
+
 			case 473:
 				raw_473(ga, ci, raw_buf);
 				break;
@@ -1309,6 +1313,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	:ChanServ!service@service.onet MODE #ucc -ips
 	:ChanServ!service@service.onet MODE #ucc -e+e-oq+qo *!50256503@* *!80810606@* ucieszony86 ucieszony86 ucc ucc
 	:ChanServ!service@service.onet MODE #ucc +ks abc
+	:ChanServ!service@service.onet MODE #ucc +l 300
 
 	Zmiany flag nicka (przykładowe RAW):
 	:Darom!12265854@devel.onet MODE Darom :+O
@@ -1861,7 +1866,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'J' && raw_parm3[s] == '+')
 			{
 				win_buf_add_str(ga, ci, raw_parm2,
-						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz blokadę ustawioną na "
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz blokadę, ustawioną na "
 						+ get_raw_parm(raw_buf, f - x + 3) + "s, uniemożliwiającą użytkownikom automatyczny powrót po wyrzuceniu "
 						"ich z pokoju (ustawił" + a + nick_gives + ").");
 			}
@@ -1887,62 +1892,78 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'm' && raw_parm3[s] == '+')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz moderowany (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz moderowany (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'm' && raw_parm3[s] == '-')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już moderowany (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już moderowany (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '+')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz hasło dostępu: "
-						+ get_raw_parm(raw_buf, f - x + 3));
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz hasło dostępu: " xBOLD_ON
+						+ get_raw_parm(raw_buf, f - x + 3) + xBOLD_OFF " (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '-')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już hasła dostępu.");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już hasła dostępu (ustawił" + a + nick_gives + ").");
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'l' && raw_parm3[s] == '+')
+			{
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz limit osób jednocześnie przebywających w pokoju "
+						"(" + get_raw_parm(raw_buf, f - x + 3) + ") (ustawił" + a + nick_gives + ").");
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'l' && raw_parm3[s] == '-')
+			{
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już limitu osób jednocześnie przebywających w pokoju "
+						"(ustawił" + a + nick_gives + ").");
 			}
 
 			// czasem poniższe flagi (ips) pojawiają się oddzielnie, dlatego zostawiono je, mimo wcześniejszego wykrycia +/-ips)
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'i' && raw_parm3[s] == '+')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz niewidoczny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz niewidoczny (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'i' && raw_parm3[s] == '-')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już niewidoczny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już niewidoczny (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'p' && raw_parm3[s] == '+')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz prywatny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz prywatny (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'p' && raw_parm3[s] == '-')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już prywatny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już prywatny (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 's' && raw_parm3[s] == '+')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz sekretny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz sekretny (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 's' && raw_parm3[s] == '-')
 			{
-				win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już sekretny (ustawił"
-						+ a + nick_gives + ").");
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już sekretny (ustawił" + a + nick_gives + ").");
 			}
 
 /*
@@ -3973,6 +3994,19 @@ void raw_461(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 void raw_462(struct global_args &ga, struct channel_irc *ci[])
 {
 	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "Nie możesz zarejestrować się ponownie.");
+}
+
+
+/*
+	471 (JOIN gdy pokój jest pełny)
+	:cf1f2.onet 471 Kernel_Panic #ucc :Cannot join channel (Channel is full)
+*/
+void raw_471(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
+
+	win_buf_add_str(ga, ci, ci[ga.current]->channel,
+			oINFOn xRED "Nie możesz wejść do pokoju " + raw_parm3 + " (przekroczono limit osób jednocześnie przebywających w pokoju).");
 }
 
 
