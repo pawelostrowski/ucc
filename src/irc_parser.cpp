@@ -6061,18 +6061,18 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany tematu w pokoju " + raw_parm4);
 	}
 
-	// CS SET #pokój MODERATED ON - przy braku uprawnień
+	// CS SET #pokój MODERATED ON/OFF - przy braku uprawnień
 	// :ChanServ!service@service.onet NOTICE ucieszony86 :463 #Suwałki MODERATED :permission denied, insufficient privileges
 	else if(raw_parm5 == "MODERATED")
 	{
-		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do włączenia moderacji w pokoju " + raw_parm4);
+		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany stanu moderacji w pokoju " + raw_parm4);
 	}
 
-	// CS SET #pokój PRIVATE ON - przy braku uprawnień
+	// CS SET #pokój PRIVATE ON/OFF - przy braku uprawnień
 	// :ChanServ!service@service.onet NOTICE ucieszony86 :463 #zua_zuy_zuo PRIVATE :permission denied, insufficient privileges
 	else if(raw_parm5 == "PRIVATE")
 	{
-		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do włączenia statusu prywatności w pokoju " + raw_parm4);
+		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany statusu prywatności w pokoju " + raw_parm4);
 	}
 
 	// CS SET #pokój PASSWORD xyz - przy braku uprawnień
