@@ -518,6 +518,10 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_474(ga, ci, raw_buf);
 				break;
 
+			case 480:
+				raw_480(ga, ci, raw_buf);
+				break;
+
 			case 481:
 				raw_481(ga, ci, raw_buf);
 				break;
@@ -778,7 +782,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 260:
-				raw_notice_260();
+				raw_notice_260(ga, ci, raw_buf);
 				break;
 
 			case 261:
@@ -1852,8 +1856,8 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'J' && raw_parm3[s] == '+')
 			{
 				win_buf_add_str(ga, ci, raw_parm2,
-						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz blokadę (ustawioną na "
-						+ get_raw_parm(raw_buf, f - x + 3) + "s), uniemożliwiającą użytkownikom automatyczny powrót po wyrzuceniu "
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz blokadę ustawioną na "
+						+ get_raw_parm(raw_buf, f - x + 3) + "s, uniemożliwiającą użytkownikom automatyczny powrót po wyrzuceniu "
 						"ich z pokoju (ustawił" + a + nick_gives + ").");
 			}
 
@@ -3981,6 +3985,18 @@ void raw_474(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 
 /*
+	480 (KNOCK #pokój :text) - obecnie wyłączony, dlatego komunikat nie będzie tłumaczony, dodano na wszelki wypadek, gdyby KNOCK kiedyś wrócił
+	:cf1f2.onet 480 Kernel_Panic :Can't KNOCK on #ucc, channel is not invite only so knocking is pointless!
+*/
+void raw_480(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string srv_msg = get_rest_from_buf(raw_buf, " :");
+
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + srv_msg);
+}
+
+
+/*
 	481 (SQUIT, CONNECT, TRACE, KILL, REHASH, DIE, RESTART, WALLOPS, KLINE - przy braku uprawnień, to otrzyma każdy, kto nie jest adminem)
 	:cf1f1.onet 481 Kernel_Panic :Permission Denied - You do not have the required operator privileges
 */
@@ -5552,13 +5568,46 @@ void raw_notice_259(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
-	NOTICE 260 (pojawia się, gdy to ja odbieram sobie uprawnienia, ale podobna informacja pojawia się w RAW NOTICE 256, więc tę ukryj)
+	NOTICE 260 (pokazywać tylko wtedy, gdy nie przebywamy w pokoju, którego zmiana dotyczy, bo w przeciwnym razie pokaże się dwa razy przez RAW 256)
 	:ChanServ!service@service.onet NOTICE ucc_test :260 ucc_test #ucc -h :channel privilege changed
 	:ChanServ!service@service.onet NOTICE ucc_test :260 AT89S8253 #ucc -h :channel privilege changed
 	:ChanServ!service@service.onet NOTICE ucieszony86 :260 ucieszony86 #ucc -q :channel privilege changed
 */
-void raw_notice_260()
+void raw_notice_260(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
+	// przebuduj parametry tak, aby pasowały do funkcji raw_mode(), aby nie dublować tego samego; poniżej przykładowy RAW z MODE:
+	// :ChanServ!service@service.onet MODE #ucc +h ucc_test
+
+	// w ten sposób należy przebudować parametry, aby pasowały do raw_mode()
+	// 0 - tu wrzucić 4
+	// 1 - bez znaczenia
+	// 2 - tu wrzucić 5
+	// 3 - tu wrzucić 6
+	// 4 - tu wrzucić 2
+
+	std::string raw_parm0 = get_raw_parm(raw_buf, 4);
+	std::string raw_parm2 = get_raw_parm(raw_buf, 5);
+	std::string raw_parm3 = get_raw_parm(raw_buf, 6);
+	std::string raw_parm4 = get_raw_parm(raw_buf, 2);
+
+	// w miejscu raw_parm0 i raw_parm1 trzeba coś wpisać (cokolwiek), dlatego wpisano kropkę (należy pamiętać, że raw_parm0 jest wysyłany jako parametr)
+	std::string raw_buf_new = ". . " + raw_parm2 + " " + raw_parm3 + " " + raw_parm4;
+
+	// przykładowy RAW z NOTICE 260:
+	// :ChanServ!service@service.onet NOTICE Kernel_Panic :260 ucieszony86 #ucc +h :channel privilege changed
+	// i po przebudowaniu (należy pamiętać, że raw_parm0 jest wysyłany jako parametr w raw_mode() ):
+	// . . #ucc +h Kernel_Panic
+
+	// nie pokazuj, jeśli pokój, którego zmiana dotyczy jest pokojem, w którym jesteśmy
+	for(int i = 0; i < CHAN_CHAT; ++i)
+	{
+		if(ci[i] && ci[i]->channel == raw_parm2)
+		{
+			return;
+		}
+	}
+
+	raw_mode(ga, ci, raw_buf_new, raw_parm0);
 }
 
 
