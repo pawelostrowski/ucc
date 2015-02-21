@@ -717,6 +717,30 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				raw_notice_152(ga, ci, raw_buf);
 				break;
 
+			case 160:
+				raw_notice_160(ga, ci, raw_buf);
+				break;
+
+			case 161:
+				raw_notice_161(ga, ci, raw_buf);
+				break;
+
+			case 162:
+				raw_notice_162(ga, ci, raw_buf);
+				break;
+
+			case 163:
+				raw_notice_163(ga, ci, raw_buf);
+				break;
+
+			case 164:
+				raw_notice_164(ga, ci, raw_buf);
+				break;
+
+			case 165:
+				raw_notice_165(ga, ci, raw_buf);
+				break;
+
 			case 210:
 				raw_notice_210(ga, ci, raw_buf);
 				break;
@@ -5381,6 +5405,89 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
+	NOTICE 160 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :160 #ucc :Jakiś temat pokoju
+*/
+void raw_notice_160(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string topic = get_rest_from_buf(raw_buf, raw_parm4 + " :");
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Temat pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + topic);
+}
+
+
+/*
+	NOTICE 161 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :161 #ucc :topicAuthor=ucieszony86 rank=0.9100 topicDate=1424534155 private=0 type=0 createdDate=1381197987 password= limit=0 vEmail=0 www= catMajor=4 moderated=0 avatar= guardian=0 kickRejoin=120 email= auditorium=0
+*/
+void raw_notice_161(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string chan_set = get_rest_from_buf(raw_buf, raw_parm4 + " :");
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Ustawienia pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_set);
+}
+
+
+/*
+	NOTICE 162 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :162 #ucc :q,ucieszony86 (i inne opy/sopy)
+*/
+void raw_notice_162(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string chan_stat = get_rest_from_buf(raw_buf, raw_parm4 + " :");
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Osoby posiadające statusy w pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_stat);
+}
+
+
+/*
+	NOTICE 163 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc b nick ucieszony86 1402408270 :
+	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc b *!*@host ucieszony86 1423269397 :nick
+*/
+void raw_notice_163(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string chan_stat = get_rest_from_buf(raw_buf, raw_parm4 + " ");
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Nadane uprawnienie w pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_stat);
+}
+
+
+/*
+	NOTICE 164 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :164 #ucc :end of channel info
+*/
+void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Koniec informacji o pokoju " xGREEN + raw_parm4);
+}
+
+
+/*
+	NOTICE 165 (CS INFO #pokój)
+	:ChanServ!service@service.onet NOTICE ucieszony86 :165 #ucc :Opis pokoju
+*/
+void raw_notice_165(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+{
+	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+
+	std::string chan_desc = get_rest_from_buf(raw_buf, raw_parm4 + " ");
+
+	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Opis pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_desc);
+}
+
+
+/*
 	NOTICE 210 (NS SET LONGDESC - gdy nie podano opcji do zmiany)
 	:NickServ!service@service.onet NOTICE ucieszony86 :210 :nothing changed
 */
@@ -6054,25 +6161,11 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
 
-	// CS SET #pokój TOPIC ... - w pokoju bez uprawnień
-	// :ChanServ!service@service.onet NOTICE ucc_test :463 #zua_zuy_zuo TOPIC :permission denied, insufficient privileges
-	if(raw_parm5 == "TOPIC")
-	{
-		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany tematu w pokoju " + raw_parm4);
-	}
-
 	// CS SET #pokój MODERATED ON/OFF - przy braku uprawnień
 	// :ChanServ!service@service.onet NOTICE ucieszony86 :463 #Suwałki MODERATED :permission denied, insufficient privileges
-	else if(raw_parm5 == "MODERATED")
+	if(raw_parm5 == "MODERATED")
 	{
 		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany stanu moderacji w pokoju " + raw_parm4);
-	}
-
-	// CS SET #pokój PRIVATE ON/OFF - przy braku uprawnień
-	// :ChanServ!service@service.onet NOTICE ucieszony86 :463 #zua_zuy_zuo PRIVATE :permission denied, insufficient privileges
-	else if(raw_parm5 == "PRIVATE")
-	{
-		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany statusu prywatności w pokoju " + raw_parm4);
 	}
 
 	// CS SET #pokój PASSWORD xyz - przy braku uprawnień
@@ -6082,7 +6175,21 @@ void raw_notice_463(struct global_args &ga, struct channel_irc *ci[], std::strin
 		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany hasła w pokoju " + raw_parm4);
 	}
 
-	// nieznany lub niezaimplementowany powód zmiany ustawień (należy dodać jeszcze te popularne)
+	// CS SET #pokój PRIVATE ON/OFF - przy braku uprawnień
+	// :ChanServ!service@service.onet NOTICE ucieszony86 :463 #zua_zuy_zuo PRIVATE :permission denied, insufficient privileges
+	else if(raw_parm5 == "PRIVATE")
+	{
+		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany statusu prywatności w pokoju " + raw_parm4);
+	}
+
+	// CS SET #pokój TOPIC ... - w pokoju bez uprawnień
+	// :ChanServ!service@service.onet NOTICE ucc_test :463 #zua_zuy_zuo TOPIC :permission denied, insufficient privileges
+	else if(raw_parm5 == "TOPIC")
+	{
+		win_buf_add_str(ga, ci, raw_parm4, oINFOn xRED "Nie posiadasz uprawnień do zmiany tematu w pokoju " + raw_parm4);
+	}
+
+	// nieznany lub niezaimplementowany powód zmiany ustawień
 	else
 	{
 		std::string nick_who = get_value_from_buf(raw_buf, ":", "!");
