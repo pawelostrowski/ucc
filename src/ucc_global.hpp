@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-02-21.05"
+#define UCC_VER		"1.0 alpha7.2015-02-24.01"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
@@ -199,6 +199,33 @@ struct kban
 	std::string reason;
 };
 
+// struktura dla CS INFO #pokój
+struct cs_info
+{
+	std::string topic;
+	std::string desc;
+	std::string topic_author;
+	std::string rank;
+	std::string topic_date;
+	std::string priv;
+	std::string type;
+	std::string created_date;
+	std::string password;
+	std::string limit;
+	std::string v_email;
+	std::string www;
+	std::string cat_major;
+	std::string moderated;
+	std::string avatar;
+	std::string guardian;
+	std::string kick_rejoin;
+	std::string email;
+	std::string auditorium;
+	std::string stats;
+	std::vector<std::string> banned;
+	std::vector<std::string> invited;
+};
+
 // struktura zmiennych (wybranych) używanych w całym programie
 struct global_args
 {
@@ -283,6 +310,8 @@ struct global_args
 	std::map<std::string, std::vector<std::string>> whowas;
 
 	std::map<std::string, struct kban> kb;
+
+	std::map<std::string, struct cs_info> cs_i;
 };
 
 // wybrane flagi nicka na czacie (wszystkie nie będą używane)

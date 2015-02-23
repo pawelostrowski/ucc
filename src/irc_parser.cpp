@@ -5412,9 +5412,7 @@ void raw_notice_160(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	std::string topic = get_rest_from_buf(raw_buf, raw_parm4 + " :");
-
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Temat pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + topic);
+	ga.cs_i[raw_parm4].topic = form_from_chat(get_rest_from_buf(raw_buf, raw_parm4 + " :"));
 }
 
 
@@ -5426,9 +5424,43 @@ void raw_notice_161(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	std::string chan_set = get_rest_from_buf(raw_buf, raw_parm4 + " :");
+	// dodaj spację na końcu bufora, aby parser wyciągający dane działał prawidłowo dla ostatniej wartości w buforze
+	raw_buf += " ";
 
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Ustawienia pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_set);
+	// pobierz informacje o pokoju
+	ga.cs_i[raw_parm4].topic_author = get_value_from_buf(raw_buf, "topicAuthor=", " "); //
+
+	ga.cs_i[raw_parm4].rank = get_value_from_buf(raw_buf, "rank=", " "); //
+
+	ga.cs_i[raw_parm4].topic_date = get_value_from_buf(raw_buf, "topicDate=", " "); //
+
+	ga.cs_i[raw_parm4].priv = get_value_from_buf(raw_buf, "private=", " "); //
+
+	ga.cs_i[raw_parm4].type = get_value_from_buf(raw_buf, "type=", " "); //
+
+	ga.cs_i[raw_parm4].created_date = get_value_from_buf(raw_buf, "createdDate=", " "); //
+
+	ga.cs_i[raw_parm4].password = get_value_from_buf(raw_buf, "password=", " ");
+
+	ga.cs_i[raw_parm4].limit = get_value_from_buf(raw_buf, "limit=", " ");
+
+	ga.cs_i[raw_parm4].v_email = get_value_from_buf(raw_buf, "vEmail=", " ");
+
+	ga.cs_i[raw_parm4].www = get_value_from_buf(raw_buf, "www=", " "); //
+
+	ga.cs_i[raw_parm4].cat_major = get_value_from_buf(raw_buf, "catMajor=", " ");
+
+	ga.cs_i[raw_parm4].moderated = get_value_from_buf(raw_buf, "moderated=", " ");
+
+	ga.cs_i[raw_parm4].avatar = get_value_from_buf(raw_buf, "avatar=", " "); //
+
+	ga.cs_i[raw_parm4].guardian = get_value_from_buf(raw_buf, "guardian=", " ");
+
+	ga.cs_i[raw_parm4].kick_rejoin = get_value_from_buf(raw_buf, "kickRejoin=", " ");
+
+	ga.cs_i[raw_parm4].email = get_value_from_buf(raw_buf, "email=", " "); //
+
+	ga.cs_i[raw_parm4].auditorium = get_value_from_buf(raw_buf, "auditorium=", " ");
 }
 
 
@@ -5440,9 +5472,7 @@ void raw_notice_162(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	std::string chan_stat = get_rest_from_buf(raw_buf, raw_parm4 + " :");
-
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Osoby posiadające statusy w pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_stat);
+	ga.cs_i[raw_parm4].stats = get_rest_from_buf(raw_buf, raw_parm4 + " :");
 }
 
 
@@ -5450,14 +5480,37 @@ void raw_notice_162(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 163 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc b nick ucieszony86 1402408270 :
 	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc b *!*@host ucieszony86 1423269397 :nick
+	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc I test!*@* ucieszony86 1424732412 :
 */
 void raw_notice_163(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
+	std::string raw_parm6 = get_raw_parm(raw_buf, 6);
+	std::string raw_parm7 = get_raw_parm(raw_buf, 7);
+	std::string raw_parm8 = get_raw_parm(raw_buf, 8);
+	std::string raw_parm_rest = get_rest_from_buf(raw_buf, raw_parm8 + " :");
 
-	std::string chan_stat = get_rest_from_buf(raw_buf, raw_parm4 + " ");
+	if(raw_parm5 == "b")
+	{
+		if(raw_parm_rest.size() == 0)
+		{
+			ga.cs_i[raw_parm4].banned.push_back(raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+		}
 
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Nadane uprawnienie w pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_stat);
+		else
+		{
+			ga.cs_i[raw_parm4].banned.push_back(raw_parm6 + " (" + raw_parm_rest + ") " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+		}
+	}
+
+	else
+	{
+		ga.cs_i[raw_parm4].invited.push_back(raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+	}
 }
 
 
@@ -5469,7 +5522,133 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Koniec informacji o pokoju " xGREEN + raw_parm4);
+	auto it = ga.cs_i.find(raw_parm4);
+
+	if(it != ga.cs_i.end())
+	{
+		win_buf_add_str(ga, ci, "Status", uINFOb xYELLOW_BLACK + raw_parm4 + xTERMC + " [Informacje]", true, 2);
+
+		if(it->second.created_date.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status",
+					oINFOn "  Data utworzenia pokoju: " + time_utimestamp_to_local_full(it->second.created_date), true, 2);
+		}
+
+		if(it->second.topic.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Temat: " + it->second.topic, true, 2);
+		}
+
+		if(it->second.topic_author.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Autor tematu: " + it->second.topic_author, true, 2);
+		}
+
+		if(it->second.topic_date.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status",
+					oINFOn "  Data ustawienia tematu: " + time_utimestamp_to_local_full(it->second.topic_date), true, 2);
+		}
+
+		if(it->second.desc.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Opis: " + it->second.desc, true, 2);
+		}
+
+		if(it->second.avatar.size() > 0)
+		{
+			size_t avatar_full = it->second.avatar.find(",1");
+
+			if(avatar_full != std::string::npos)
+			{
+				it->second.avatar.replace(avatar_full + 1, 1, "0");
+			}
+
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Awatar: " + it->second.avatar, true, 2);
+		}
+
+		if(it->second.priv == "1")
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Pokój jest prywatny.", true, 2);
+		}
+
+		if(it->second.email.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Adres email: " + it->second.email, true, 2);
+		}
+
+		if(it->second.www.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Strona internetowa: " + it->second.www, true, 2);
+		}
+
+		if(it->second.type.size() > 0)
+		{
+			if(it->second.type == "0")
+			{
+				it->second.type = "Dziki";
+			}
+
+			else if(it->second.type == "1")
+			{
+				it->second.type = "Oswojony";
+			}
+
+			else if(it->second.type == "2")
+			{
+				it->second.type = "Z klasą";
+			}
+
+			else if(it->second.type == "3")
+			{
+				it->second.type = "Kultowy";
+			}
+
+			if(it->second.rank.size() > 0)
+			{
+				it->second.type += " (" + it->second.rank + ")";
+			}
+
+			win_buf_add_str(ga, ci, "Status", oINFOn "  Ranga: " + it->second.type, true, 2);
+		}
+
+		if(it->second.stats.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOb "  Uprawnienia:", true, 2);
+
+			win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.stats, true, 2);
+		}
+
+		if(it->second.banned.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOb "  Zbanowani:", true, 2);
+
+			for(unsigned int i = 0; i < it->second.banned.size(); ++i)
+			{
+				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.banned[i], true, 2);
+			}
+		}
+
+		if(it->second.invited.size() > 0)
+		{
+			win_buf_add_str(ga, ci, "Status", oINFOb "  Zaproszeni:", true, 2);
+
+			for(unsigned int i = 0; i < it->second.invited.size(); ++i)
+			{
+				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.invited[i], true, 2);
+			}
+		}
+
+		win_buf_add_str(ga, ci, "Status", oINFOn "Koniec informacji o pokoju " xBOLD_ON + raw_parm4, true, 2);
+	}
+
+	else
+	{
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED "Wystąpił błąd podczas przetwarzania informacji o pokoju " + raw_parm4, true, 2);
+	}
+
+	// po przetworzeniu informacji o pokoju wyczyść jego dane
+	ga.cs_i.erase(raw_parm4);
 }
 
 
@@ -5481,9 +5660,7 @@ void raw_notice_165(struct global_args &ga, struct channel_irc *ci[], std::strin
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
-	std::string chan_desc = get_rest_from_buf(raw_buf, raw_parm4 + " ");
-
-	win_buf_add_str(ga, ci, raw_parm4, oINFOn xWHITE "Opis pokoju " xGREEN + raw_parm4 + xWHITE ": " xTERMC + chan_desc);
+	ga.cs_i[raw_parm4].desc = form_from_chat(get_rest_from_buf(raw_buf, raw_parm4 + " :"));
 }
 
 
