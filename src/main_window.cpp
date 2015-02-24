@@ -66,8 +66,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 		return 1;
 	}
 
-	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo, przy okazji pl_PL ustawi polskie dni i miesiące przy pobieraniu daty z unixtimestamp
-	std::setlocale(LC_ALL, "pl_PL.UTF-8");
+	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo
+	std::setlocale(LC_ALL, "");
 
 	// inicjalizacja ncurses
 	if(! initscr())

@@ -5491,25 +5491,52 @@ void raw_notice_163(struct global_args &ga, struct channel_irc *ci[], std::strin
 	std::string raw_parm8 = get_raw_parm(raw_buf, 8);
 	std::string raw_parm_rest = get_rest_from_buf(raw_buf, raw_parm8 + " :");
 
+/*
+	Dodawanie użytkowników po kluczu z daty dodania posortuje ich wg daty dodania.
+*/
+
 	if(raw_parm5 == "b")
 	{
 		if(raw_parm_rest.size() == 0)
 		{
-			ga.cs_i[raw_parm4].banned.push_back(raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
-					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+			// zbanowany nick, który istnieje
+			if(raw_parm6.find("!") == std::string::npos)
+			{
+				ga.cs_i[raw_parm4].banned[raw_parm8] = xRED + raw_parm6 + xTERMC " " xWHITE "przez" xTERMC " " + raw_parm7
+						+ " " xWHITE "(" + time_utimestamp_to_local_full(raw_parm8) + ")";
+			}
+
+			// zbanowanie po masce
+			else
+			{
+				ga.cs_i[raw_parm4].banned[raw_parm8] = raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
+						+ " " xWHITE "(" + time_utimestamp_to_local_full(raw_parm8) + ")";
+			}
 		}
 
 		else
 		{
-			ga.cs_i[raw_parm4].banned.push_back(raw_parm6 + " (" + raw_parm_rest + ") " xWHITE "przez" xTERMC " " + raw_parm7
-					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+			// zbanowany nick po IP, który istnieje
+			ga.cs_i[raw_parm4].banned[raw_parm8] = raw_parm6 + " (" xRED + raw_parm_rest + xTERMC ") " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " " xWHITE "(" + time_utimestamp_to_local_full(raw_parm8) + ")";
 		}
 	}
 
 	else
 	{
-		ga.cs_i[raw_parm4].invited.push_back(raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
-					+ " (" + time_utimestamp_to_local_full(raw_parm8) + ")");
+		if(raw_parm6.find("!") == std::string::npos)
+		{
+			// zaproszony nick, który istnieje
+			ga.cs_i[raw_parm4].invited[raw_parm8] = xGREEN + raw_parm6 + xTERMC " " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " " xWHITE "(" + time_utimestamp_to_local_full(raw_parm8) + ")";
+		}
+
+		else
+		{
+			// zaproszenie po masce
+			ga.cs_i[raw_parm4].invited[raw_parm8] = raw_parm6 + " " xWHITE "przez" xTERMC " " + raw_parm7
+					+ " " xWHITE "(" + time_utimestamp_to_local_full(raw_parm8) + ")";
+		}
 	}
 }
 
@@ -5526,7 +5553,7 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 	if(it != ga.cs_i.end())
 	{
-		win_buf_add_str(ga, ci, "Status", uINFOb xYELLOW_BLACK + raw_parm4 + xTERMC + " [Informacje]", true, 2);
+		win_buf_add_str(ga, ci, "Status", oINFOb xYELLOW_BLACK + raw_parm4 + xTERMC + " [Informacje]", true, 2);
 
 		if(it->second.created_date.size() > 0)
 		{
@@ -5623,9 +5650,9 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 		{
 			win_buf_add_str(ga, ci, "Status", oINFOb "  Zbanowani:", true, 2);
 
-			for(unsigned int i = 0; i < it->second.banned.size(); ++i)
+			for(auto it2 = it->second.banned.begin(); it2 != it->second.banned.end(); ++it2)
 			{
-				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.banned[i], true, 2);
+				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it2->second, true, 2);
 			}
 		}
 
@@ -5633,9 +5660,9 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 		{
 			win_buf_add_str(ga, ci, "Status", oINFOb "  Zaproszeni:", true, 2);
 
-			for(unsigned int i = 0; i < it->second.invited.size(); ++i)
+			for(auto it2 = it->second.invited.begin(); it2 != it->second.invited.end(); ++it2)
 			{
-				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.invited[i], true, 2);
+				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it2->second, true, 2);
 			}
 		}
 
