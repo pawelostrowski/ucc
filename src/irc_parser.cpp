@@ -5561,10 +5561,11 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 					oINFOn "  Data utworzenia pokoju: " + time_utimestamp_to_local_full(it->second.created_date), true, 2);
 		}
 
-		if(it->second.topic.size() > 0)
-		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Temat: " + it->second.topic, true, 2);
-		}
+		win_buf_add_str(ga, ci, "Status",
+				(it->second.topic.size() > 0
+				? oINFOn "  Temat: " + it->second.topic
+				: oINFOn "  Temat pokoju nie został ustawiony (jest pusty)."),
+				true, 2);
 
 		if(it->second.topic_author.size() > 0)
 		{
