@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-03-04.04"
+#define UCC_VER		"1.0 alpha7.2015-03-04.05"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
@@ -351,6 +351,8 @@ struct channel_irc
 	std::vector<std::string> win_buf;
 	std::string channel;
 	std::string topic;
+
+	std::string chan_priv;	// tutaj będzie przechowywana nazwa pokoju dla rozmowy prywatnej w stylu ^nick_z_którym_mamy_rozmowę
 
         std::map<std::string, struct nick_irc> ni;
 

@@ -399,7 +399,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 353:
-				raw_353(ga, raw_buf);
+				raw_353(ga, ci, raw_buf);
 				break;
 
 			case 366:
@@ -3301,12 +3301,47 @@ void raw_341()
 /*
 	353 (NAMES)
 	:cf1f1.onet 353 ucc_test = #scc :%ucc_test|rx,0 AT89S8253|brx,0 %Husar|rx,1 ~Ayindida|x,0 YouTube_Dekoder|rx,0 StyX1|rx,0 %Radowsky|rx,1 fml|rx,0
+	:cf1f3.onet 353 ucieszony86 = ^cf1f2xxxxxx :ucieszony86|rx,1 Kernel_Panic|rx,0
 */
-void raw_353(struct global_args &ga, std::string &raw_buf)
+void raw_353(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
+	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
+	std::string raw_parm6 = get_raw_parm(raw_buf, 6);
 
-	ga.names[raw_parm4] += get_rest_from_buf(raw_buf, " :");
+	if(raw_parm4.size() > 0)
+	{
+		ga.names[raw_parm4] += get_rest_from_buf(raw_buf, " :");
+
+		// jeśli to NAMES dla rozmowy prywatnej i to ja wchodzę (bo jest już tam nick osoby, z którą będę rozmawiać), to dodaj go do bufora
+		if(raw_parm4[0] == '^' && raw_parm6.size() > 0)
+		{
+			// znajdź, który nick nie jest mój (nie ma żadnej reguły, w jakiej kolejności podane są nicki) i ten wybierz
+			std::string nick_priv = (raw_parm5.find(ga.zuousername) == std::string::npos) ? raw_parm5 : raw_parm6;
+
+			// usuń z nicka jego statusy
+			size_t nick_stat_pos = nick_priv.find("|");
+
+			if(nick_stat_pos != std::string::npos)
+			{
+				nick_priv.erase(nick_stat_pos, nick_priv.size() - nick_stat_pos);
+			}
+
+			// dodanie nicka, który wyświetli się na dolnym pasku w nazwie pokoju oraz w tytule
+			for(int i = 0; i < CHAN_CHAT; ++i)
+			{
+				if(ci[i] && ci[i]->channel == raw_parm4)
+				{
+					ci[i]->chan_priv = "^" + nick_priv;
+
+					ci[i]->topic = "Rozmowa prywatna z " + nick_priv;
+
+					// po odnalezieniu pokoju przerwij pętlę
+					break;
+				}
+			}
+		}
+	}
 }
 
 
@@ -3765,9 +3800,22 @@ void raw_401(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 				 : oINFOn xRED + raw_parm3 + " - nieprawidłowa nazwa pokoju."));
 	}
 
-	// INVREJECT przy błędnym pokoju
+	// INVREJECT przy błędnym pokoju lub PART do rozmowy, która już nie istnieje (po przelogowaniu się bez zamykania tego priva)
 	else if(srv_msg == "No such channel")
 	{
+		// jeśli to PART do rozmowy, która nie istnieje (jeśli ten pokój istnieje), usuń pokój z pamięci programu (zamknij go)
+		for(int i = 0; i < CHAN_CHAT; ++i)
+		{
+			if(ci[i] && ci[i]->channel == raw_parm3)
+			{
+				del_chan_chat(ga, ci, raw_parm3);
+
+				// po odnalezieniu pokoju zakończ
+				return;
+			}
+		}
+
+		// gdy to nie był PART do nieaktywnego priva, wyświetl komunikat
 		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE + raw_parm3 + " - wybrana rozmowa prywatna nie istnieje.");
 	}
 
@@ -3793,16 +3841,35 @@ void raw_402(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 
 /*
 	403 (JOIN do nieistniejącego priva lub do pokoju bez podania # na początku)
-	:cf1f2.onet 403 ucc_test ^cf1f2123456 :Invalid channel name
 	:cf1f4.onet 403 ucc_test sc :Invalid channel name
+	:cf1f2.onet 403 ucc_test ^cf1f2123456 :Invalid channel name
 */
 void raw_403(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
 	std::string raw_parm3 = get_raw_parm(raw_buf, 3);
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_parm3.size() > 0 && raw_parm3[0] == '^'
-			? oINFOn xWHITE + raw_parm3 + " - wybrana rozmowa prywatna nie istnieje."
-			: oINFOn xRED + raw_parm3 + " - nieprawidłowa nazwa pokoju."));
+	if(raw_parm3.size() > 0 && raw_parm3[0] != '^')
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED + raw_parm3 + " - nieprawidłowa nazwa pokoju.");
+	}
+
+	else
+	{
+		// jeśli to był otwarty priv i nie da się do niego wejść (po przelogowaniu), pokaż nazwę z nickiem
+		for(int i = 0; i < CHAN_CHAT; ++i)
+		{
+			if(ci[i] && ci[i]->channel == raw_parm3)
+			{
+				win_buf_add_str(ga, ci, raw_parm3, oINFOn xWHITE + ci[i]->chan_priv + " - wybrana rozmowa prywatna nie istnieje.");
+
+				// po odnalezieniu pokoju zakończ
+				return;
+			}
+		}
+
+		// w przeciwnym razie pokaż zwykłe ostrzeżenie w aktualnie otwartym pokoju
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE + raw_parm3 + " - wybrana rozmowa prywatna nie istnieje.");
+	}
 }
 
 
@@ -4673,6 +4740,20 @@ void raw_notice(struct global_args &ga, struct channel_irc *ci[], std::string &r
 		&& srv_msg == "*** " +  raw_parm4 + " invited " + raw_parm6 + " into the channel")
 	{
 		win_buf_add_str(ga, ci, raw_parm2, oINFOn xWHITE "Wysłano zaproszenie do rozmowy prywatnej dla " + raw_parm6);
+
+		// dodanie nicka, który wyświetli się na dolnym pasku w nazwie pokoju oraz w tytule
+		for(int i = 0; i < CHAN_CHAT; ++i)
+		{
+			if(ci[i] && ci[i]->channel == raw_parm2)
+			{
+				ci[i]->chan_priv = "^" + raw_parm6;
+
+				ci[i]->topic = "Rozmowa prywatna z " + raw_parm6;
+
+				// po odnalezieniu pokoju przerwij pętlę
+				break;
+			}
+		}
 	}
 
 	// :cf1f2.onet NOTICE #Computers :*** drew_barrymore invited aga271980 into the channel

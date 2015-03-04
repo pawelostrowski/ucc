@@ -562,7 +562,18 @@ int main_window(bool _use_colors, bool _debug_irc)
 			// wyświetl nazwę pokoju
 			addstr(" [");
 			attron(A_BOLD);
-			addstr(ci[ga.current]->channel.c_str());
+
+			// nazwa pokoju lub osoba, z którą mamy rozmowę prywatną
+			if(ci[ga.current]->chan_priv.size() == 0)
+			{
+				addstr(ci[ga.current]->channel.c_str());
+			}
+
+			else
+			{
+				addstr(ci[ga.current]->chan_priv.c_str());
+			}
+
 			attroff(A_BOLD);
 			addch(']');
 
