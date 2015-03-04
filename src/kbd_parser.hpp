@@ -65,6 +65,8 @@ void command_help(struct global_args &ga, struct channel_irc *ci[]);
 
 void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start, bool add_del);
 
+void command_info(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
+
 void command_invite(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
 void command_join(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);

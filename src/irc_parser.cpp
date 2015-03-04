@@ -718,19 +718,19 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 160:
-				raw_notice_160(ga, ci, raw_buf);
+				raw_notice_160(ga, raw_buf);
 				break;
 
 			case 161:
-				raw_notice_161(ga, ci, raw_buf);
+				raw_notice_161(ga, raw_buf);
 				break;
 
 			case 162:
-				raw_notice_162(ga, ci, raw_buf);
+				raw_notice_162(ga, raw_buf);
 				break;
 
 			case 163:
-				raw_notice_163(ga, ci, raw_buf);
+				raw_notice_163(ga, raw_buf);
 				break;
 
 			case 164:
@@ -738,7 +738,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 165:
-				raw_notice_165(ga, ci, raw_buf);
+				raw_notice_165(ga, raw_buf);
 				break;
 
 			case 210:
@@ -5408,7 +5408,7 @@ void raw_notice_152(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 160 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :160 #ucc :Jakiś temat pokoju
 */
-void raw_notice_160(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+void raw_notice_160(struct global_args &ga, std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
@@ -5420,7 +5420,7 @@ void raw_notice_160(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 161 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :161 #ucc :topicAuthor=ucieszony86 rank=0.9100 topicDate=1424534155 private=0 type=0 createdDate=1381197987 password= limit=0 vEmail=0 www= catMajor=4 moderated=0 avatar= guardian=0 kickRejoin=120 email= auditorium=0
 */
-void raw_notice_161(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+void raw_notice_161(struct global_args &ga, std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
@@ -5468,7 +5468,7 @@ void raw_notice_161(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 162 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :162 #ucc :q,ucieszony86 (i inne opy/sopy)
 */
-void raw_notice_162(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+void raw_notice_162(struct global_args &ga, std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 
@@ -5482,7 +5482,7 @@ void raw_notice_162(struct global_args &ga, struct channel_irc *ci[], std::strin
 	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc b *!*@host ucieszony86 1423269397 :nick
 	:ChanServ!service@service.onet NOTICE ucieszony86 :163 #ucc I test!*@* ucieszony86 1424732412 :
 */
-void raw_notice_163(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+void raw_notice_163(struct global_args &ga, std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 	std::string raw_parm5 = get_raw_parm(raw_buf, 5);
@@ -5553,34 +5553,33 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 	if(it != ga.cs_i.end())
 	{
-		win_buf_add_str(ga, ci, "Status", oINFOb xYELLOW_BLACK + raw_parm4 + xTERMC + " [Informacje]", true, 2);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb xYELLOW_BLACK + raw_parm4 + xTERMC + " [Informacje]");
 
 		if(it->second.created_date.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status",
-					oINFOn "  Data utworzenia pokoju: " + time_utimestamp_to_local_full(it->second.created_date), true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					oINFOn "  Data utworzenia pokoju: " + time_utimestamp_to_local_full(it->second.created_date));
 		}
 
-		win_buf_add_str(ga, ci, "Status",
+		win_buf_add_str(ga, ci, ci[ga.current]->channel,
 				(it->second.topic.size() > 0
 				? oINFOn "  Temat: " + it->second.topic
-				: oINFOn "  Temat pokoju nie został ustawiony (jest pusty)."),
-				true, 2);
+				: oINFOn "  Temat pokoju nie został ustawiony (jest pusty)."));
 
 		if(it->second.topic_author.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Autor tematu: " + it->second.topic_author, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Autor tematu: " + it->second.topic_author);
 		}
 
 		if(it->second.topic_date.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status",
-					oINFOn "  Data ustawienia tematu: " + time_utimestamp_to_local_full(it->second.topic_date), true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel,
+					oINFOn "  Data ustawienia tematu: " + time_utimestamp_to_local_full(it->second.topic_date));
 		}
 
 		if(it->second.desc.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Opis: " + it->second.desc, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Opis: " + it->second.desc);
 		}
 
 		if(it->second.avatar.size() > 0)
@@ -5592,22 +5591,17 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 				it->second.avatar.replace(avatar_full + 1, 1, "0");
 			}
 
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Awatar: " + it->second.avatar, true, 2);
-		}
-
-		if(it->second.priv == "1")
-		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Pokój jest prywatny.", true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Awatar: " + it->second.avatar);
 		}
 
 		if(it->second.email.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Adres email: " + it->second.email, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Adres email: " + it->second.email);
 		}
 
 		if(it->second.www.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Strona internetowa: " + it->second.www, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Strona internetowa: " + it->second.www);
 		}
 
 		if(it->second.type.size() > 0)
@@ -5637,42 +5631,47 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 				it->second.type += " (" + it->second.rank + ")";
 			}
 
-			win_buf_add_str(ga, ci, "Status", oINFOn "  Ranga: " + it->second.type, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Ranga: " + it->second.type);
+		}
+
+		if(it->second.priv == "1")
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xRED "  Pokój jest prywatny.");
 		}
 
 		if(it->second.stats.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOb "  Uprawnienia:", true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb "  Uprawnienia:");
 
-			win_buf_add_str(ga, ci, "Status", oINFOn "  " + it->second.stats, true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  " + it->second.stats);
 		}
 
 		if(it->second.banned.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOb "  Zbanowani:", true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb "  Zbanowani:");
 
 			for(auto it2 = it->second.banned.begin(); it2 != it->second.banned.end(); ++it2)
 			{
-				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it2->second, true, 2);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  " + it2->second);
 			}
 		}
 
 		if(it->second.invited.size() > 0)
 		{
-			win_buf_add_str(ga, ci, "Status", oINFOb "  Zaproszeni:", true, 2);
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOb "  Zaproszeni:");
 
 			for(auto it2 = it->second.invited.begin(); it2 != it->second.invited.end(); ++it2)
 			{
-				win_buf_add_str(ga, ci, "Status", oINFOn "  " + it2->second, true, 2);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  " + it2->second);
 			}
 		}
 
-		win_buf_add_str(ga, ci, "Status", oINFOn "Koniec informacji o pokoju " xBOLD_ON + raw_parm4, true, 2);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Koniec informacji o pokoju " xBOLD_ON + raw_parm4);
 	}
 
 	else
 	{
-		win_buf_add_str(ga, ci, "Status", uINFOn xRED "Wystąpił błąd podczas przetwarzania informacji o pokoju " + raw_parm4, true, 2);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Wystąpił błąd podczas przetwarzania informacji o pokoju " + raw_parm4);
 	}
 
 	// po przetworzeniu informacji o pokoju wyczyść jego dane
@@ -5684,7 +5683,7 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 	NOTICE 165 (CS INFO #pokój)
 	:ChanServ!service@service.onet NOTICE ucieszony86 :165 #ucc :Opis pokoju
 */
-void raw_notice_165(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
+void raw_notice_165(struct global_args &ga, std::string &raw_buf)
 {
 	std::string raw_parm4 = get_raw_parm(raw_buf, 4);
 

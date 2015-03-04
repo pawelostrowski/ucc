@@ -348,6 +348,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_ignore_common(ga, ci, kbd_buf, pos_arg_start, true);
 			}
 
+			else if(command == "INFO")
+			{
+				command_info(ga, ci, kbd_buf, pos_arg_start);
+			}
+
 			else if(command == "INVITE" || command == "INV")
 			{
 				command_invite(ga, ci, kbd_buf, pos_arg_start);
@@ -883,6 +888,7 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/friends" xGREEN "      lub  " xCYAN "/f\n"
 			xCYAN  "/help" xGREEN "         lub  " xCYAN "/h\n"
 			xCYAN  "/ignore" xGREEN "       lub  " xCYAN "/ign\n"
+			xCYAN  "/info\n"
 			xCYAN  "/invite" xGREEN "       lub  " xCYAN "/inv\n"
 			xCYAN  "/join" xGREEN "         lub  " xCYAN "/j\n"
 			xCYAN  "/kban\n"
@@ -940,6 +946,51 @@ void command_ignore_common(struct global_args &ga, struct channel_irc *ci[], std
 			irc_send(ga, ci, (add_del ? "NS IGNORE ADD " : "NS IGNORE DEL ") + ignore_nick);
 
 			ga.cf.ignore = true;
+		}
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
+}
+
+
+void command_info(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start)
+{
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		// pobierz wpisany pokój do pokazania
+		std::string info_chan = get_arg(kbd_buf, pos_arg_start);
+
+		// jeśli wpisano pokój do pokazania
+		if(info_chan.size() > 0)
+		{
+			// jeśli nie podano # przed nazwą pokoju, dodaj #
+			if(info_chan[0] != '#')
+			{
+				info_chan.insert(0, "#");
+			}
+
+			irc_send(ga, ci, "CS INFO " + info_chan);
+		}
+
+		// jeśli nie wpisano pokoju, pokaż info o aktualnie otwartym pokoju (o ile to aktywny pokój czata)
+		else
+		{
+			if(ga.current < CHAN_CHAT)
+			{
+				irc_send(ga, ci, "CS INFO " + ci[ga.current]->channel);
+			}
+
+			else
+			{
+				win_buf_add_str(ga, ci, ci[ga.current]->channel,
+						uINFOn xRED "Nie jesteś w aktywnym pokoju czata. W tej sytuacji musisz podać pokój, który chcesz sprawdzić.",
+						false);
+			}
 		}
 	}
 
