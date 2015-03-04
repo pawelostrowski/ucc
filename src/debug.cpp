@@ -75,6 +75,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			dbg_recv.erase(exp_start + gif_str.size() + 3, dbg_recv.size() - exp_start - gif_str.size() - 3);
 		}
 
+#ifndef __CYGWIN__
 		// usuń \r z buforów
 		size_t code_erase = dbg_sent.find("\r");
 
@@ -91,28 +92,73 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			dbg_recv.erase(dbg_recv.find("\r"), 1);
 			code_erase = dbg_recv.find("\r");
 		}
+#endif		// __CYGWIN__
 
 		// zapisz dane do pliku
-		ga.debug_http_f << "================================================================================" << std::endl;
+		ga.debug_http_f << "================================================================================";
 
-		ga.debug_http_f << dbg_http_msg << " (" << get_time_full() << "):" << std::endl << std::endl << std::endl;
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n";
+#else
+		ga.debug_http_f << "\r\n";
+#endif		// __CYGWIN__
 
-		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):" << std::endl << std::endl;
+		ga.debug_http_f << dbg_http_msg << " (" << get_time_full() << "):";
 
-		ga.debug_http_f << dbg_sent << std::endl;
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n\n\n";
+#else
+		ga.debug_http_f << "\r\n\r\n\r\n";
+#endif		// __CYGWIN__
+
+		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):";
+
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n\n";
+#else
+		ga.debug_http_f << "\r\n\r\n";
+#endif		// __CYGWIN__
+
+		ga.debug_http_f << dbg_sent;
+
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n";
+#else
+		ga.debug_http_f << "\r\n";
+#endif		// __CYGWIN__
 
 		if(dbg_sent.size() > 0 && dbg_sent[dbg_sent.size() - 1] != '\n')
 		{
-			ga.debug_http_f << std::endl << std::endl;
+#ifndef __CYGWIN__
+			ga.debug_http_f << "\n\n";
+#else
+			ga.debug_http_f << "\r\n\r\n";
+#endif		// __CYGWIN__
 		}
 
-		ga.debug_http_f << "<-- RECV:" << std::endl << std::endl;
+		ga.debug_http_f << "<-- RECV:";
 
-		ga.debug_http_f << buf_iso_to_utf(dbg_recv) << std::endl;
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n\n";
+#else
+		ga.debug_http_f << "\r\n\r\n";
+#endif		// __CYGWIN__
+
+		ga.debug_http_f << buf_iso_to_utf(dbg_recv);
+
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n";
+#else
+		ga.debug_http_f << "\r\n";
+#endif		// __CYGWIN__
 
 		if(dbg_sent.size() > 0 && dbg_recv[dbg_recv.size() - 1] != '\n')
 		{
-			ga.debug_http_f << std::endl << std::endl;
+#ifndef __CYGWIN__
+			ga.debug_http_f << "\n\n";
+#else
+			ga.debug_http_f << "\r\n\r\n";
+#endif		// __CYGWIN__
 		}
 
 		ga.debug_http_f.flush();

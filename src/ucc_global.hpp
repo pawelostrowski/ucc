@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-03-04.03"
+#define UCC_VER		"1.0 alpha7.2015-03-04.04"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
@@ -71,8 +71,17 @@ namespace std
 #define SHOW_STAT_IN_WIN_CHAT	false
 
 // początek i koniec logu
-#define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---" << std::endl
-#define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---" << std::endl << std::endl
+#ifndef __CYGWIN__
+
+#define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---\n"
+#define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---\n\n"
+
+#else
+
+#define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---\r\n"
+#define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---\r\n\r\n"
+
+#endif		// __CYGWIN__
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 // (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)

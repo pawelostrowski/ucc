@@ -984,7 +984,14 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		// zapisz log
 		if(save_log && ci[which_chan]->chan_log.good())
 		{
-			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line) << std::endl;
+			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line);
+
+#ifndef __CYGWIN__
+			ci[which_chan]->chan_log << "\n";
+#else
+			ci[which_chan]->chan_log << "\r\n";
+#endif		// __CYGWIN__
+
 			ci[which_chan]->chan_log.flush();
 		}
 	}
@@ -1011,12 +1018,6 @@ void win_buf_all_chan_msg(struct global_args &ga, struct channel_irc *ci[], std:
 			win_buf_add_str(ga, ci, ci[i]->channel, msg, save_log);
 		}
 	}
-}
-
-
-void aaaa(std::iterator<std::string, struct nick_irc> it)
-{
-
 }
 
 
