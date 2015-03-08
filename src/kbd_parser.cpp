@@ -343,6 +343,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_help(ga, ci);
 			}
 
+			else if(command == "HOMES")
+			{
+				command_homes(ga, ci);
+			}
+
 			else if(command == "IGNORE" || command == "IGN")
 			{
 				command_ignore_common(ga, ci, kbd_buf, pos_arg_start, true);
@@ -691,10 +696,7 @@ void command_connect(struct global_args &ga, struct channel_irc *ci[], std::stri
 	else
 	{
 		// komunikat o łączeniu we wszystkich otwartych pokojach (z wyjątkiem "DebugIRC" i "RawUnknown")
-		win_buf_all_chan_msg(ga, ci, uINFOb xGREEN "Łączenie z czatem, proszę czekać...");
-
-		// pokaż od razu ten komunikat (by nie było widać zwłoki)
-		win_buf_refresh(ga, ci);
+		win_buf_all_chan_msg(ga, ci, uINFOb xGREEN "Łączenie z czatem...");
 
 		// rozpocznij łączenie z czatem
 		if(! auth_http_init(ga, ci))
@@ -762,7 +764,7 @@ void command_disconnect(struct global_args &ga, struct channel_irc *ci[], std::s
 		std::string disconnect_reason = get_rest_args(kbd_buf, pos_arg_start);
 
 		// komunikat o rozłączaniu we wszystkich otwartych pokojach (z wyjątkiem "DebugIRC" i "RawUnknown")
-		win_buf_all_chan_msg(ga, ci, uINFOb xYELLOW_BLACK "Rozłączanie z czatem, proszę czekać...");
+		win_buf_all_chan_msg(ga, ci, uINFOb xYELLOW_BLACK "Rozłączanie z czatem...");
 
 		// jeśli podano argument (tekst pożegnalny), wstaw go, jeśli nie podano argumentu, wyślij samo polecenie
 		irc_send(ga, ci, (disconnect_reason.size() > 0 ? "QUIT :" + disconnect_reason : "QUIT"));
@@ -887,6 +889,7 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/favourites" xGREEN "   lub  " xCYAN "/fav\n"
 			xCYAN  "/friends" xGREEN "      lub  " xCYAN "/f\n"
 			xCYAN  "/help" xGREEN "         lub  " xCYAN "/h\n"
+			xCYAN  "/homes\n"
 			xCYAN  "/ignore" xGREEN "       lub  " xCYAN "/ign\n"
 			xCYAN  "/info\n"
 			xCYAN  "/invite" xGREEN "       lub  " xCYAN "/inv\n"
@@ -912,6 +915,22 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/whois\n"
 			xCYAN  "/whowas", false);
 			// dopisać resztę poleceń
+}
+
+
+void command_homes(struct global_args &ga, struct channel_irc *ci[])
+{
+	// jeśli połączono z IRC
+	if(ga.irc_ok)
+	{
+		irc_send(ga, ci, "CS HOMES");
+	}
+
+	// jeśli nie połączono z IRC, pokaż ostrzeżenie
+	else
+	{
+		msg_err_first_login(ga, ci);
+	}
 }
 
 
@@ -1647,7 +1666,7 @@ void command_quit(struct global_args &ga, struct channel_irc *ci[], std::string 
 		std::string quit_reason = get_rest_args(kbd_buf, pos_arg_start);
 
 		// komunikat o rozłączaniu we wszystkich otwartych pokojach (z wyjątkiem "DebugIRC" i "RawUnknown")
-		win_buf_all_chan_msg(ga, ci, uINFOb xYELLOW_BLACK "Rozłączanie z czatem, proszę czekać...");
+		win_buf_all_chan_msg(ga, ci, uINFOb xYELLOW_BLACK "Rozłączanie z czatem...");
 
 		// jeśli podano powód wyjścia, wyślij go, jeśli nie podano argumentu, wyślij samo polecenie
 		irc_send(ga, ci, (quit_reason.size() > 0 ? "QUIT :" + quit_reason : "QUIT"));
