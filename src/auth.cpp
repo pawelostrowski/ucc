@@ -129,7 +129,7 @@ bool auth_http_init(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpInit...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpInit...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -166,7 +166,7 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetCaptcha...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpGetCaptcha...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -313,7 +313,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpCheckCode...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpCheckCode...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -381,7 +381,7 @@ bool auth_http_getsk(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetSk...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpGetSk...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -415,7 +415,7 @@ bool auth_http_mlogin(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpMLogin...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpMLogin...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -450,7 +450,7 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpUserOverride...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpUserOverride...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP
@@ -480,7 +480,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 	std::string msg_err;
 
 	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
-	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetUoKey...");
+	win_buf_add_str(ga, ci, "Status", uINFOb xDARK "authHttpGetUoKey...");
 	win_buf_refresh(ga, ci);
 
 	// zapisz nagłówek do pliku debugowania HTTP

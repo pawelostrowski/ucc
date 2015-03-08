@@ -923,7 +923,7 @@ void command_homes(struct global_args &ga, struct channel_irc *ci[])
 	// jeśli połączono z IRC
 	if(ga.irc_ok)
 	{
-		irc_send(ga, ci, "CS HOMES");
+		irc_send(ga, ci, "CS HOMES LIST");
 	}
 
 	// jeśli nie połączono z IRC, pokaż ostrzeżenie
@@ -1292,7 +1292,7 @@ void command_me(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			// pobierz wpisany komunikat dla /me (nie jest niezbędny)
 			std::string me_reason = get_rest_args(kbd_buf, pos_arg_start);
 
-			// przygotuj komunikat do wyświetlenia w oknie terminala
+			// komunikat do wyświetlenia w oknie terminala
 			win_buf_add_str(ga, ci, ci[ga.current]->channel,
 					xBOLD_ON xMAGENTA "* " + ga.zuousername + xNORMAL " " + form_from_chat(me_reason), true, 2);
 
@@ -1800,7 +1800,9 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 
 void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_start)
 {
-	if(buf_lower_to_upper(get_arg(kbd_buf, pos_arg_start)) == "STAT")
+	std::string set_parm = buf_lower_to_upper(get_arg(kbd_buf, pos_arg_start));
+
+	if(set_parm == "STAT")
 	{
 		std::string set_arg = get_arg(kbd_buf, pos_arg_start);
 
@@ -1812,6 +1814,21 @@ void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_st
 		else if(set_arg == "1")
 		{
 			ga.show_stat_in_win_chat = true;
+		}
+	}
+
+	else if(set_parm == "SSL")
+	{
+		std::string set_arg = get_arg(kbd_buf, pos_arg_start);
+
+		if(set_arg == "0")
+		{
+			ga.all_auth_https = false;
+		}
+
+		else if(set_arg == "1")
+		{
+			ga.all_auth_https = true;
 		}
 	}
 }
