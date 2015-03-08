@@ -38,8 +38,8 @@ int socket_init(std::string host, uint16_t port, std::string &msg_err);
 
 bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &cookies, std::string &msg_err);
 
-char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::string method, std::string host, uint16_t port, std::string stock,
-	std::string content, bool get_cookies, int &bytes_recv_all, std::string dbg_http_msg);
+char *http_get_data(struct global_args &ga, std::string method, std::string host, uint16_t port, std::string stock,
+	std::string content, bool get_cookies, int &bytes_recv_all, std::string &msg_err);
 
 void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_send_buf, std::string dbg_irc_msg = "");
 

@@ -134,24 +134,22 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 }
 
 
-char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::string method, std::string host, uint16_t port, std::string stock,
-	std::string content, bool get_cookies, int &bytes_recv_all, std::string dbg_http_msg)
+char *http_get_data(struct global_args &ga, std::string method, std::string host, uint16_t port, std::string stock,
+	std::string content, bool get_cookies, int &bytes_recv_all, std::string &msg_err)
 {
 	if(method != "GET" && method != "POST")
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": Nieobsługiwana metoda: " + method);
+		msg_err = "Nieobsługiwana metoda: " + method;
 
 		return NULL;
 	}
-
-	std::string msg_err;
 
 	// utwórz deskryptor gniazda (socket) oraz połącz się z hostem
 	int socketfd = socket_init(host, port, msg_err);
 
 	if(socketfd == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": " + msg_err);
+		// opis błędu jest w msg_err
 
 		return NULL;
 	}
@@ -208,21 +206,18 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(bytes_sent == -1)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Nie udało się wysłać danych do hosta: " + host);
+			msg_err = "Nie udało się wysłać danych do hosta: " + host;
 		}
 
 		else if(bytes_sent == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Podczas próby wysłania danych host " + host + " zakończył połączenie.");
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie.";
 		}
 
 		// sprawdź, czy wysłana ilość bajtów jest taka sama, jaką chcieliśmy wysłać
 		else if(bytes_sent != data_send_len)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Nie udało się wysłać wszystkich danych do hosta: " + host);
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host;
 		}
 
 		// w przypadku błędu podczas wysyłania danych do hosta, zakończ
@@ -244,8 +239,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, ci, ci[ga.current]->channel,
-							uINFOn xRED + dbg_http_msg + ": Błąd podczas alokacji pamięci przez std::malloc()");
+					msg_err = "Błąd podczas alokacji pamięci przez std::malloc()";
 				}
 			}
 
@@ -256,8 +250,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, ci, ci[ga.current]->channel,
-							uINFOn xRED + dbg_http_msg + ": Błąd podczas realokacji pamięci przez std::realloc()");
+					msg_err = "Błąd podczas realokacji pamięci przez std::realloc()";
 				}
 			}
 
@@ -275,15 +268,13 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 			// sprawdź, czy pobieranie danych się powiodło
 			if(bytes_recv == -1)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						uINFOn xRED + dbg_http_msg + ": Nie udało się pobrać danych z hosta: " + host);
+				msg_err = "Nie udało się pobrać danych z hosta: " + host;
 			}
 
 			// sprawdź, przy pierwszym obiegu pętli, czy pobrano jakieś dane
 			else if(first_recv && bytes_recv == 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						uINFOn xRED + dbg_http_msg + ": Podczas próby pobrania danych host " + host + " zakończył połączenie.");
+				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie.";
 			}
 
 			// w przypadku błędu podczas pobierania danych od hosta, zakończ
@@ -321,7 +312,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(ssl_context == NULL)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": Błąd podczas tworzenia obiektu SSL_CTX");
+			msg_err = "Błąd podczas tworzenia obiektu SSL_CTX";
 
 			return NULL;
 		}
@@ -330,7 +321,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(ssl_handle == NULL)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": Błąd podczas tworzenia struktury SSL.");
+			msg_err = "Błąd podczas tworzenia struktury SSL";
 
 			SSL_CTX_free(ssl_context);
 
@@ -339,7 +330,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(! SSL_set_fd(ssl_handle, socketfd))
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": Błąd podczas łączenia deskryptora SSL.");
+			msg_err = "Błąd podczas łączenia deskryptora SSL";
 
 			SSL_free(ssl_handle);
 			SSL_CTX_free(ssl_context);
@@ -349,8 +340,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(SSL_connect(ssl_handle) != 1)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Błąd podczas łączenia się z " + host + " przez SSL.");
+			msg_err = "Błąd podczas łączenia się z " + host + " [SSL]";
 
 			close(socketfd);
 
@@ -366,20 +356,17 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 		if(bytes_sent <= -1)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Nie udało się wysłać danych do hosta: " + host + " [SSL]");
+			msg_err = "Nie udało się wysłać danych do hosta: " + host + " [SSL]";
 		}
 
 		else if(bytes_sent == 0)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]");
+			msg_err = "Podczas próby wysłania danych host " + host + " zakończył połączenie. [SSL]";
 		}
 
 		else if(bytes_sent != data_send_len)
 		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel,
-					uINFOn xRED + dbg_http_msg + ": Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]");
+			msg_err = "Nie udało się wysłać wszystkich danych do hosta: " + host + " [SSL]";
 		}
 
 		// w przypadku błędu podczas wysyłania danych do hosta, zakończ
@@ -403,8 +390,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, ci, ci[ga.current]->channel,
-							uINFOn xRED + dbg_http_msg + ": Błąd podczas alokacji pamięci przez std::malloc() [SSL]");
+					msg_err = "Błąd podczas alokacji pamięci przez std::malloc() [SSL]";
 				}
 			}
 
@@ -414,8 +400,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 				if(http_recv_buf_ptr == NULL)
 				{
-					win_buf_add_str(ga, ci, ci[ga.current]->channel,
-							uINFOn xRED + dbg_http_msg + ": Błąd podczas realokacji pamięci przez std::realloc() [SSL]");
+					msg_err = "Błąd podczas realokacji pamięci przez std::realloc() [SSL]";
 				}
 			}
 
@@ -435,14 +420,12 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 			if(bytes_recv <= -1)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						uINFOn xRED + dbg_http_msg + ": Nie udało się pobrać danych z hosta: " + host + " [SSL]");
+				msg_err = "Nie udało się pobrać danych z hosta: " + host + " [SSL]";
 			}
 
 			else if(first_recv && bytes_recv == 0)
 			{
-				win_buf_add_str(ga, ci, ci[ga.current]->channel,
-						uINFOn xRED + dbg_http_msg + ": Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]");
+				msg_err = "Podczas próby pobrania danych host " + host + " zakończył połączenie. [SSL]";
 			}
 
 			// w przypadku błędu podczas pobierania danych od hosta, zakończ
@@ -481,7 +464,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 /*
 	DBG HTTP START
 */
-	http_dbg_to_file(ga, data_send, std::string(http_recv_buf_ptr), host, port, stock, dbg_http_msg);
+	http_dbg_to_file(ga, data_send, std::string(http_recv_buf_ptr), host, port, stock);
 /*
 	DBG HTTP END
 */
@@ -491,7 +474,7 @@ char *http_get_data(struct global_args &ga, struct channel_irc *ci[], std::strin
 	{
 		std::free(http_recv_buf_ptr);
 
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED + dbg_http_msg + ": " + msg_err);
+		// opis błędu jest w msg_err
 
 		return NULL;
 	}

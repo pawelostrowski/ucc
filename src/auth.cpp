@@ -27,6 +27,7 @@
 // -std=c++11 - std::free(), std::system(), std::to_string()
 
 #include "auth.hpp"
+#include "debug.hpp"
 #include "network.hpp"
 #include "window_utils.hpp"
 #include "irc_parser.hpp"
@@ -125,15 +126,26 @@ bool auth_http_init(struct global_args &ga, struct channel_irc *ci[])
 */
 
 	int bytes_recv_all;
+	std::string msg_err;
+
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpInit...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpInit");
 
 	// wyczyść bufor cookies przed zapoczątkowaniem połączenia
 	ga.cookies.clear();
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "kropka.onet.pl", (ga.all_auth_https ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
-				"", true, bytes_recv_all, "authHttpInit");
+	char *http_recv_buf_ptr = http_get_data(ga, "GET", "kropka.onet.pl", (ga.all_auth_https ? 443 : 80), "/_s/kropka/5?DV=czat/applet/FULL",
+				"", true, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -151,12 +163,23 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 */
 
 	int bytes_recv_all;
+	std::string msg_err;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/myimg.gif",
-				"", true, bytes_recv_all, "authHttpGetCaptcha");
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetCaptcha...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpGetCaptcha");
+
+	char *http_recv_buf_ptr = http_get_data(ga, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/myimg.gif",
+				"", true, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -287,15 +310,26 @@ bool auth_http_getcaptcha(struct global_args &ga, struct channel_irc *ci[])
 bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::string &captcha)
 {
 	int bytes_recv_all;
+	std::string msg_err;
+
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpCheckCode...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpCheckCode");
 
 	// zapobiega ponownemu wysłaniu kodu na serwer
 	ga.captcha_ready = false;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
-				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}", false, bytes_recv_all, "authHttpCheckCode");
+	char *http_recv_buf_ptr = http_get_data(ga, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
+				"api_function=checkCode&params=a:1:{s:4:\"code\";s:6:\"" + captcha + "\";}", false, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -309,7 +343,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpCheckCode: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Serwer nie zwrócił err_code.");
 
 		return false;
 	}
@@ -327,7 +361,7 @@ bool auth_http_checkcode(struct global_args &ga, struct channel_irc *ci[], std::
 	if(err_code != "TRUE")
 	{
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				uINFOn xRED "authHttpCheckCode: Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
+				uINFOn xRED "Serwer nie zwrócił oczekiwanego TRUE lub FALSE, zwrócona wartość: " + err_code);
 
 		return false;
 	}
@@ -344,12 +378,23 @@ bool auth_http_getsk(struct global_args &ga, struct channel_irc *ci[])
 */
 
 	int bytes_recv_all;
+	std::string msg_err;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/sk.gif",
-				"", true, bytes_recv_all, "authHttpGetSk");
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetSk...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpGetSk");
+
+	char *http_recv_buf_ptr = http_get_data(ga, "GET", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/sk.gif",
+				"", true, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -367,13 +412,24 @@ bool auth_http_mlogin(struct global_args &ga, struct channel_irc *ci[])
 */
 
 	int bytes_recv_all;
+	std::string msg_err;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "secure.onet.pl", 443, "/mlogin.html",
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpMLogin...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpMLogin");
+
+	char *http_recv_buf_ptr = http_get_data(ga, "POST", "secure.onet.pl", 443, "/mlogin.html",
 				"r=&url=&login=" + buf_utf_to_iso(ga.my_nick) + "&haslo=" + buf_utf_to_iso(ga.my_password) + "&app_id=20&ssl=1&ok=1",
-				true, bytes_recv_all, "authHttpMLogin");
+				true, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -391,13 +447,24 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 */
 
 	int bytes_recv_all;
+	std::string msg_err;
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpUserOverride...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpUserOverride");
+
+	char *http_recv_buf_ptr = http_get_data(ga, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(buf_chars(ga.my_nick)) + ":\""
-				+ buf_utf_to_iso(ga.my_nick) + "\";}", false, bytes_recv_all, "authHttpUserOverride");
+				+ buf_utf_to_iso(ga.my_nick) + "\";}", false, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -410,6 +477,14 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 {
 	int bytes_recv_all;
+	std::string msg_err;
+
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOn xWHITE "authHttpGetUoKey...");
+	win_buf_refresh(ga, ci);
+
+	// zapisz nagłówek do pliku debugowania HTTP
+	http_dbg_to_file_header(ga, "authHttpGetUoKey");
 
 	// wykonaj "kopię" nicka, aby nie modyfikować go z punktu widzenia użytkownika (gdy trzeba usunąć ~)
 	std::string my_nick_c = ga.my_nick;
@@ -421,13 +496,16 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 		my_nick_c.erase(0, 1);
 	}
 
-	char *http_recv_buf_ptr = http_get_data(ga, ci, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
+	char *http_recv_buf_ptr = http_get_data(ga, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(buf_chars(my_nick_c)) + ":\"" + buf_utf_to_iso(my_nick_c)
 				+ "\";s:8:\"tempNick\";i:" + (ga.my_password.size() == 0 ? "1" : "0") + ";s:7:\"version\";s:"
-				+ std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}", false, bytes_recv_all, "authHttpGetUoKey");
+				+ std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}", false, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
+		// wyświetl zwrócony komunikat błędu
+		win_buf_add_str(ga, ci, "Status", uINFOn xRED + msg_err, true, 3);
+
 		return false;
 	}
 
@@ -438,7 +516,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(err_code.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił err_code.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Serwer nie zwrócił err_code.");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -450,7 +528,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 		std::string err_text = get_value_from_buf(http_recv_buf_str, "err_text=\"", "\"");
 
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				uINFOn xRED "authHttpGetUoKey: Błąd serwera (" + err_code + "): "
+				uINFOn xRED "Błąd serwera (" + err_code + "): "
 				// wyświetl zwrócony błąd lub komunikat o błędzie (nie powinno się zdarzyć, ale lepiej się zabezpieczyć)
 				+ (err_text.size() > 0 ? buf_iso_to_utf(err_text) : "<serwer nie zwrócił komunikatu błędu>"));
 
@@ -463,7 +541,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(ga.uokey.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił uoKey.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Serwer nie zwrócił uoKey.");
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -476,7 +554,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 
 	if(ga.zuousername.size() == 0)
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "authHttpGetUoKey: Serwer nie zwrócił zuoUsername.");
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, uINFOn xRED "Serwer nie zwrócił zuoUsername.");
 
 		return false;
 	}
@@ -494,6 +572,10 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 void auth_irc_all(struct global_args &ga, struct channel_irc *ci[])
 {
 	std::string msg_err;
+
+	// komunikat początkowy wraz z natychmiastowym odświeżeniem, aby pokazał się od razu
+	win_buf_add_str(ga, ci, "Status", uINFOb xWHITE "authIrcAll...");
+	win_buf_refresh(ga, ci);
 
 	// nie próbuj ponownie łączyć się do IRC od zera
 	ga.irc_ready = false;

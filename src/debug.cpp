@@ -28,8 +28,32 @@
 #include "ucc_global.hpp"
 
 
-void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, uint16_t port, std::string &stock,
-	std::string &dbg_http_msg)
+void http_dbg_to_file_header(struct global_args &ga, std::string dbg_header)
+{
+	if(ga.debug_http_f.good())
+	{
+		ga.debug_http_f << "================================================================================";
+
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n";
+#else
+		ga.debug_http_f << "\r\n";
+#endif		// __CYGWIN__
+
+		ga.debug_http_f << dbg_header << " (" << get_time_full() << "):";
+
+#ifndef __CYGWIN__
+		ga.debug_http_f << "\n\n\n";
+#else
+		ga.debug_http_f << "\r\n\r\n\r\n";
+#endif		// __CYGWIN__
+
+		ga.debug_http_f.flush();
+	}
+}
+
+
+void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, uint16_t port, std::string &stock)
 {
 	if(ga.debug_http_f.good())
 	{
@@ -95,22 +119,6 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 #endif		// __CYGWIN__
 
 		// zapisz dane do pliku
-		ga.debug_http_f << "================================================================================";
-
-#ifndef __CYGWIN__
-		ga.debug_http_f << "\n";
-#else
-		ga.debug_http_f << "\r\n";
-#endif		// __CYGWIN__
-
-		ga.debug_http_f << dbg_http_msg << " (" << get_time_full() << "):";
-
-#ifndef __CYGWIN__
-		ga.debug_http_f << "\n\n\n";
-#else
-		ga.debug_http_f << "\r\n\r\n\r\n";
-#endif		// __CYGWIN__
-
 		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):";
 
 #ifndef __CYGWIN__
