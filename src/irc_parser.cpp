@@ -1339,6 +1339,8 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	:ChanServ!service@service.onet MODE #ucc +ks abc
 	:ChanServ!service@service.onet MODE #ucc +l 300
 	:ChanServ!service@service.onet MODE #pokój +F 1
+	:ChanServ!service@service.onet MODE #nowy_test +il-e 1 *!50256503@*
+	:ChanServ!service@service.onet MODE #nowy_test +il-ee 1 *!70914256@* *!50256503@*
 
 	Zmiany flag nicka (przykładowe RAW):
 	:Darom!12265854@devel.onet MODE Darom :+O
@@ -1351,8 +1353,6 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 	Do zaimplementowania:
 	:ChanServ!service@service.onet MODE #ucc +c 1
-	:ChanServ!service@service.onet MODE #nowy_test +il-e 1 *!50256503@*			(gdy ja lub ktoś usuwa pokój i w nim byłem)
-	:ChanServ!service@service.onet MODE #nowy_test +il-ee 1 *!70914256@* *!50256503@*	(gdy ja lub ktoś usuwa pokój i w nim byłem)
 */
 void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf, std::string &raw_parm0)
 {
@@ -1460,28 +1460,25 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	else if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "+ips")
 	{
 		win_buf_add_str(ga, ci, raw_parm2,
-				oINFOn xMAGENTA "Pokój " + raw_parm2
-				+ " jest teraz niewidoczny, prywatny i sekretny (ustawił" + a + nick_gives + ").");
+				oINFOn xMAGENTA "Pokój " + raw_parm2 + " jest teraz niewidoczny, prywatny i sekretny (ustawił" + a + nick_gives + ").");
 	}
 
 	else if(raw_parm2.size() > 0 && raw_parm2[0] == '#' && raw_parm3 == "-ips")
 	{
 		win_buf_add_str(ga, ci, raw_parm2,
-				oINFOn xWHITE "Pokój " + raw_parm2
-				+ " nie jest już niewidoczny, prywatny i sekretny (ustawił" + a + nick_gives + ").");
+				oINFOn xWHITE "Pokój " + raw_parm2 + " nie jest już niewidoczny, prywatny i sekretny (ustawił" + a + nick_gives + ").");
 	}
 
 	else
 	{
 		int s = 0;	// pozycja znaku +/- od początku raw_parm3
-		int x = -1;	// ile znaków +/- było minus 1
+		int o = 3;	// offset argumentu względem początku flag (licząc od zera)
 
 		for(int f = 0; f < raw_parm3_len; ++f)
 		{
 			if(raw_parm3[f] == '+' || raw_parm3[f] == '-')
 			{
 				s = f;
-				++x;
 				continue;	// gdy znaleziono znak + lub -, powróć do początku
 			}
 
@@ -1490,7 +1487,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 */
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'q' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;	// flaga z argumentem
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1523,7 +1522,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'q' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;	// flaga z argumentem
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1556,7 +1557,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'o' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1589,7 +1592,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'o' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1622,7 +1627,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'h' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1655,7 +1662,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'h' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1688,7 +1697,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'v' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1721,7 +1732,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'v' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1754,7 +1767,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'X' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1787,7 +1802,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'X' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 				std::string nick_receives_key = buf_lower_to_upper(nick_receives);
 
 				win_buf_add_str(ga, ci, raw_parm2,
@@ -1820,7 +1837,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xRED + nick_receives + " otrzymuje bana w pokoju " + raw_parm2 + " (ustawił" + a + nick_gives + ").");
@@ -1844,7 +1863,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'b' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xWHITE + nick_receives + " nie posiada już bana w pokoju " + raw_parm2
@@ -1853,7 +1874,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'e' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xMAGENTA + nick_receives + " posiada teraz wyjątek od bana w pokoju " + raw_parm2
@@ -1862,7 +1885,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'e' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xWHITE + nick_receives + " nie posiada już wyjątku od bana w pokoju " + raw_parm2
@@ -1871,7 +1896,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'I' && raw_parm3[s] == '+')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xMAGENTA + nick_receives + " jest teraz na liście zaproszonych w pokoju " + raw_parm2
@@ -1880,7 +1907,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'I' && raw_parm3[s] == '-')
 			{
-				std::string nick_receives = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string nick_receives = get_raw_parm(raw_buf, o);
 
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xWHITE + nick_receives + " nie jest już na liście zaproszonych w pokoju " + raw_parm2
@@ -1889,9 +1918,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'J' && raw_parm3[s] == '+')
 			{
+				++o;
+
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz blokadę, ustawioną na "
-						+ get_raw_parm(raw_buf, f - x + 3) + "s, uniemożliwiającą użytkownikom automatyczny powrót po wyrzuceniu "
+						+ get_raw_parm(raw_buf, o) + "s, uniemożliwiającą użytkownikom automatyczny powrót po wyrzuceniu "
 						"ich z pokoju (ustawił" + a + nick_gives + ").");
 			}
 
@@ -1928,9 +1959,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '+')
 			{
+				++o;
+
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz hasło dostępu: " xBOLD_ON
-						+ get_raw_parm(raw_buf, f - x + 3) + xBOLD_OFF " (ustawił" + a + nick_gives + ").");
+						+ get_raw_parm(raw_buf, o) + xBOLD_OFF " (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'k' && raw_parm3[s] == '-')
@@ -1941,9 +1974,11 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'l' && raw_parm3[s] == '+')
 			{
+				++o;
+
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz limit osób jednocześnie przebywających w pokoju "
-						"(" + get_raw_parm(raw_buf, f - x + 3) + ") (ustawił" + a + nick_gives + ").");
+						"(" + get_raw_parm(raw_buf, o) + ") (ustawił" + a + nick_gives + ").");
 			}
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'l' && raw_parm3[s] == '-')
@@ -1955,7 +1990,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'F' && raw_parm3[s] == '+')
 			{
-				std::string rank = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string rank = get_raw_parm(raw_buf, o);
 
 				// bez 0, bo + oznacza zwiększanie rangi
 				if(rank == "1")
@@ -1980,7 +2017,9 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'F' && raw_parm3[s] == '-')
 			{
-				std::string rank = get_raw_parm(raw_buf, f - x + 3);
+				++o;
+
+				std::string rank = get_raw_parm(raw_buf, o);
 
 				// bez 3, bo - oznacza zmniejszenie rangi
 				if(rank == "2")
