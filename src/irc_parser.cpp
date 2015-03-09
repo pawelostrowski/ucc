@@ -1338,6 +1338,7 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 	:ChanServ!service@service.onet MODE #ucc -e+e-oq+qo *!50256503@* *!80810606@* ucieszony86 ucieszony86 ucc ucc
 	:ChanServ!service@service.onet MODE #ucc +ks abc
 	:ChanServ!service@service.onet MODE #ucc +l 300
+	:ChanServ!service@service.onet MODE #pokój +F 1
 
 	Zmiany flag nicka (przykładowe RAW):
 	:Darom!12265854@devel.onet MODE Darom :+O
@@ -1350,7 +1351,6 @@ void raw_kick(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 
 	Do zaimplementowania:
 	:ChanServ!service@service.onet MODE #ucc +c 1
-	:ChanServ!service@service.onet MODE #pokój +F 1
 	:ChanServ!service@service.onet MODE #nowy_test +il-e 1 *!50256503@*			(gdy ja lub ktoś usuwa pokój i w nim byłem)
 	:ChanServ!service@service.onet MODE #nowy_test +il-ee 1 *!70914256@* *!50256503@*	(gdy ja lub ktoś usuwa pokój i w nim byłem)
 */
@@ -1951,6 +1951,56 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 				win_buf_add_str(ga, ci, raw_parm2,
 						oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już limitu osób jednocześnie przebywających w pokoju "
 						"(ustawił" + a + nick_gives + ").");
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'F' && raw_parm3[s] == '+')
+			{
+				std::string rank = get_raw_parm(raw_buf, f - x + 3);
+
+				// bez 0, bo + oznacza zwiększanie rangi
+				if(rank == "1")
+				{
+					rank = "Oswojony";
+				}
+
+				else if(rank == "2")
+				{
+					rank = "Z klasą";
+				}
+
+				else if(rank == "3")
+				{
+					rank = "Kultowy";
+				}
+
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xMAGENTA "Pokój " + raw_parm2 + " posiada teraz rangę \"" + rank
+						+ "\" (ustawił" + a + nick_gives + ").");
+			}
+
+			else if(raw_parm2[0] == '#' && raw_parm3[f] == 'F' && raw_parm3[s] == '-')
+			{
+				std::string rank = get_raw_parm(raw_buf, f - x + 3);
+
+				// bez 3, bo - oznacza zmniejszenie rangi
+				if(rank == "2")
+				{
+					rank = "Z klasą";
+				}
+
+				else if(rank == "1")
+				{
+					rank = "Oswojony";
+				}
+
+				else if(rank == "0")
+				{
+					rank = "Dziki";
+				}
+
+				win_buf_add_str(ga, ci, raw_parm2,
+						oINFOn xWHITE "Pokój " + raw_parm2 + " nie posiada już rangi \"" + rank
+						+ "\" (ustawił" + a + nick_gives + ").");
 			}
 
 			// czasem poniższe flagi (ips) pojawiają się oddzielnie, dlatego zostawiono je, mimo wcześniejszego wykrycia +/-ips)
@@ -6022,7 +6072,7 @@ void raw_notice_259(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 
 /*
-	NOTICE 260 (pokazywać tylko wtedy, gdy nie przebywamy w pokoju, którego zmiana dotyczy, bo w przeciwnym razie pokaże się dwa razy przez RAW 256)
+	NOTICE 260 (pokazywać tylko wtedy, gdy nie przebywamy w pokoju, którego zmiana dotyczy, bo w przeciwnym razie pokaże się dwa razy)
 	:ChanServ!service@service.onet NOTICE ucc_test :260 ucc_test #ucc -h :channel privilege changed
 	:ChanServ!service@service.onet NOTICE ucc_test :260 AT89S8253 #ucc -h :channel privilege changed
 	:ChanServ!service@service.onet NOTICE ucieszony86 :260 ucieszony86 #ucc -q :channel privilege changed
