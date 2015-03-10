@@ -59,16 +59,13 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-03-10.01"
+#define UCC_VER		"1.0 alpha7.2015-03-10.02"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
 
 // minimalna szerokość listy nicków
 #define NICKLIST_WIDTH_MIN	24
-
-// czy pokazywać statusy nicków w oknie rozmowy
-#define SHOW_STAT_IN_WIN_CHAT	false
 
 // początek i koniec logu
 #ifndef __CYGWIN__

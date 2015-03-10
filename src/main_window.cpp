@@ -137,8 +137,6 @@ int main_window(bool _use_colors, bool _debug_irc)
 	ga.ucc_quit = false;		// aby zakończyć program, zmienna ta musi mieć wartość prawdziwą
 	ga.ucc_quit_time = false;
 
-	ga.show_stat_in_win_chat = SHOW_STAT_IN_WIN_CHAT;
-
 	ga.win_info_state = true;
 	ga.win_info_refresh = false;
 
@@ -151,6 +149,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 	ga.irc_ok = false;		// stan połączenia z czatem
 
 	ga.is_irc_recv_buf_incomplete = false;
+
+	ga.show_stat_in_win_chat = false;	// czy domyślnie pokazywać statusy nicków w oknie rozmowy
 
 	// wymuś całą autoryzację przez HTTPS, a nie tylko samo hasło, jeśli z jakiegoś powodu ta opcja będzie sprawiać problemy, można ją wyłączyć;
 	// po dodaniu opcji zrobić możliwość wyboru

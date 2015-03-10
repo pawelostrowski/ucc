@@ -2093,7 +2093,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 					if(ci[i] && ci[i]->ni.find(nick_receives_key) != ci[i]->ni.end())
 					{
 						win_buf_add_str(ga, ci, ci[i]->channel,
-								oINFOn xMAGENTA + nick_receives + " jest teraz deweloperem czata (ustawił"
+								oINFOn xMAGENTA + nick_receives + " jest teraz netadministratorem czata (ustawił"
 								+ a + nick_gives + ").");
 					}
 				}
@@ -2110,7 +2110,7 @@ void raw_mode(struct global_args &ga, struct channel_irc *ci[], std::string &raw
 					if(ci[i] && ci[i]->ni.find(nick_receives_key) != ci[i]->ni.end())
 					{
 						win_buf_add_str(ga, ci, ci[i]->channel,
-								oINFOn xWHITE + nick_receives + " nie jest już deweloperem czata (ustawił"
+								oINFOn xWHITE + nick_receives + " nie jest już netadministratorem czata (ustawił"
 								+ a + nick_gives + ").");
 					}
 				}
@@ -2578,6 +2578,14 @@ void raw_privmsg(struct global_args &ga, struct channel_irc *ci[], std::string &
 		win_buf_add_str(ga, ci, raw_parm2,
 				form_start + "<" + nick_stat + form_start + nick_who
 				+ (form_start.size() > 0 ? form_start + ">" xNORMAL " " : xNORMAL "> ") + user_msg, true, act_type);
+
+		// przy włączonym away pokazuj w "Status" odpowiednie powiadomienia, gdy ktoś pisze do mnie
+		if(act_type == 3 && ga.my_away)
+		{
+			win_buf_add_str(ga, ci, "Status",
+					"[" + get_time_full() + "] " xGREEN + raw_parm2 + xWHITE ":" xTERMC " " xBOLD_ON xYELLOW_BLACK
+					"<" + nick_who + ">" xNORMAL " " + user_msg, true, 3, false);
+		}
 	}
 }
 
