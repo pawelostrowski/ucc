@@ -34,8 +34,8 @@
 // maksymalna liczba znaków w buforze klawiatury (za duża liczba przy pełnym wykorzystaniu może powodować rozłączenie z czatem podczas wysyłania wiadomości)
 #define KBD_BUF_MAX_CHARS	390
 
-// maksymalna ilość pozycji (wpisów) w buforze historii
-#define HIST_BUF_MAX_ITEMS	100
+// domyślna maksymalna ilość pozycji (wpisów) w buforze historii (będzie można ją zmienić, gdy będą opcje w programie)
+#define HIST_BUF_MAX_ITEMS	50
 
 // nick na pasku dolnym, gdy nie jesteśmy zalogowani do czata
 #define NICK_NOT_LOGGED		"Niezalogowany"

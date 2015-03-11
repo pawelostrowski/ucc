@@ -373,10 +373,12 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
 			}
 
-//			else if(command == "KBANIP")
-//			{
-//				command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
-//			}
+/*
+			else if(command == "KBANIP")
+			{
+				command_kban_common(ga, ci, kbd_buf, pos_arg_start, command);
+			}
+*/
 
 			else if(command == "KICK")
 			{

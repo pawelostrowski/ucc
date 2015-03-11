@@ -1002,6 +1002,14 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 	{
 		ga.win_chat_refresh = true;
 	}
+
+/*
+	// pilnuj, aby bufor nie przekroczył ustalonej ilości pozycji (aby długie "wiszenie" nie zapchało pamięci)
+	while(WIN_BUF_MAX_ITEMS > 0 && ci[which_chan]->win_buf.size() > WIN_BUF_MAX_ITEMS)
+	{
+		ci[which_chan]->win_buf.erase(ci[which_chan]->win_buf.begin());
+	}
+*/
 }
 
 

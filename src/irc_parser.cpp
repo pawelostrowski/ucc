@@ -583,7 +583,7 @@ void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string db
 				break;
 
 			case 666:
-				raw_666(ga, ci);
+				raw_666(ga, ci, raw_buf);
 				break;
 
 			case 801:
@@ -2752,8 +2752,7 @@ void raw_251(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 				// wykryj ciąg z RAW powyżej
 				(srv_msg == "There are " + raw_parm5 + " users and " + raw_parm8 + " invisible on " + raw_parm11 + " servers"
 				// jeśli szukany ciąg istnieje, przetłumacz go
-				? xTERMC "- Liczba użytkowników: " + raw_parm5 + ", niewidoczni: " + raw_parm8 + ", liczba serwerów: "
-				+ raw_parm11
+				? xTERMC "- Liczba użytkowników: " + raw_parm5 + ", niewidoczni: " + raw_parm8 + ", liczba serwerów: " + raw_parm11
 				// jeśli szukany ciąg nie istnieje (np. został zmieniony), wyświetl komunikat w formie oryginalnej
 				: xTERMC "- " + srv_msg));
 	}
@@ -2976,8 +2975,7 @@ void raw_301(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 	// w przeciwnym razie wyświetl od razu (ma znaczenie np. podczas pisania na priv, gdy osoba ma away)
 	else
 	{
-		win_buf_add_str(ga, ci, ci[ga.current]->channel,
-				oINFOn xWHITE + raw_parm3 + " jest nieobecny(-na) z powodu: " + away_msg);
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE + raw_parm3 + " jest nieobecny(-na) z powodu: " + away_msg);
 	}
 }
 
@@ -3020,7 +3018,8 @@ void raw_303(struct global_args &ga, struct channel_irc *ci[], std::string &raw_
 */
 void raw_304(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, (raw_buf.find(" :SYNTAX ") != std::string::npos
+	win_buf_add_str(ga, ci, ci[ga.current]->channel,
+			(raw_buf.find(" :SYNTAX ") != std::string::npos
 			// jeśli był ciąg 'SYNTAX', zamień go na 'Składnia:'
 			? oINFOn xRED "Składnia:" + get_rest_from_buf(raw_buf, " :SYNTAX")
 			// jeśli nie było ciągu 'SYNTAX', wyświetl komunikat bez zmian
@@ -3048,7 +3047,7 @@ void raw_306(struct global_args &ga, struct channel_irc *ci[])
 {
 	ga.my_away = true;
 
-	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Jesteś teraz oznaczony(-na) jako nieobecny(-na) z powodu: " + ga.away_msg);
+	win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn xWHITE "Jesteś teraz oznaczony(-na) jako nieobecny(-na) z powodu:" xNORMAL " " + ga.away_msg);
 
 	ga.away_msg.clear();
 }
@@ -4538,10 +4537,16 @@ void raw_607()
 	666 (SERVER)
 	:cf1f2.onet 666 ucieszony86 :You cannot identify as a server, you are a USER. IRC Operators informed.
 */
-void raw_666(struct global_args &ga, struct channel_irc *ci[])
+void raw_666(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf)
 {
+	std::string srv_msg = get_rest_from_buf(raw_buf, " :");
+
 	win_buf_add_str(ga, ci, ci[ga.current]->channel,
-			oINFOn xRED "Nie możesz zidentyfikować się jako serwer, jesteś użytkownikiem. Operatorzy IRC poinformowani.");
+			(srv_msg == "You cannot identify as a server, you are a USER. IRC Operators informed."
+			// dla komunikatu powyżej pokaż przetłumaczoną wersję
+			? oINFOn xRED "Nie możesz zidentyfikować się jako serwer, jesteś użytkownikiem. Operatorzy IRC poinformowani."
+			// w przeciwnym razie pokaż oryginalny tekst (już nie na czerwono)
+			: oINFOn xWHITE + srv_msg));
 }
 
 
@@ -5161,10 +5166,12 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 			{
 				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Adres email: " + it->second.email);
 
+/*
 				if(it->second.v_email.size() > 0)
 				{
-//					win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  vEmail: " + it->second.v_email);
+					win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  vEmail: " + it->second.v_email);
 				}
+*/
 			}
 
 			if(it->second.www.size() > 0)
@@ -5223,10 +5230,12 @@ void raw_notice_112(struct global_args &ga, struct channel_irc *ci[], std::strin
 				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Ranga: " + it->second.type);
 			}
 
+/*
 			if(it->second.prefs.size() > 0)
 			{
-//				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Preferencje: " + it->second.prefs);
+				win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Preferencje: " + it->second.prefs);
 			}
+*/
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "Koniec informacji o użytkowniku " xBOLD_ON + it->first);
 		}
@@ -5755,11 +5764,6 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 					oINFOn "  Data ustawienia tematu: " + time_utimestamp_to_local_full(it->second.topic_date));
 		}
 
-		if(it->second.desc.size() > 0)
-		{
-			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Opis: " + it->second.desc);
-		}
-
 		if(it->second.avatar.size() > 0)
 		{
 			size_t avatar_full = it->second.avatar.find(",1");
@@ -5770,6 +5774,11 @@ void raw_notice_164(struct global_args &ga, struct channel_irc *ci[], std::strin
 			}
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Awatar: " + it->second.avatar);
+		}
+
+		if(it->second.desc.size() > 0)
+		{
+			win_buf_add_str(ga, ci, ci[ga.current]->channel, oINFOn "  Opis: " + it->second.desc);
 		}
 
 		if(it->second.email.size() > 0)
