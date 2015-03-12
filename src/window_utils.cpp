@@ -93,7 +93,19 @@ std::string get_time()
 }
 
 
-std::string time_utimestamp_to_local(std::string &time_unixtimestamp)
+std::string get_time_full()
+{
+	time_t time_g;
+
+	time(&time_g);
+
+	std::string time_str = std::to_string(time_g);
+
+	return unixtimestamp2local_full(time_str);
+}
+
+
+std::string unixtimestamp2local(std::string &time_unixtimestamp)
 {
 	char time_hms[25];
 
@@ -107,19 +119,7 @@ std::string time_utimestamp_to_local(std::string &time_unixtimestamp)
 }
 
 
-std::string get_time_full()
-{
-	time_t time_g;
-
-	time(&time_g);
-
-	std::string time_str = std::to_string(time_g);
-
-	return time_utimestamp_to_local_full(time_str);
-}
-
-
-std::string time_utimestamp_to_local_full(std::string &time_unixtimestamp)
+std::string unixtimestamp2local_full(std::string &time_unixtimestamp)
 {
 	char time_date[50];
 
@@ -273,7 +273,7 @@ std::string time_sec2time(std::string &sec_str)
 }
 
 
-std::string buf_lower_to_upper(std::string buf)
+std::string buf_lower2upper(std::string buf)
 {
 	int buf_len = buf.size();
 
@@ -984,13 +984,19 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		// zapisz log
 		if(save_log && ci[which_chan]->chan_log.good())
 		{
-			ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line);
+#ifdef LOG_HEADER
+#undef LOG_HEADER
+#endif		// LOG_HEADER
+
+#define LOG_HEADER ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line)
 
 #ifndef __CYGWIN__
-			ci[which_chan]->chan_log << "\n";
+			LOG_HEADER << "\n";
 #else
-			ci[which_chan]->chan_log << "\r\n";
+			LOG_HEADER << "\r\n";
 #endif		// __CYGWIN__
+
+#undef LOG_HEADER
 
 			ci[which_chan]->chan_log.flush();
 		}
@@ -1002,14 +1008,6 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 	{
 		ga.win_chat_refresh = true;
 	}
-
-/*
-	// pilnuj, aby bufor nie przekroczył ustalonej ilości pozycji (aby długie "wiszenie" nie zapchało pamięci)
-	while(WIN_BUF_MAX_ITEMS > 0 && ci[which_chan]->win_buf.size() > WIN_BUF_MAX_ITEMS)
-	{
-		ci[which_chan]->win_buf.erase(ci[which_chan]->win_buf.begin());
-	}
-*/
 }
 
 

@@ -945,7 +945,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 						}
 
 						// wpisane znaki przekształć na wielkie (tak są zapisane indeksy w std::map, łatwiej będzie je porównywać)
-						tab_text = buf_lower_to_upper(tab_text);
+						tab_text = buf_lower2upper(tab_text);
 
 						// jeśli bufor był pusty, zacznij od pierwszej pozycji na liście nicków
 						tab_pos_list = 0;
@@ -1184,7 +1184,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 							if(hist_buf_max_items > 0)
 							{
 								// jeśli na początku wpisano "/", pobierz wpisane polecenie
-								command_tmp = (kbd_buf[0] == '/' ? buf_lower_to_upper(get_raw_parm(kbd_buf, 0)) : "");
+								command_tmp = (kbd_buf[0] == '/' ? buf_lower2upper(get_raw_parm(kbd_buf, 0)) : "");
 
 								// nie zapisuj w historii poleceń /nick oraz /vhost, aby nie było w niej haseł
 								if(command_tmp != "/NICK" && command_tmp != "/VHOST")
@@ -1259,7 +1259,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 					if(hist_buf_max_items > 0)
 					{
 						// jeśli na początku wpisano "/", pobierz wpisane polecenie
-						command_tmp = (kbd_buf[0] == '/' ? buf_lower_to_upper(get_raw_parm(kbd_buf, 0)) : "");
+						command_tmp = (kbd_buf[0] == '/' ? buf_lower2upper(get_raw_parm(kbd_buf, 0)) : "");
 
 						// nie zapisuj w historii poleceń /nick oraz /vhost, aby nie było w niej haseł
 						if(command_tmp != "/NICK" && command_tmp != "/VHOST")
@@ -1391,7 +1391,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 				if(hist_buf_index == hist_buf.size() && kbd_buf.size() > 0 && hist_buf[hist_buf.size() - 1] != kbd_buf)
 				{
 					// jeśli na początku wpisano "/", pobierz wpisane polecenie
-					command_tmp = (kbd_buf[0] == '/' ? buf_lower_to_upper(get_raw_parm(kbd_buf, 0)) : "");
+					command_tmp = (kbd_buf[0] == '/' ? buf_lower2upper(get_raw_parm(kbd_buf, 0)) : "");
 
 					// nie zapisuj w historii poleceń /nick oraz /vhost, aby nie było w niej haseł
 					if(command_tmp != "/NICK" && command_tmp != "/VHOST")
@@ -1447,7 +1447,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 				if(hist_buf_index == hist_buf.size() && kbd_buf.size() > 0)
 				{
 					// jeśli na początku wpisano "/", pobierz wpisane polecenie
-					command_tmp = (kbd_buf[0] == '/' ? buf_lower_to_upper(get_raw_parm(kbd_buf, 0)) : "");
+					command_tmp = (kbd_buf[0] == '/' ? buf_lower2upper(get_raw_parm(kbd_buf, 0)) : "");
 
 					// nie zapisuj w historii poleceń /nick oraz /vhost, aby nie było w niej haseł
 					if(command_tmp != "/NICK" && command_tmp != "/VHOST")

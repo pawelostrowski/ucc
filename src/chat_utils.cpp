@@ -226,7 +226,7 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *ci[], s
 	struct nick_flags flags)
 {
 	// w kluczu trzymaj nick zapisany wielkimi literami (w celu poprawienia sortowania zapewnianego przez std::map)
-	std::string nick_key = buf_lower_to_upper(nick);
+	std::string nick_key = buf_lower2upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{
@@ -254,7 +254,7 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *ci[], s
 
 void del_nick_chan(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string nick)
 {
-	std::string nick_key = buf_lower_to_upper(nick);
+	std::string nick_key = buf_lower2upper(nick);
 
 	for(int i = 0; i < CHAN_CHAT; ++i)
 	{

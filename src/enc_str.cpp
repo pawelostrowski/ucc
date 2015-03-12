@@ -27,7 +27,7 @@
 #include "enc_str.hpp"
 
 
-std::string buf_utf_to_iso(std::string &in_buf)
+std::string buf_utf2iso(std::string &in_buf)
 {
 	size_t in_buf_len = in_buf.size();
 
@@ -51,7 +51,7 @@ std::string buf_utf_to_iso(std::string &in_buf)
 }
 
 
-std::string buf_iso_to_utf(std::string &in_buf)
+std::string buf_iso2utf(std::string &in_buf)
 {
 	size_t in_buf_len = in_buf.size();
 

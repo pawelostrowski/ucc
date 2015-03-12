@@ -422,7 +422,7 @@ bool auth_http_mlogin(struct global_args &ga, struct channel_irc *ci[])
 	http_dbg_to_file_header(ga, "authHttpMLogin");
 
 	char *http_recv_buf_ptr = http_get_data(ga, "POST", "secure.onet.pl", 443, "/mlogin.html",
-				"r=&url=&login=" + buf_utf_to_iso(ga.my_nick) + "&haslo=" + buf_utf_to_iso(ga.my_password) + "&app_id=20&ssl=1&ok=1",
+				"r=&url=&login=" + buf_utf2iso(ga.my_nick) + "&haslo=" + buf_utf2iso(ga.my_password) + "&app_id=20&ssl=1&ok=1",
 				true, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
@@ -458,7 +458,7 @@ bool auth_http_useroverride(struct global_args &ga, struct channel_irc *ci[])
 
 	char *http_recv_buf_ptr = http_get_data(ga, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
 				"api_function=userOverride&params=a:1:{s:4:\"nick\";s:" + std::to_string(buf_chars(ga.my_nick)) + ":\""
-				+ buf_utf_to_iso(ga.my_nick) + "\";}", false, bytes_recv_all, msg_err);
+				+ buf_utf2iso(ga.my_nick) + "\";}", false, bytes_recv_all, msg_err);
 
 	if(http_recv_buf_ptr == NULL)
 	{
@@ -497,7 +497,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 	}
 
 	char *http_recv_buf_ptr = http_get_data(ga, "POST", "czat.onet.pl", (ga.all_auth_https ? 443 : 80), "/include/ajaxapi.xml.php3",
-				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(buf_chars(my_nick_c)) + ":\"" + buf_utf_to_iso(my_nick_c)
+				"api_function=getUoKey&params=a:3:{s:4:\"nick\";s:" + std::to_string(buf_chars(my_nick_c)) + ":\"" + buf_utf2iso(my_nick_c)
 				+ "\";s:8:\"tempNick\";i:" + (ga.my_password.size() == 0 ? "1" : "0") + ";s:7:\"version\";s:"
 				+ std::to_string(sizeof(AP_VER) - 1) + ":\"" + AP_VER + "\";}", false, bytes_recv_all, msg_err);
 
@@ -530,7 +530,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 		win_buf_add_str(ga, ci, ci[ga.current]->channel,
 				uINFOn xRED "Błąd serwera (" + err_code + "): "
 				// wyświetl zwrócony błąd lub komunikat o błędzie (nie powinno się zdarzyć, ale lepiej się zabezpieczyć)
-				+ (err_text.size() > 0 ? buf_iso_to_utf(err_text) : "<serwer nie zwrócił komunikatu błędu>"));
+				+ (err_text.size() > 0 ? buf_iso2utf(err_text) : "<serwer nie zwrócił komunikatu błędu>"));
 
 		std::free(http_recv_buf_ptr);
 		return false;
@@ -560,7 +560,7 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[])
 	}
 
 	// przekoduj zwrócony nick z ISO-8859-2 na UTF-8
-	ga.zuousername = buf_iso_to_utf(ga.zuousername);
+	ga.zuousername = buf_iso2utf(ga.zuousername);
 
 	// gotowość do połączenia z IRC
 	ga.irc_ready = true;

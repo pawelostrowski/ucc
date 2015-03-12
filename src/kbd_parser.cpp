@@ -105,7 +105,7 @@ std::string get_arg(std::string &kbd_buf, size_t &pos_arg_start, bool lower2uppe
 	// jeśli trzeba, zamień małe litery w argumencie na wielkie (domyślnie nie zamieniaj)
 	if(lower2upper)
 	{
-		arg = buf_lower_to_upper(arg);
+		arg = buf_lower2upper(arg);
 	}
 
 	// wpisz nową pozycję początkową dla ewentualnego kolejnego argumentu
@@ -188,7 +188,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			// jeśli pokazywanie statusu nicka jest włączone, dodaj je do nicka (busy również ma wpływ na nick)
 			if(ga.show_stat_in_win_chat)
 			{
-				nick_stat = get_flags_nick(ga, ci, ga.current, buf_lower_to_upper(ga.zuousername));
+				nick_stat = get_flags_nick(ga, ci, ga.current, buf_lower2upper(ga.zuousername));
 			}
 
 			win_buf_add_str(ga, ci, ci[ga.current]->channel,
@@ -240,7 +240,7 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 			command_org.insert(0, kbd_buf, 1, pos_command_end - 1);		// 1, - 1, bo pomijamy znak /
 
 			// zamień małe litery w poleceniu na wielkie (łatwiej będzie wyszukać polecenie)
-			std::string command = buf_lower_to_upper(command_org);
+			std::string command = buf_lower2upper(command_org);
 
 			// gdy coś było za poleceniem, tutaj będzie pozycja początkowa (ewentualne spacje będą usunięte w get_arg() )
 			size_t pos_arg_start = pos_command_end;
@@ -1142,7 +1142,7 @@ void command_kban_common(struct global_args &ga, struct channel_irc *ci[], std::
 			// jeśli wpisano nick do zbanowania i wyrzucenia, wyślij polecenie do IRC (w aktualnie otwartym pokoju), opcjonalnie można podać powód
 			if(kban_nick.size() > 0)
 			{
-				std::string kban_nick_key = buf_lower_to_upper(kban_nick);
+				std::string kban_nick_key = buf_lower2upper(kban_nick);
 
 				// polecenie wyślij, gdy nick jest w pokoju
 				if(ci[ga.current]->ni.find(kban_nick_key) != ci[ga.current]->ni.end())
@@ -1704,12 +1704,12 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 		// wykryj wysłanie wybranych poleceń przez /raw i na tej podstawie ustaw stosowne flagi
 		pos_arg_start = 0;	// początek pobranej reszty z bufora
 
-		std::string raw_command = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
+		std::string raw_command = buf_lower2upper(get_arg(raw_args, pos_arg_start));
 
 		if(raw_command == "NS")
 		{
-			std::string raw_arg1 = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
-			std::string raw_arg2 = buf_lower_to_upper(get_arg(raw_args, pos_arg_start));
+			std::string raw_arg1 = buf_lower2upper(get_arg(raw_args, pos_arg_start));
+			std::string raw_arg2 = buf_lower2upper(get_arg(raw_args, pos_arg_start));
 
 			if(raw_arg1 == "INFO")
 			{
@@ -1802,7 +1802,7 @@ void command_raw(struct global_args &ga, struct channel_irc *ci[], std::string &
 
 void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_start)
 {
-	std::string set_parm = buf_lower_to_upper(get_arg(kbd_buf, pos_arg_start));
+	std::string set_parm = buf_lower2upper(get_arg(kbd_buf, pos_arg_start));
 
 	if(set_parm == "STAT")
 	{
@@ -2031,7 +2031,7 @@ void command_whois(struct global_args &ga, struct channel_irc *ci[], std::string
 		// wpisanie 's' za nickiem wyświetli krótką formę (tylko nick, ZUO i host)
 		if(get_arg(kbd_buf, pos_arg_start, true) == "S")
 		{
-                        ga.whois_short = buf_lower_to_upper(whois_nick);
+                        ga.whois_short = buf_lower2upper(whois_nick);
 		}
 
 		ga.cf.whois = true;

@@ -23,22 +23,19 @@
 #ifndef WINDOW_UTILS_HPP
 #define WINDOW_UTILS_HPP
 
-// domyślna maksymalna ilość pozycji w buforze każdego okna (będzie można ją zmienić, gdy będą opcje w programie), 0 wyłącza ograniczenie
-#define WIN_BUF_MAX_ITEMS 2000
-
 bool check_colors();
 
 std::string get_time();
 
-std::string time_utimestamp_to_local(std::string &time_unixtimestamp);
-
 std::string get_time_full();
 
-std::string time_utimestamp_to_local_full(std::string &time_unixtimestamp);
+std::string unixtimestamp2local(std::string &time_unixtimestamp);
+
+std::string unixtimestamp2local_full(std::string &time_unixtimestamp);
 
 std::string time_sec2time(std::string &sec_str);
 
-std::string buf_lower_to_upper(std::string buf);
+std::string buf_lower2upper(std::string buf);
 
 int buf_chars(std::string &in_buf);
 

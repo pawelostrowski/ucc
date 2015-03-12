@@ -152,7 +152,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		ga.debug_http_f << "\r\n\r\n";
 #endif		// __CYGWIN__
 
-		ga.debug_http_f << buf_iso_to_utf(dbg_recv);
+		ga.debug_http_f << buf_iso2utf(dbg_recv);
 
 #ifndef __CYGWIN__
 		ga.debug_http_f << "\n";

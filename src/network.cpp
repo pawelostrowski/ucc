@@ -509,7 +509,7 @@ void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_
 	}
 
 	// przekoduj UTF-8 na ISO-8859-2
-	irc_send_buf = buf_utf_to_iso(irc_send_buf);
+	irc_send_buf = buf_utf2iso(irc_send_buf);
 
 	// do każdego zapytania dodaj znak nowego wiersza oraz przejścia do początku linii (aby nie trzeba było go dodawać poza funkcją)
 	irc_send_buf += "\r\n";
@@ -606,7 +606,7 @@ void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc
 		}
 
 		// serwer wysyła dane w kodowaniu ISO-8859-2, zamień je na UTF-8
-		irc_recv_buf = buf_iso_to_utf(irc_recv_buf);
+		irc_recv_buf = buf_iso2utf(irc_recv_buf);
 
 		// dopisz do początku bufora głównego ewentualnie zachowany niepełny fragment poprzedniego wiersza z bufora pomocniczego
 		if(irc_recv_buf_incomplete.size() > 0)
