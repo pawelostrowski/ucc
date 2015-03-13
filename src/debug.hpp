@@ -27,4 +27,4 @@ void http_dbg_to_file_header(struct global_args &ga, std::string dbg_header);
 
 void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string dbg_recv, std::string &host, uint16_t port, std::string &stock);
 
-#endif		// DEBUG_HPP
+#endif // DEBUG_HPP

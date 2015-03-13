@@ -45,4 +45,4 @@ void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_
 
 void irc_recv(struct global_args &ga, struct channel_irc *ci[], std::string &irc_recv_buf, std::string dbg_irc_msg = "");
 
-#endif		// NETWORK_HPP
+#endif // NETWORK_HPP

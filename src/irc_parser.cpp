@@ -35,6 +35,8 @@
 #include "auth.hpp"
 #include "ucc_global.hpp"
 
+#include "kbd_parser.hpp"
+
 
 std::string get_value_from_buf(std::string &in_buf, std::string expr_before, std::string expr_after)
 {
@@ -122,17 +124,27 @@ std::string get_raw_parm(std::string &raw_buf, int raw_parm_number)
 }
 
 
-void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string dbg_irc_msg)
+void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string dbg_irc_msg, bool test_parser)
 {
 	std::string irc_recv_buf;
 
-	// pobierz odpowiedź z serwera
-	irc_recv(ga, ci, irc_recv_buf, dbg_irc_msg);
-
-	// w przypadku błędu podczas pobierania danych zakończ
-	if(! ga.irc_ok)
+	// normalne użycie parsera najpierw pobiera dane z serwera
+	if(! test_parser)
 	{
-		return;
+		// pobierz odpowiedź z serwera
+		irc_recv(ga, ci, irc_recv_buf, dbg_irc_msg);
+
+		// w przypadku błędu podczas pobierania danych zakończ
+		if(! ga.irc_ok)
+		{
+			return;
+		}
+	}
+
+	// testowanie parsera pobiera dane z dbg_irc_msg
+	else
+	{
+		irc_recv_buf = dbg_irc_msg;
 	}
 
 	std::stringstream irc_recv_buf_stream(irc_recv_buf);

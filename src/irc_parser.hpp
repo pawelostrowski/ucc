@@ -29,7 +29,7 @@ std::string get_rest_from_buf(std::string &in_buf, std::string expr_before);
 
 std::string get_raw_parm(std::string &raw_buf, int raw_parm_number);
 
-void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string dbg_irc_msg = "");
+void irc_parser(struct global_args &ga, struct channel_irc *ci[], std::string dbg_irc_msg = "", bool test_parser = false);
 
 /*
 	Poniżej są funkcje do obsługi RAW.
@@ -387,4 +387,4 @@ void raw_notice_470(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 void raw_notice_472(struct global_args &ga, struct channel_irc *ci[], std::string &raw_buf);
 
-#endif		// IRC_PARSER_HPP
+#endif // IRC_PARSER_HPP

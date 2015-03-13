@@ -40,4 +40,4 @@ void new_or_update_nick_chan(struct global_args &ga, struct channel_irc *ci[], s
 
 void del_nick_chan(struct global_args &ga, struct channel_irc *ci[], std::string chan_name, std::string nick);
 
-#endif		// CHAT_UTILS_HPP
+#endif // CHAT_UTILS_HPP

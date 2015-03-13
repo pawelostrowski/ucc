@@ -148,6 +148,8 @@ int main_window(bool _use_colors, bool _debug_irc)
 	ga.irc_ready = false;		// gotowość do połączenia z czatem, po połączeniu jest ustawiany na false
 	ga.irc_ok = false;		// stan połączenia z czatem
 
+	ga.ucc_dev = false;		// domyślnie zablokuj możliwość wstrzykiwania RAW z klawiatury do parsera IRC
+
 	ga.is_irc_recv_buf_incomplete = false;
 
 	ga.show_stat_in_win_chat = false;	// czy domyślnie pokazywać statusy nicków w oknie rozmowy
@@ -788,7 +790,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 			tv_sel.tv_usec = 0;
 		}
 
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		if(sel_stat == -1)
 		{

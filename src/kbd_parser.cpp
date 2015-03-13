@@ -23,6 +23,7 @@
 #include <string>		// std::string
 
 #include "kbd_parser.hpp"
+#include "irc_parser.hpp"
 #include "chat_utils.hpp"
 #include "window_utils.hpp"
 #include "form_conv.hpp"
@@ -475,6 +476,11 @@ void kbd_parser(struct global_args &ga, struct channel_irc *ci[], std::string &k
 				command_whowas(ga, ci, kbd_buf, pos_arg_start);
 			}
 
+			else if(command == "X" && ga.ucc_dev)
+			{
+				command_x(ga, ci, kbd_buf, pos_arg_start);
+			}
+
 			// gdy nie znaleziono polecenia, pokaż je wraz z ostrzeżeniem
 			else
 			{
@@ -917,6 +923,11 @@ void command_help(struct global_args &ga, struct channel_irc *ci[])
 			xCYAN  "/whois\n"
 			xCYAN  "/whowas", false);
 			// dopisać resztę poleceń
+
+	if(ga.ucc_dev)
+	{
+		win_buf_add_str(ga, ci, ci[ga.current]->channel, xCYAN "/x", false);
+	}
 }
 
 
@@ -1833,6 +1844,11 @@ void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_st
 			ga.all_auth_https = true;
 		}
 	}
+
+	else if(set_parm == "X")
+	{
+		ga.ucc_dev = true;
+	}
 }
 
 
@@ -2061,4 +2077,10 @@ void command_whowas(struct global_args &ga, struct channel_irc *ci[], std::strin
 	{
 		msg_err_first_login(ga, ci);
 	}
+}
+
+
+void command_x(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start)
+{
+	irc_parser(ga, ci, get_rest_args(kbd_buf, pos_arg_start), true);
 }

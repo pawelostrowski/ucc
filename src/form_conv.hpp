@@ -37,4 +37,4 @@ std::string month_en_to_pl(std::string &month_en);
 
 std::string remove_form(std::string &in_buf);
 
-#endif		// FORM_CONV_HPP
+#endif // FORM_CONV_HPP

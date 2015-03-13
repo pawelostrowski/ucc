@@ -38,7 +38,7 @@ void http_dbg_to_file_header(struct global_args &ga, std::string dbg_header)
 		ga.debug_http_f << "\n";
 #else
 		ga.debug_http_f << "\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		ga.debug_http_f << dbg_header << " (" << get_time_full() << "):";
 
@@ -46,7 +46,7 @@ void http_dbg_to_file_header(struct global_args &ga, std::string dbg_header)
 		ga.debug_http_f << "\n\n\n";
 #else
 		ga.debug_http_f << "\r\n\r\n\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		ga.debug_http_f.flush();
 	}
@@ -116,7 +116,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			dbg_recv.erase(dbg_recv.find("\r"), 1);
 			code_erase = dbg_recv.find("\r");
 		}
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		// zapisz dane do pliku
 		ga.debug_http_f << "--> SENT (http" << (port == 443 ? "s" : "") << "://" << host << stock << "):";
@@ -125,7 +125,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		ga.debug_http_f << "\n\n";
 #else
 		ga.debug_http_f << "\r\n\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		ga.debug_http_f << dbg_sent;
 
@@ -133,7 +133,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		ga.debug_http_f << "\n";
 #else
 		ga.debug_http_f << "\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		if(dbg_sent.size() > 0 && dbg_sent[dbg_sent.size() - 1] != '\n')
 		{
@@ -141,7 +141,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			ga.debug_http_f << "\n\n";
 #else
 			ga.debug_http_f << "\r\n\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 		}
 
 		ga.debug_http_f << "<-- RECV:";
@@ -150,7 +150,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		ga.debug_http_f << "\n\n";
 #else
 		ga.debug_http_f << "\r\n\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		ga.debug_http_f << buf_iso2utf(dbg_recv);
 
@@ -158,7 +158,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 		ga.debug_http_f << "\n";
 #else
 		ga.debug_http_f << "\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 		if(dbg_sent.size() > 0 && dbg_recv[dbg_recv.size() - 1] != '\n')
 		{
@@ -166,7 +166,7 @@ void http_dbg_to_file(struct global_args &ga, std::string dbg_sent, std::string 
 			ga.debug_http_f << "\n\n";
 #else
 			ga.debug_http_f << "\r\n\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 		}
 
 		ga.debug_http_f.flush();

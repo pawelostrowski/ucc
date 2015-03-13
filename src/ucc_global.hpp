@@ -50,7 +50,7 @@ namespace std
 	}
 }
 
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 #include <ncursesw/ncurses.h>	// wersja ncurses ze wsparciem dla UTF-8
 #include <fstream>
@@ -59,7 +59,7 @@ namespace std
 
 // nazwa i numer wersji programu
 #define UCC_NAME	"Ucieszony Chat Client"
-#define UCC_VER		"1.0 alpha7.2015-03-12.01"
+#define UCC_VER		"1.0 alpha7.2015-03-13.01"
 
 // katalog ucc (sama nazwa, nie jego położenie)
 #define UCC_DIR		".ucc"
@@ -78,7 +78,7 @@ namespace std
 #define LOG_STARTED	"--- Rozpoczęto log: " + get_time_full() + " ---\r\n"
 #define LOG_STOPPED	"--- Zakończono log: " + get_time_full() + " ---\r\n\r\n"
 
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 // przypisanie własnych nazw kolorów dla zainicjalizowanych par kolorów
 // (kody 0x09 i 0x0A są pominięte, bo w win_buf_add_str() są interpretowane jako \t i \n)
@@ -274,6 +274,8 @@ struct global_args
 	bool irc_ready;
 	bool irc_ok;
 
+	bool ucc_dev;
+
 	int current;		// aktualnie otwarty pokój
 
 	std::string my_nick;
@@ -367,4 +369,4 @@ struct channel_irc
 	int win_skip_lead_last;
 };
 
-#endif		// UCC_GLOBAL_HPP
+#endif // UCC_GLOBAL_HPP

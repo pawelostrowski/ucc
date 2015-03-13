@@ -51,4 +51,4 @@
 
 int main_window(bool _use_colors, bool _debug_irc);
 
-#endif		// MAIN_WINDOW_HPP
+#endif // MAIN_WINDOW_HPP

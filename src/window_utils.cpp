@@ -128,17 +128,13 @@ std::string unixtimestamp2local_full(std::string &time_unixtimestamp)
 
 	time_date_l = localtime(&time_date_g);	// czas lokalny
 
-#ifdef __CYGWIN__
-
-	// w Cygwin dodanie minusa wewnątrz %d nie działa, na razie data będzie z nieznaczącym zerem
-	strftime(time_date, 45, "%A, %d %b %Y, %H:%M:%S", time_date_l);
-
-#else
-
+#ifndef __CYGWIN__
 	// %-d, aby nie było nieznaczącego zera w dniu miesiąca
 	strftime(time_date, 45, "%A, %-d %b %Y, %H:%M:%S", time_date_l);
-
-#endif		// __CYGWIN__
+#else
+	// w Cygwin dodanie minusa wewnątrz %d nie działa, na razie data będzie z nieznaczącym zerem
+	strftime(time_date, 45, "%A, %d %b %Y, %H:%M:%S", time_date_l);
+#endif // __CYGWIN__
 
 	std::string time_date_str = std::string(time_date);
 
@@ -986,7 +982,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 		{
 #ifdef LOG_HEADER
 #undef LOG_HEADER
-#endif		// LOG_HEADER
+#endif // LOG_HEADER
 
 #define LOG_HEADER ci[which_chan]->chan_log << (add_time ? get_time() : "") << remove_form(in_buf_line)
 
@@ -994,7 +990,7 @@ void win_buf_add_str(struct global_args &ga, struct channel_irc *ci[], std::stri
 			LOG_HEADER << "\n";
 #else
 			LOG_HEADER << "\r\n";
-#endif		// __CYGWIN__
+#endif // __CYGWIN__
 
 #undef LOG_HEADER
 

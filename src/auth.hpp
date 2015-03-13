@@ -47,4 +47,4 @@ bool auth_http_getuokey(struct global_args &ga, struct channel_irc *ci[]);
 
 void auth_irc_all(struct global_args &ga, struct channel_irc *ci[]);
 
-#endif		// AUTH_HPP
+#endif // AUTH_HPP

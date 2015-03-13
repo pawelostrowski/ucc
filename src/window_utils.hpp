@@ -56,4 +56,4 @@ std::string get_flags_nick(struct global_args &ga, struct channel_irc *ci[], int
 
 void nicklist_refresh(struct global_args &ga, struct channel_irc *ci[]);
 
-#endif		// WINDOW_UTILS_HPP
+#endif // WINDOW_UTILS_HPP

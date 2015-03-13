@@ -111,4 +111,6 @@ void command_whois(struct global_args &ga, struct channel_irc *ci[], std::string
 
 void command_whowas(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
 
-#endif		// KBD_PARSER_HPP
+void command_x(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start);
+
+#endif // KBD_PARSER_HPP
