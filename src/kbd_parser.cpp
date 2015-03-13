@@ -2084,10 +2084,7 @@ void command_x(struct global_args &ga, struct channel_irc *ci[], std::string &kb
 {
 	std::string irc_parser_raw = get_rest_args(kbd_buf, pos_arg_start);
 
-	if(ga.debug_irc)
-	{
-		win_buf_add_str(ga, ci, "DebugIRC", xCYAN + irc_parser_raw, true, 1, true, false);
-	}
+	win_buf_add_str(ga, ci, "DebugIRC", xCYAN + irc_parser_raw, true, 1, true, false);
 
 	irc_parser(ga, ci, irc_parser_raw, true);
 }

@@ -504,7 +504,7 @@ void irc_send(struct global_args &ga, struct channel_irc *ci[], std::string irc_
 				code_erase = irc_send_buf_line.find("\r");
 			}
 
-			win_buf_add_str(ga, ci, "DebugIRC", xYELLOW "> " + irc_send_buf_line, true, 1, true, false);
+			win_buf_add_str(ga, ci, "DebugIRC", xYELLOW "<<< " + irc_send_buf_line, true, 1, true, false);
 		}
 	}
 
