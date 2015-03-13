@@ -35,8 +35,6 @@
 #include "auth.hpp"
 #include "ucc_global.hpp"
 
-#include "kbd_parser.hpp"
-
 
 std::string get_value_from_buf(std::string &in_buf, std::string expr_before, std::string expr_after)
 {

@@ -1845,7 +1845,7 @@ void command_set(struct global_args &ga, std::string &kbd_buf, size_t pos_arg_st
 		}
 	}
 
-	else if(set_parm == "X")
+	else if(set_parm == "X" && ga.debug_irc)
 	{
 		ga.ucc_dev = true;
 	}
@@ -2082,5 +2082,12 @@ void command_whowas(struct global_args &ga, struct channel_irc *ci[], std::strin
 
 void command_x(struct global_args &ga, struct channel_irc *ci[], std::string &kbd_buf, size_t pos_arg_start)
 {
-	irc_parser(ga, ci, get_rest_args(kbd_buf, pos_arg_start), true);
+	std::string irc_parser_raw = get_rest_args(kbd_buf, pos_arg_start);
+
+	if(ga.debug_irc)
+	{
+		win_buf_add_str(ga, ci, "DebugIRC", xCYAN + irc_parser_raw, true, 1, true, false);
+	}
+
+	irc_parser(ga, ci, irc_parser_raw, true);
 }
