@@ -66,8 +66,10 @@ int main_window(bool _use_colors, bool _debug_irc)
 		return 1;
 	}
 
-	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo
-	std::setlocale(LC_ALL, "");
+	// aby polskie znaki w UTF-8 wyświetlały się prawidłowo, była kropka w Lag oraz ustaw pobieranie daty w notacji polskiej
+	std::setlocale(LC_CTYPE, "");
+	std::setlocale(LC_NUMERIC, "C");
+	std::setlocale(LC_TIME, "pl_PL.UTF-8");
 
 	// inicjalizacja ncurses
 	if(! initscr())
