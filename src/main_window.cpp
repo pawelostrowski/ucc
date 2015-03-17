@@ -1439,6 +1439,14 @@ int main_window(bool _use_colors, bool _debug_irc)
 				// wskaźnik i kursor na koniec
 				kbd_buf_pos = kbd_buf.size();
 				kbd_cur_pos = buf_chars(kbd_buf);
+
+				// pomiń wielokrotne kody (np. w KDE) podczas używania scrolla myszki
+				key_code = getch();
+
+				while(key_code != ERR)
+				{
+					key_code = getch();
+				}
 			}
 
 			// Down Arrow
@@ -1522,6 +1530,14 @@ int main_window(bool _use_colors, bool _debug_irc)
 						kbd_buf_pos = 0;
 						kbd_cur_pos = 0;
 					}
+				}
+
+				// pomiń wielokrotne kody (np. w KDE) podczas używania scrolla myszki
+				key_code = getch();
+
+				while(key_code != ERR)
+				{
+					key_code = getch();
 				}
 			}
 
