@@ -1441,12 +1441,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 				kbd_cur_pos = buf_chars(kbd_buf);
 
 				// pomiń wielokrotne kody (np. w KDE) podczas używania scrolla myszki
-				key_code = getch();
-
-				while(key_code != ERR)
-				{
-					key_code = getch();
-				}
+				while(getch() != ERR);
 			}
 
 			// Down Arrow
@@ -1533,12 +1528,7 @@ int main_window(bool _use_colors, bool _debug_irc)
 				}
 
 				// pomiń wielokrotne kody (np. w KDE) podczas używania scrolla myszki
-				key_code = getch();
-
-				while(key_code != ERR)
-				{
-					key_code = getch();
-				}
+				while(getch() != ERR);
 			}
 
 			// Backspace (key_code == 0x7F - Cygwin)
