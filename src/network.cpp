@@ -88,10 +88,16 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 {
 	std::string cookie;
 
-	const std::string cookie_string = "Set-Cookie: ";
+	// bufor pomocniczy z przekształconymi małymi znakami na wielkie, Onet pomieszał nieco przy ciastkach i trzeba inaczej ich szukać
+	std::string http_recv_buf_str_upper;
 
-	// znajdź pozycję pierwszego cookie (od miejsca: "Set-Cookie: ")
-	size_t pos_cookie_start = http_recv_buf_str.find(cookie_string);
+	// zamień małe znaki na wielkie
+	http_recv_buf_str_upper = buf_lower2upper(http_recv_buf_str);
+
+	const std::string cookie_string = "SET-COOKIE: ";
+
+	// znajdź pozycję pierwszego cookie
+	size_t pos_cookie_start = http_recv_buf_str_upper.find(cookie_string);
 
 	if(pos_cookie_start == std::string::npos)
 	{
@@ -105,7 +111,7 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 	do
 	{
 		// szukaj ";" od pozycji początku cookie
-		pos_cookie_end = http_recv_buf_str.find(";", pos_cookie_start);
+		pos_cookie_end = http_recv_buf_str_upper.find(";", pos_cookie_start);
 
 		if(pos_cookie_end == std::string::npos)
 		{
@@ -126,7 +132,7 @@ bool http_get_cookies(std::string http_recv_buf_str, std::vector<std::string> &c
 		}
 
 		// znajdź kolejne cookie
-		pos_cookie_start = http_recv_buf_str.find(cookie_string, pos_cookie_start + cookie_string.size());
+		pos_cookie_start = http_recv_buf_str_upper.find(cookie_string, pos_cookie_start + cookie_string.size());
 
 	} while(pos_cookie_start != std::string::npos);		// zakończ szukanie, gdy nie zostanie znalezione kolejne cookie
 
